@@ -1,16 +1,15 @@
 package stoufexis.jarpc;
 
 import io.aeron.Publication;
-import io.aeron.logbuffer.ControlledFragmentHandler;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.*;
-import org.agrona.concurrent.ControlledMessageHandler.Action;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.nio.ByteBuffer;
 
+/** Allows multiple producer threads to enqueue, as it uses a MPSC buffer underneath */
 final class QueuedPublisher<T> {
   private final Encoder<T> encoder;
   private final SendAgent agent;
@@ -29,6 +28,12 @@ final class QueuedPublisher<T> {
     return this.agent;
   }
 
+  /**
+   * Reads and releases elem in the calling thread, callers may mutate elem and call enqueue again
+   * with the mutated value to reduce allocations.
+   *
+   * <p>Caveat; this assumes the encoder also does not capture the elem internally.
+   */
   boolean enqueue(T elem) {
     int index = buf.tryClaim(0, encoder.length(elem));
 
@@ -47,12 +52,9 @@ final class QueuedPublisher<T> {
     }
   }
 
-  private static final class SendAgent implements Agent {
+  private static final class SendAgent implements Agent, ControlledMessageHandler {
     private final RingBuffer buf;
     private final Publication pub;
-
-    // Hoisted to avoid allocating on every doWork
-    private final ControlledMessageHandler handler = this::onMessage;
 
     private Flag flag;
 
@@ -65,7 +67,7 @@ final class QueuedPublisher<T> {
     public int doWork() {
       flag = Flag.NORMAL;
 
-      int processed = buf.controlledRead(handler);
+      int processed = buf.controlledRead(this);
 
       return switch (flag) {
         case NORMAL -> processed;
@@ -76,7 +78,8 @@ final class QueuedPublisher<T> {
       };
     }
 
-    private Action onMessage(int msgTypeId, MutableDirectBuffer buffer, int index, int length) {
+    @Override
+    public Action onMessage(int msgTypeId, MutableDirectBuffer buffer, int index, int length) {
       return switch (pub.offer(buffer, index, length)) {
         case long i when i > 0 -> Action.CONTINUE;
 

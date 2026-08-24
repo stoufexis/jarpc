@@ -11,11 +11,11 @@ import static java.lang.IO.println;
 public class Main {
 
   static void main() {
-    ByteBuffer bb = ByteBuffer.allocate(8);        // default order: big-endian
-    UnsafeBuffer ub = new UnsafeBuffer(bb);         // default order: native
+    ByteBuffer bb = ByteBuffer.allocate(8); // default order: big-endian
+    UnsafeBuffer ub = new UnsafeBuffer(bb); // default order: native
 
-    ub.putInt(0, 42);                               // written native (little-endian on x86)
-    int x = ub.getInt(0);                           // read big-endian -> byte-swapped, not 42
+    ub.putInt(0, 42); // written native (little-endian on x86)
+    int x = ub.getInt(0); // read big-endian -> byte-swapped, not 42
     println(x);
   }
 }

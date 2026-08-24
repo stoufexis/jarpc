@@ -12,7 +12,7 @@
       "statusCode": "int"
     }
   },
-  "cancelAllOrders": {
+  "cancelAll": {
     "request": {},
     "response": {
       "statusCode": "int"

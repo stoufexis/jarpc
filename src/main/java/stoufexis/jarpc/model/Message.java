@@ -5,6 +5,7 @@ import org.agrona.MutableDirectBuffer;
 
 public abstract class Message {
   private boolean initialized;
+
   private final Class<?> clazz;
   private final int messageSize;
 
@@ -44,7 +45,7 @@ public abstract class Message {
    * @throws IllegalArgumentException if the length exceeds the expected size
    */
   public final void checkSize(int length) {
-    if (length > messageSize) {
+    if (length != messageSize) {
       throw new IllegalArgumentException(
           String.format(
               "%s cannot be decoded. Expected size %d, received size %d",

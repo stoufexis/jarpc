@@ -1,10 +1,14 @@
 package stoufexis.jarpc.model;
 
 public interface BaseCallback {
-  enum CancellationReason {
+
+  enum ErrorType {
+    NOT_CONNECTED,
+    BACKPRESSURE,
     TIMEOUT,
-    INTERRUPT
+    INTERRUPT,
+    CORRUPT_SESSION
   }
 
-  void onCancelled(long correlationId, CancellationReason reason);
+  void onError(long correlationId, ErrorType reason);
 }

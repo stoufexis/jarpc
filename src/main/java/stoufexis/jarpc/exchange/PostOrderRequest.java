@@ -51,6 +51,7 @@ public class PostOrderRequest extends Message {
   }
 
   public void set(
+      long correlationId,
       int baseAssetId,
       int quoteAssetId,
       long quantityUnscaled,
@@ -58,7 +59,6 @@ public class PostOrderRequest extends Message {
       long rateUnscaled,
       int rateScale) {
     initialize();
-
     this.baseAssetId = baseAssetId;
     this.quoteAssetId = quoteAssetId;
     this.quantityUnscaled = quantityUnscaled;

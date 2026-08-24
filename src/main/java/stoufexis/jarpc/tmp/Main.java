@@ -1,4 +1,4 @@
-package stoufexis.jarpc;
+package stoufexis.jarpc.tmp;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
@@ -7,10 +7,6 @@ import io.aeron.driver.MediaDriver;
 import org.agrona.ErrorHandler;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.*;
-
-import java.nio.ByteBuffer;
-
-import static java.lang.IO.println;
 
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.

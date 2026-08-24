@@ -1,0 +1,21 @@
+{
+  "postOrder": {
+    "request": {
+      "baseAssetId": "int",
+      "quoteAssetId": "int",
+      "quantityUnscaled": "long",
+      "quantityScale": "int",
+      "rateUnscaled": "long",
+      "rateScale": "int"
+    },
+    "response": {
+      "statusCode": "int"
+    }
+  },
+  "cancelAllOrders": {
+    "request": {},
+    "response": {
+      "statusCode": "int"
+    }
+  }
+}

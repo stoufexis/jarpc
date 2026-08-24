@@ -1,8 +1,10 @@
 package stoufexis.jarpc;
 
 import io.aeron.Publication;
+import io.aeron.logbuffer.ControlledFragmentHandler;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.*;
+import org.agrona.concurrent.ControlledMessageHandler.Action;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
@@ -74,19 +76,18 @@ final class QueuedPublisher<T> {
       };
     }
 
-    private ControlledMessageHandler.Action onMessage(
-        int msgTypeId, MutableDirectBuffer buffer, int index, int length) {
+    private Action onMessage(int msgTypeId, MutableDirectBuffer buffer, int index, int length) {
       return switch (pub.offer(buffer, index, length)) {
-        case long i when i > 0 -> ControlledMessageHandler.Action.CONTINUE;
+        case long i when i > 0 -> Action.CONTINUE;
 
         case Publication.NOT_CONNECTED, Publication.BACK_PRESSURED, Publication.ADMIN_ACTION -> {
           flag = Flag.BACKOFF;
-          yield ControlledMessageHandler.Action.ABORT;
+          yield Action.ABORT;
         }
 
         case Publication.CLOSED, Publication.MAX_POSITION_EXCEEDED -> {
           flag = Flag.TERMINATE;
-          yield ControlledMessageHandler.Action.ABORT;
+          yield Action.ABORT;
         }
 
         default -> throw new IllegalStateException("Impossible offer result");

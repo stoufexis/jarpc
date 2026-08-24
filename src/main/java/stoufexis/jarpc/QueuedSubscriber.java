@@ -78,7 +78,7 @@ final class QueuedSubscriber<T> {
 
     @Override
     public Action onFragment(DirectBuffer buffer, int offset, int length, Header header) {
-      int index = buf.tryClaim(0, length);
+      int index = buf.tryClaim(1, length);
 
       if (index <= 0) {
         return Action.ABORT;

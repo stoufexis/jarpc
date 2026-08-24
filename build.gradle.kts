@@ -35,9 +35,11 @@ tasks.compileJava {
     options.compilerArgs.add("--enable-preview")
 }
 
+
 application {
     applicationDefaultJvmArgs = listOf(
-        "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED"
+        "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
+        "--enable-preview"
     )
 
     mainClass.set("stoufexis.jarpc.Main")

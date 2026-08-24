@@ -1,7 +1,7 @@
 package stoufexis.jarpc;
 
-import org.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
 
 public interface Decoder<T> {
-  T decode(int offset, int length, MutableDirectBuffer b);
+  T decode(int offset, int length, DirectBuffer b);
 }

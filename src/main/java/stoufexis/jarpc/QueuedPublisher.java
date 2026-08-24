@@ -35,7 +35,7 @@ final class QueuedPublisher<T> {
    * <p>Caveat; this assumes the encoder also does not capture the elem internally.
    */
   boolean enqueue(T elem) {
-    int index = buf.tryClaim(0, encoder.length(elem));
+    int index = buf.tryClaim(1, encoder.length(elem));
 
     if (index <= 0) {
       return false;

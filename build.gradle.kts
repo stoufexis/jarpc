@@ -39,8 +39,9 @@ tasks.compileJava {
 application {
     applicationDefaultJvmArgs = listOf(
         "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
+        "--add-opens=java.base/jdk.internal.vm.annotation=ALL-UNNAMED",
         "--enable-preview"
     )
 
-    mainClass.set("stoufexis.jarpc.Main")
+    mainClass.set("stoufexis.jarpc.tmp.Main")
 }

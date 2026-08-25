@@ -8,7 +8,6 @@ import org.agrona.ErrorHandler;
 import org.jctools.maps.NonBlockingHashMapLong;
 import stoufexis.jarpc.model.BaseCallback;
 import stoufexis.jarpc.model.JarpcClient;
-import stoufexis.jarpc.util.MessageHeader;
 
 import static stoufexis.jarpc.util.Util.*;
 
@@ -23,15 +22,15 @@ public class JarpcExchangeClient extends JarpcClient implements Exchange {
   private final NonBlockingHashMapLong<CancelAllCallback> cancelAllCallbacks =
       new NonBlockingHashMapLong<>();
 
-  private final MessageHeader header = new MessageHeader();
-  private final PostOrderResponse postOrderResponse = new PostOrderResponse();
-  private final CancelAllResponse cancelAllResponse = new CancelAllResponse();
-  private final BufferClaim claim = new BufferClaim();
-
   public JarpcExchangeClient(
       Publication publication, Subscription subscription, ErrorHandler handler) {
     super(publication, subscription, handler);
   }
+
+  // Publication
+  //
+
+  private final BufferClaim claim = new BufferClaim();
 
   @Override
   public void postOrder(long correlationId, PostOrderRequest request, PostOrderCallback callback) {
@@ -85,52 +84,47 @@ public class JarpcExchangeClient extends JarpcClient implements Exchange {
     }
   }
 
+  // Subscription
+  //
+
+  private final PostOrderResponse postOrderResponse = new PostOrderResponse();
+  private final CancelAllResponse cancelAllResponse = new CancelAllResponse();
+
   @Override
-  protected boolean handleReceivedFragment(DirectBuffer buffer, int offset, int length) {
-    try {
-      header.decode(buffer, offset, length);
+  protected boolean handleReceivedFragment(
+      int messageType, long correlationId, DirectBuffer buffer, int offset, int length) {
 
-      int messageType = header.getMessageType();
-      long correlationId = header.getCorrelationId();
+    switch (messageType) {
+      case Catalog.postOrderId -> {
+        PostOrderCallback callback = removeOrThrow(postOrderCallbacks, correlationId);
 
-      offset += MessageHeader.HEADER_SIZE;
-      length -= MessageHeader.HEADER_SIZE;
+        try {
+          postOrderResponse.decode(buffer, offset, length);
+          return callback.onResponse(correlationId, postOrderResponse);
 
-      switch (messageType) {
-        case Catalog.postOrderId -> {
-          PostOrderCallback callback = removeOrThrow(postOrderCallbacks, correlationId);
-
-          try {
-            postOrderResponse.decode(buffer, offset, length);
-            return callback.onResponse(correlationId, postOrderResponse);
-
-          } catch (RuntimeException e) {
-            callback.onError(correlationId, BaseCallback.ErrorType.DECODE_ERROR, e);
-            return true;
-          }
-        }
-
-        case Catalog.cancelAllOrdersId -> {
-          CancelAllCallback callback = removeOrThrow(cancelAllCallbacks, correlationId);
-
-          try {
-            cancelAllResponse.decode(buffer, offset, length);
-            return callback.onResponse(correlationId, cancelAllResponse);
-
-          } catch (RuntimeException e) {
-            callback.onError(correlationId, BaseCallback.ErrorType.DECODE_ERROR, e);
-            return true;
-          }
-        }
-
-        default -> {
-          handler.onError(illegal("Unknown message type " + messageType));
+        } catch (RuntimeException e) {
+          callback.onError(correlationId, BaseCallback.ErrorType.DECODE_ERROR, e);
           return true;
         }
       }
-    } catch (RuntimeException e) {
-      handler.onError(e);
-      return true;
+
+      case Catalog.cancelAllOrdersId -> {
+        CancelAllCallback callback = removeOrThrow(cancelAllCallbacks, correlationId);
+
+        try {
+          cancelAllResponse.decode(buffer, offset, length);
+          return callback.onResponse(correlationId, cancelAllResponse);
+
+        } catch (RuntimeException e) {
+          callback.onError(correlationId, BaseCallback.ErrorType.DECODE_ERROR, e);
+          return true;
+        }
+      }
+
+      default -> {
+        handler.onError(illegal("Unknown message type " + messageType));
+        return true;
+      }
     }
   }
 }

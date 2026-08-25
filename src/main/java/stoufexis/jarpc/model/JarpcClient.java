@@ -5,14 +5,13 @@ import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.IdleStrategy;
 
-public interface JarpcClient {
+public abstract class JarpcClient {
 
-  Agent getAgent();
+  public abstract Agent getAgent();
 
-  ErrorHandler getHandler();
+  public abstract ErrorHandler getHandler();
 
-  default Thread startOnThread(IdleStrategy idleStrategy) {
-    return AgentRunner.startOnThread(
-        new AgentRunner(idleStrategy, getHandler(), null, getAgent()));
+  public final Thread startOnThread(IdleStrategy idleStrategy) {
+    return AgentRunner.startOnThread(new AgentRunner(idleStrategy, getHandler(), null, getAgent()));
   }
 }

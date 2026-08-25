@@ -17,7 +17,7 @@ import stoufexis.jarpc.util.MessageHeader;
 
 import static stoufexis.jarpc.util.Util.illegal;
 
-public class JarpcExchangeClient implements Exchange, JarpcClient {
+public class JarpcExchangeClient extends JarpcClient implements Exchange {
 
   private final Publication publication;
   private final Subscription subscription;

@@ -44,11 +44,9 @@ public abstract class JarpcClient {
   protected abstract boolean handleReceivedFragment(
       int messageType, long correlationId, DirectBuffer buffer, int offset, int length);
 
-  private class ReceiveAgent extends ClassAgent {
+  private class ReceiveAgent extends ClassAgent implements ControlledFragmentHandler {
     private final MessageHeader header = new MessageHeader();
-
-    private final ControlledFragmentHandler assembled =
-        new ControlledFragmentAssembler(this::onFragment);
+    private final ControlledFragmentHandler assembled = new ControlledFragmentAssembler(this);
 
     private int work;
 
@@ -59,7 +57,8 @@ public abstract class JarpcClient {
       return work;
     }
 
-    private ControlledFragmentHandler.Action onFragment(
+    @Override
+    public ControlledFragmentHandler.Action onFragment(
         DirectBuffer buffer, int offset, int length, Header h_) {
       try {
         header.decode(buffer, offset, length);

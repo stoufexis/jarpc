@@ -141,7 +141,7 @@ public class JarpcExchangeClient implements Exchange, JarpcClient {
         DirectBuffer buffer, int offset, int length, Header header) {
       boolean dispatchResult = dispatch(buffer, offset, length);
 
-      // deliberately accounts 1 point for each pre-assembled fragment
+      // deliberately accounts 1 point for each post-assembled fragment
       // and 1 point for backpressure
       work++;
 

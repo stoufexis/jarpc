@@ -1,29 +1,18 @@
 package stoufexis.jarpc.exchange;
 
-import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.ControlledFragmentHandler;
-import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
-import org.agrona.concurrent.Agent;
 import org.jctools.maps.NonBlockingHashMapLong;
 import stoufexis.jarpc.model.BaseCallback;
 import stoufexis.jarpc.model.JarpcClient;
-import stoufexis.jarpc.util.ClassAgent;
 import stoufexis.jarpc.util.MessageHeader;
 
-import static stoufexis.jarpc.util.Util.illegal;
+import static stoufexis.jarpc.util.Util.*;
 
 public class JarpcExchangeClient extends JarpcClient implements Exchange {
-
-  private final Publication publication;
-  private final Subscription subscription;
-  private final Agent agent;
-  private final ErrorHandler handler;
-
   // FIXME this is perhaps not the best data structure for this use-case.
   //  removes leave behind tombstones, which are not re-used since keys do not repeat,
   //  which forces a somewhat expensive periodic compaction.
@@ -34,13 +23,14 @@ public class JarpcExchangeClient extends JarpcClient implements Exchange {
   private final NonBlockingHashMapLong<CancelAllCallback> cancelAllCallbacks =
       new NonBlockingHashMapLong<>();
 
+  private final MessageHeader header = new MessageHeader();
+  private final PostOrderResponse postOrderResponse = new PostOrderResponse();
+  private final CancelAllResponse cancelAllResponse = new CancelAllResponse();
   private final BufferClaim claim = new BufferClaim();
 
-  public JarpcExchangeClient(Publication publication, Subscription subscription, ErrorHandler handler) {
-    this.publication = publication;
-    this.subscription = subscription;
-    this.handler = handler;
-    this.agent = new ReceiveAgent();
+  public JarpcExchangeClient(
+      Publication publication, Subscription subscription, ErrorHandler handler) {
+    super(publication, subscription, handler);
   }
 
   @Override
@@ -95,113 +85,52 @@ public class JarpcExchangeClient extends JarpcClient implements Exchange {
     }
   }
 
-  private static BaseCallback.ErrorType interpretError(long claimResult) {
-    return switch (claimResult) {
-      case Publication.ADMIN_ACTION, Publication.BACK_PRESSURED ->
-          BaseCallback.ErrorType.BACKPRESSURE;
-
-      case Publication.CLOSED, Publication.MAX_POSITION_EXCEEDED ->
-          BaseCallback.ErrorType.CORRUPT_SESSION;
-
-      case Publication.NOT_CONNECTED -> BaseCallback.ErrorType.NOT_CONNECTED;
-
-      default -> throw illegal("Unrecognized error code " + claimResult);
-    };
-  }
-
   @Override
-  public Agent getAgent() {
-    return agent;
-  }
+  protected boolean handleReceivedFragment(DirectBuffer buffer, int offset, int length) {
+    try {
+      header.decode(buffer, offset, length);
 
-  @Override
-  public ErrorHandler getHandler() {
-    return handler;
-  }
+      int messageType = header.getMessageType();
+      long correlationId = header.getCorrelationId();
 
-  private final class ReceiveAgent extends ClassAgent {
-    private static final int FRAGMENT_LIMIT = 10;
+      offset += MessageHeader.HEADER_SIZE;
+      length -= MessageHeader.HEADER_SIZE;
 
-    private final MessageHeader header = new MessageHeader();
-    private final PostOrderResponse postOrderResponse = new PostOrderResponse();
-    private final CancelAllResponse cancelAllResponse = new CancelAllResponse();
-    private final ControlledFragmentHandler assembled =
-        new ControlledFragmentAssembler(this::onFragment);
+      switch (messageType) {
+        case Catalog.postOrderId -> {
+          PostOrderCallback callback = removeOrThrow(postOrderCallbacks, correlationId);
 
-    private int work;
+          try {
+            postOrderResponse.decode(buffer, offset, length);
+            return callback.onResponse(correlationId, postOrderResponse);
 
-    @Override
-    public int doWork() {
-      work = 0;
-      subscription.controlledPoll(assembled, FRAGMENT_LIMIT);
-      return work;
-    }
-
-    private ControlledFragmentHandler.Action onFragment(
-        DirectBuffer buffer, int offset, int length, Header header) {
-      boolean dispatchResult = dispatch(buffer, offset, length);
-
-      // deliberately accounts 1 point for each post-assembled fragment
-      // and 1 point for backpressure
-      work++;
-
-      return dispatchResult
-          ? ControlledFragmentHandler.Action.CONTINUE
-          : ControlledFragmentHandler.Action.ABORT;
-    }
-
-    private boolean dispatch(DirectBuffer buffer, int offset, int length) {
-      try {
-        header.decode(buffer, offset, length);
-
-        int messageType = header.getMessageType();
-        long correlationId = header.getCorrelationId();
-
-        offset += MessageHeader.HEADER_SIZE;
-        length -= MessageHeader.HEADER_SIZE;
-
-        switch (messageType) {
-          case Catalog.postOrderId -> {
-            PostOrderCallback callback = removeOrThrow(postOrderCallbacks, correlationId);
-
-            try {
-              postOrderResponse.decode(buffer, offset, length);
-              return callback.onResponse(correlationId, postOrderResponse);
-
-            } catch (RuntimeException e) {
-              callback.onError(correlationId, BaseCallback.ErrorType.DECODE_ERROR, e);
-              return true;
-            }
-          }
-
-          case Catalog.cancelAllOrdersId -> {
-            CancelAllCallback callback = removeOrThrow(cancelAllCallbacks, correlationId);
-
-            try {
-              cancelAllResponse.decode(buffer, offset, length);
-              return callback.onResponse(correlationId, cancelAllResponse);
-
-            } catch (RuntimeException e) {
-              callback.onError(correlationId, BaseCallback.ErrorType.DECODE_ERROR, e);
-              return true;
-            }
-          }
-
-          default -> {
-            handler.onError(illegal("Unknown message type " + messageType));
+          } catch (RuntimeException e) {
+            callback.onError(correlationId, BaseCallback.ErrorType.DECODE_ERROR, e);
             return true;
           }
         }
-      } catch (RuntimeException e) {
-        handler.onError(e);
-        return true;
-      }
-    }
 
-    private static <T> T removeOrThrow(NonBlockingHashMapLong<T> map, long key) {
-      T value = map.remove(key);
-      if (value == null) throw illegal("Callback not registered for correlation id " + key);
-      return value;
+        case Catalog.cancelAllOrdersId -> {
+          CancelAllCallback callback = removeOrThrow(cancelAllCallbacks, correlationId);
+
+          try {
+            cancelAllResponse.decode(buffer, offset, length);
+            return callback.onResponse(correlationId, cancelAllResponse);
+
+          } catch (RuntimeException e) {
+            callback.onError(correlationId, BaseCallback.ErrorType.DECODE_ERROR, e);
+            return true;
+          }
+        }
+
+        default -> {
+          handler.onError(illegal("Unknown message type " + messageType));
+          return true;
+        }
+      }
+    } catch (RuntimeException e) {
+      handler.onError(e);
+      return true;
     }
   }
 }

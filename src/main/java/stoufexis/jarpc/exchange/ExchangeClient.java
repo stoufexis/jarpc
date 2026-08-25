@@ -1,26 +1,97 @@
 package stoufexis.jarpc.exchange;
 
+import io.aeron.Publication;
+import io.aeron.Subscription;
+import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.Long2ObjectHashMap;
+import org.jctools.maps.NonBlockingHashMapLong;
 import stoufexis.jarpc.model.BaseCallback;
 import stoufexis.jarpc.util.ClassAgent;
 import stoufexis.jarpc.util.EventHandler;
 import stoufexis.jarpc.util.MessageHeader;
 
+import static stoufexis.jarpc.util.Util.illegal;
+
 public class ExchangeClient implements Exchange {
 
+  private final Publication publication;
   private final ReceiveAgent agent;
+  private final NonBlockingHashMapLong<PostOrderCallback> postOrderCallbacks;
+  private final NonBlockingHashMapLong<CancelAllCallback> cancelAllCallbacks;
 
-  public ExchangeClient(EventHandler handler) {
-    this.agent = new ReceiveAgent(handler);
+  private final BufferClaim claim = new BufferClaim();
+
+  public ExchangeClient(Publication publication, EventHandler handler, Subscription subscription) {
+    this.publication = publication;
+    this.postOrderCallbacks = new NonBlockingHashMapLong<>();
+    this.cancelAllCallbacks = new NonBlockingHashMapLong<>();
+    this.agent = new ReceiveAgent(postOrderCallbacks, cancelAllCallbacks, handler, subscription);
   }
 
   @Override
   public void postOrder(long correlationId, PostOrderRequest request, PostOrderCallback callback) {
+    if (postOrderCallbacks.putIfAbsent(correlationId, callback) != null) {
+      callback.onError(correlationId, BaseCallback.ErrorType.DUPLICATE_ID, null);
+      return;
+    }
+
+    long result = publication.tryClaim(request.getMessageSize(), claim);
+
+    if (result < 0) {
+      postOrderCallbacks.remove(correlationId);
+      callback.onError(correlationId, interpretError(result), null);
+      return;
+    }
+
+    try {
+      request.encode(claim.buffer(), claim.offset());
+      claim.commit();
+    } catch (RuntimeException e) {
+      claim.abort();
+      postOrderCallbacks.remove(correlationId);
+      callback.onError(correlationId, interpretError(result), null);
+      throw e;
+    }
   }
 
   @Override
   public void cancelAll(long correlationId, CancelAllRequest request, CancelAllCallback callback) {
+    if (cancelAllCallbacks.putIfAbsent(correlationId, callback) != null) {
+      callback.onError(correlationId, BaseCallback.ErrorType.DUPLICATE_ID, null);
+      return;
+    }
+
+    long result = publication.tryClaim(request.getMessageSize(), claim);
+
+    if (result < 0) {
+      cancelAllCallbacks.remove(correlationId);
+      callback.onError(correlationId, interpretError(result), null);
+      return;
+    }
+
+    try {
+      request.encode(claim.buffer(), claim.offset());
+      claim.commit();
+    } catch (RuntimeException e) {
+      claim.abort();
+      cancelAllCallbacks.remove(correlationId);
+      callback.onError(correlationId, interpretError(result), null);
+      throw e;
+    }
+  }
+
+  private static BaseCallback.ErrorType interpretError(long claimResult) {
+    return switch (claimResult) {
+      case Publication.ADMIN_ACTION, Publication.BACK_PRESSURED ->
+          BaseCallback.ErrorType.BACKPRESSURE;
+
+      case Publication.CLOSED, Publication.MAX_POSITION_EXCEEDED ->
+          BaseCallback.ErrorType.CORRUPT_SESSION;
+
+      case Publication.NOT_CONNECTED -> BaseCallback.ErrorType.NOT_CONNECTED;
+
+      default -> throw illegal("Unrecognized error code " + claimResult);
+    };
   }
 
   private static final class ReceiveAgent extends ClassAgent {
@@ -28,16 +99,26 @@ public class ExchangeClient implements Exchange {
     private final PostOrderResponse postOrderResponse = new PostOrderResponse();
     private final CancelAllResponse cancelAllResponse = new CancelAllResponse();
 
-    private final Long2ObjectHashMap<PostOrderCallback> postOrderCallbacks =
-        new Long2ObjectHashMap<>();
+    // FIXME this is perhaps not the best data structure for this use-case.
+    //  removes leave behind tombstones, which are not re-used since keys do not repeat,
+    //  which forces a somewhat expensive periodic compaction.
+    //  Consider replacing this with a purpose-built data structure instead.
+    private final NonBlockingHashMapLong<PostOrderCallback> postOrderCallbacks;
 
-    private final Long2ObjectHashMap<CancelAllCallback> cancelAllCallbacks =
-        new Long2ObjectHashMap<>();
+    private final NonBlockingHashMapLong<CancelAllCallback> cancelAllCallbacks;
 
     private final EventHandler handler;
+    private final Subscription subscription;
 
-    private ReceiveAgent(EventHandler handler) {
+    private ReceiveAgent(
+        NonBlockingHashMapLong<PostOrderCallback> postOrderCallbacks,
+        NonBlockingHashMapLong<CancelAllCallback> cancelAllCallbacks,
+        EventHandler handler,
+        Subscription subscription) {
+      this.postOrderCallbacks = postOrderCallbacks;
+      this.cancelAllCallbacks = cancelAllCallbacks;
       this.handler = handler;
+      this.subscription = subscription;
     }
 
     @Override
@@ -93,14 +174,10 @@ public class ExchangeClient implements Exchange {
       }
     }
 
-    private static <T> T removeOrThrow(Long2ObjectHashMap<T> map, long key) {
+    private static <T> T removeOrThrow(NonBlockingHashMapLong<T> map, long key) {
       T value = map.remove(key);
       if (value == null) throw illegal("Callback not registered for correlation id " + key);
       return value;
-    }
-
-    private static IllegalStateException illegal(String message) {
-      return new IllegalStateException(message);
     }
   }
 }

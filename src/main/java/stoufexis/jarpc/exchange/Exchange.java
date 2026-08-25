@@ -2,6 +2,9 @@ package stoufexis.jarpc.exchange;
 
 import stoufexis.jarpc.model.BaseCallback;
 
+/**
+ * Correlation ids must be unique per-request, they are used internally for identifying each request/response pair.
+ */
 public interface Exchange {
   void postOrder(long correlationId, PostOrderRequest request, PostOrderCallback callback);
 
@@ -15,7 +18,7 @@ public interface Exchange {
      * @param correlationId
      * @param t
      * @return true when the response was accepted, false when it was not and delivery must be
-     *     re-tried
+     * re-tried
      */
     boolean onResponse(long correlationId, PostOrderResponse t);
   }
@@ -28,7 +31,7 @@ public interface Exchange {
      * @param correlationId
      * @param t
      * @return true when the response was accepted, false when it was not and delivery must be
-     *     re-tried
+     * re-tried
      */
     boolean onResponse(long correlationId, CancelAllResponse t);
   }

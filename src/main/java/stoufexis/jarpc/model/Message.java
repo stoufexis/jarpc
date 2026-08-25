@@ -37,7 +37,7 @@ public abstract class Message {
   }
 
   /** Max encoded size of this message type */
-  public final int messageSize() {
+  public final int getMessageSize() {
     return messageSize;
   }
 

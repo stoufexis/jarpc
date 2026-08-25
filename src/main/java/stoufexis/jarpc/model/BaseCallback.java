@@ -8,7 +8,8 @@ public interface BaseCallback {
     TIMEOUT,
     INTERRUPT,
     CORRUPT_SESSION,
-    DECODE_ERROR
+    DECODE_ERROR,
+    DUPLICATE_ID
   }
 
   /**

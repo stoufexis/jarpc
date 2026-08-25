@@ -1,31 +1,46 @@
 package stoufexis.jarpc.exchange;
 
+import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.BufferClaim;
+import io.aeron.logbuffer.ControlledFragmentHandler;
+import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
+import org.agrona.concurrent.Agent;
 import org.jctools.maps.NonBlockingHashMapLong;
 import stoufexis.jarpc.model.BaseCallback;
+import stoufexis.jarpc.model.JarpcClient;
 import stoufexis.jarpc.util.ClassAgent;
-import stoufexis.jarpc.util.EventHandler;
 import stoufexis.jarpc.util.MessageHeader;
 
 import static stoufexis.jarpc.util.Util.illegal;
 
-public class ExchangeClient implements Exchange {
+public class JarpcExchangeClient implements Exchange, JarpcClient {
 
   private final Publication publication;
-  private final ReceiveAgent agent;
-  private final NonBlockingHashMapLong<PostOrderCallback> postOrderCallbacks;
-  private final NonBlockingHashMapLong<CancelAllCallback> cancelAllCallbacks;
+  private final Subscription subscription;
+  private final Agent agent;
+  private final ErrorHandler handler;
+
+  // FIXME this is perhaps not the best data structure for this use-case.
+  //  removes leave behind tombstones, which are not re-used since keys do not repeat,
+  //  which forces a somewhat expensive periodic compaction.
+  //  Consider replacing this with a purpose-built data structure instead.
+  private final NonBlockingHashMapLong<PostOrderCallback> postOrderCallbacks =
+      new NonBlockingHashMapLong<>();
+
+  private final NonBlockingHashMapLong<CancelAllCallback> cancelAllCallbacks =
+      new NonBlockingHashMapLong<>();
 
   private final BufferClaim claim = new BufferClaim();
 
-  public ExchangeClient(Publication publication, EventHandler handler, Subscription subscription) {
+  public JarpcExchangeClient(Publication publication, Subscription subscription, ErrorHandler handler) {
     this.publication = publication;
-    this.postOrderCallbacks = new NonBlockingHashMapLong<>();
-    this.cancelAllCallbacks = new NonBlockingHashMapLong<>();
-    this.agent = new ReceiveAgent(postOrderCallbacks, cancelAllCallbacks, handler, subscription);
+    this.subscription = subscription;
+    this.handler = handler;
+    this.agent = new ReceiveAgent();
   }
 
   @Override
@@ -94,36 +109,45 @@ public class ExchangeClient implements Exchange {
     };
   }
 
-  private static final class ReceiveAgent extends ClassAgent {
+  @Override
+  public Agent getAgent() {
+    return agent;
+  }
+
+  @Override
+  public ErrorHandler getHandler() {
+    return handler;
+  }
+
+  private final class ReceiveAgent extends ClassAgent {
+    private static final int FRAGMENT_LIMIT = 10;
+
     private final MessageHeader header = new MessageHeader();
     private final PostOrderResponse postOrderResponse = new PostOrderResponse();
     private final CancelAllResponse cancelAllResponse = new CancelAllResponse();
+    private final ControlledFragmentHandler assembled =
+        new ControlledFragmentAssembler(this::onFragment);
 
-    // FIXME this is perhaps not the best data structure for this use-case.
-    //  removes leave behind tombstones, which are not re-used since keys do not repeat,
-    //  which forces a somewhat expensive periodic compaction.
-    //  Consider replacing this with a purpose-built data structure instead.
-    private final NonBlockingHashMapLong<PostOrderCallback> postOrderCallbacks;
-
-    private final NonBlockingHashMapLong<CancelAllCallback> cancelAllCallbacks;
-
-    private final EventHandler handler;
-    private final Subscription subscription;
-
-    private ReceiveAgent(
-        NonBlockingHashMapLong<PostOrderCallback> postOrderCallbacks,
-        NonBlockingHashMapLong<CancelAllCallback> cancelAllCallbacks,
-        EventHandler handler,
-        Subscription subscription) {
-      this.postOrderCallbacks = postOrderCallbacks;
-      this.cancelAllCallbacks = cancelAllCallbacks;
-      this.handler = handler;
-      this.subscription = subscription;
-    }
+    private int work;
 
     @Override
-    public int doWork() throws Exception {
-      return 0;
+    public int doWork() {
+      work = 0;
+      subscription.controlledPoll(assembled, FRAGMENT_LIMIT);
+      return work;
+    }
+
+    private ControlledFragmentHandler.Action onFragment(
+        DirectBuffer buffer, int offset, int length, Header header) {
+      boolean dispatchResult = dispatch(buffer, offset, length);
+
+      // deliberately accounts 1 point for each pre-assembled fragment
+      // and 1 point for backpressure
+      work++;
+
+      return dispatchResult
+          ? ControlledFragmentHandler.Action.CONTINUE
+          : ControlledFragmentHandler.Action.ABORT;
     }
 
     private boolean dispatch(DirectBuffer buffer, int offset, int length) {
@@ -164,12 +188,12 @@ public class ExchangeClient implements Exchange {
           }
 
           default -> {
-            handler.onDispatchError(illegal("Unknown message type " + messageType));
+            handler.onError(illegal("Unknown message type " + messageType));
             return true;
           }
         }
       } catch (RuntimeException e) {
-        handler.onDispatchError(e);
+        handler.onError(e);
         return true;
       }
     }

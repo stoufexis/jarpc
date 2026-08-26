@@ -11,7 +11,7 @@ import stoufexis.jarpc.model.JarpcClient;
 
 import static stoufexis.jarpc.util.Util.*;
 
-public class JarpcExchangeClient extends JarpcClient implements Exchange {
+public class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
   // FIXME this is perhaps not the best data structure for this use-case.
   //  removes leave behind tombstones, which are not re-used since keys do not repeat,
   //  which forces a somewhat expensive periodic compaction.

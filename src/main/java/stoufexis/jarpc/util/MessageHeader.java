@@ -40,6 +40,9 @@ public class MessageHeader {
     this.messageType = buffer.getInt(offset + 8);
   }
 
+  /**
+   * @throws IllegalStateException if the header cannot be decoded.
+   */
   public void encode(MutableDirectBuffer buffer, int offset) {
     checkInitialized();
     buffer.putLong(offset, correlationId);
@@ -48,7 +51,7 @@ public class MessageHeader {
 
   private void checkInitialized() {
     if (!initialized) {
-      throw new IllegalArgumentException("Header cannot be encoded. It is not initialized.");
+      throw new IllegalStateException("Header cannot be encoded. It is not initialized.");
     }
   }
 

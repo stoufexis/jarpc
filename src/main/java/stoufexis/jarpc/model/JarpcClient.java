@@ -39,7 +39,7 @@ public abstract class JarpcClient {
    * Runs in the dedicated Agent thread, can use mutable state. Should not share thread-unsafe state
    * with other methods of the class.
    *
-   * @throws RuntimeException in case decoding/dispatching fails
+   * @throws RuntimeException in case dispatching fails
    */
   protected abstract boolean handleReceivedFragment(
       int messageType, long correlationId, DirectBuffer buffer, int offset, int length);
@@ -48,13 +48,9 @@ public abstract class JarpcClient {
     private final MessageHeader header = new MessageHeader();
     private final ControlledFragmentHandler assembled = new ControlledFragmentAssembler(this);
 
-    private int work;
-
     @Override
     public int doWork() {
-      work = 0;
-      subscription.controlledPoll(assembled, FRAGMENT_LIMIT);
-      return work;
+      return subscription.controlledPoll(assembled, FRAGMENT_LIMIT);
     }
 
     @Override
@@ -70,10 +66,6 @@ public abstract class JarpcClient {
                 buffer,
                 offset + MessageHeader.HEADER_SIZE,
                 length - MessageHeader.HEADER_SIZE);
-
-        // deliberately accounts 1 point for each post-assembled fragment
-        // and 1 point for backpressure
-        work++;
 
         return dispatchResult
             ? ControlledFragmentHandler.Action.CONTINUE

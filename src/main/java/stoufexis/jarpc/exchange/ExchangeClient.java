@@ -5,7 +5,7 @@ import stoufexis.jarpc.model.BaseCallback;
 /**
  * Correlation ids must be unique per-request, they are used internally for identifying each request/response pair.
  */
-public interface Exchange {
+public interface ExchangeClient {
   void postOrder(long correlationId, PostOrderRequest request, PostOrderCallback callback);
 
   void cancelAll(long correlationId, CancelAllRequest request, CancelAllCallback callback);

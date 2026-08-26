@@ -124,10 +124,7 @@ public class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
         }
       }
 
-      default -> {
-        handler.onError(illegal("Unknown message type " + messageType));
-        return true;
-      }
+      default -> throw illegal("Unknown message type " + messageType);
     }
   }
 

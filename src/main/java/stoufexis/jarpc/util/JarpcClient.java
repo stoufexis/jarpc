@@ -7,8 +7,6 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.AgentRunner;
-import org.agrona.concurrent.IdleStrategy;
 import stoufexis.jarpc.model.BaseCatalog;
 import stoufexis.jarpc.model.DecodeFailureResponse;
 

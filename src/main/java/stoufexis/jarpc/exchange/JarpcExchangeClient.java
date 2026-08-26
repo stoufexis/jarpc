@@ -6,7 +6,8 @@ import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.jctools.maps.NonBlockingHashMapLong;
-import stoufexis.jarpc.model.JarpcClient;
+import stoufexis.jarpc.model.ErrorCode;
+import stoufexis.jarpc.util.JarpcClient;
 
 import java.nio.ByteBuffer;
 
@@ -17,6 +18,9 @@ public class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
   //  removes leave behind tombstones, which are not re-used since keys do not repeat,
   //  which forces a somewhat expensive periodic compaction.
   //  Consider replacing this with a purpose-built data structure instead.
+
+  // FIXME requests should timeout after a while
+
   private final NonBlockingHashMapLong<PostOrderCallback> postOrderCallbacks =
       new NonBlockingHashMapLong<>();
 
@@ -31,57 +35,57 @@ public class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
   // Publication
   //
 
-  private final BufferClaim claim = new BufferClaim();
-
   @Override
-  public void postOrder(long correlationId, PostOrderRequest request, PostOrderCallback callback) {
+  public ErrorCode postOrder(
+      long correlationId, PostOrderRequest request, PostOrderCallback callback) {
+
     if (postOrderCallbacks.putIfAbsent(correlationId, callback) != null) {
-      callback.onDuplicateId(correlationId);
-      return;
+      return ErrorCode.DUPLICATE_ID;
     }
 
+    BufferClaim claim = request.getClaim();
     long result = publication.tryClaim(request.getMessageSize(), claim);
 
     if (result < 0) {
       postOrderCallbacks.remove(correlationId);
-      interpretError(result, correlationId, callback);
-      return;
+      return interpretErrorCode(result);
     }
 
     try {
       request.encode(claim.buffer(), claim.offset());
       claim.commit();
+      return null;
     } catch (RuntimeException e) {
       claim.abort();
       postOrderCallbacks.remove(correlationId);
-      interpretError(result, correlationId, callback);
-      throw e;
+      return ErrorCode.ENCODE_ERROR;
     }
   }
 
   @Override
-  public void cancelAll(long correlationId, CancelAllRequest request, CancelAllCallback callback) {
+  public ErrorCode cancelAll(
+      long correlationId, CancelAllRequest request, CancelAllCallback callback) {
+
     if (cancelAllCallbacks.putIfAbsent(correlationId, callback) != null) {
-      callback.onDuplicateId(correlationId);
-      return;
+      return ErrorCode.DUPLICATE_ID;
     }
 
+    BufferClaim claim = request.getClaim();
     long result = publication.tryClaim(request.getMessageSize(), claim);
 
     if (result < 0) {
       cancelAllCallbacks.remove(correlationId);
-      interpretError(result, correlationId, callback);
-      return;
+      return interpretErrorCode(result);
     }
 
     try {
       request.encode(claim.buffer(), claim.offset());
       claim.commit();
+      return null;
     } catch (RuntimeException e) {
       claim.abort();
       cancelAllCallbacks.remove(correlationId);
-      interpretError(result, correlationId, callback);
-      throw e;
+      return ErrorCode.ENCODE_ERROR;
     }
   }
 
@@ -97,7 +101,7 @@ public class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
 
     switch (messageType) {
       case Catalog.postOrderId -> {
-        PostOrderCallback callback = removeOrThrow(postOrderCallbacks, correlationId);
+        PostOrderCallback callback = removeCallbackOrThrow(postOrderCallbacks, correlationId);
 
         try {
           postOrderResponse.decode(buffer, offset, length);
@@ -110,7 +114,7 @@ public class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
       }
 
       case Catalog.cancelAllOrdersId -> {
-        CancelAllCallback callback = removeOrThrow(cancelAllCallbacks, correlationId);
+        CancelAllCallback callback = removeCallbackOrThrow(cancelAllCallbacks, correlationId);
 
         try {
           cancelAllResponse.decode(buffer, offset, length);
@@ -135,11 +139,11 @@ public class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
 
     switch (messageType) {
       case Catalog.postOrderId ->
-          removeOrThrow(postOrderCallbacks, correlationId)
+          removeCallbackOrThrow(postOrderCallbacks, correlationId)
               .onServerDecodeError(correlationId, bytes, bytesSize);
 
       case Catalog.cancelAllOrdersId ->
-          removeOrThrow(cancelAllCallbacks, correlationId)
+          removeCallbackOrThrow(cancelAllCallbacks, correlationId)
               .onServerDecodeError(correlationId, bytes, bytesSize);
 
       default -> handler.onError(illegal("Unknown message type " + messageType));

@@ -1,4 +1,4 @@
-package stoufexis.jarpc.model;
+package stoufexis.jarpc.util;
 
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Publication;
@@ -10,8 +10,8 @@ import org.agrona.ErrorHandler;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.IdleStrategy;
-import stoufexis.jarpc.util.ClassAgent;
-import stoufexis.jarpc.util.MessageHeader;
+import stoufexis.jarpc.model.BaseCatalog;
+import stoufexis.jarpc.model.DecodeFailureResponse;
 
 import java.nio.ByteBuffer;
 

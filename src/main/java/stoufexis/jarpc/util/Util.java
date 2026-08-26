@@ -2,12 +2,12 @@ package stoufexis.jarpc.util;
 
 import io.aeron.Publication;
 import org.jctools.maps.NonBlockingHashMapLong;
-import stoufexis.jarpc.model.ClientCallback;
+import stoufexis.jarpc.model.ErrorCode;
 
 public final class Util {
   private Util() {}
 
-  public static <T> T removeOrThrow(NonBlockingHashMapLong<T> map, long key) {
+  public static <T> T removeCallbackOrThrow(NonBlockingHashMapLong<T> map, long key) {
     T value = map.remove(key);
     if (value == null) throw illegal("Callback not registered for correlation id " + key);
     return value;
@@ -17,17 +17,15 @@ public final class Util {
     return new IllegalStateException(message);
   }
 
-  public static void interpretError(long claimResult, long correlationId, ClientCallback callback) {
-    switch (claimResult) {
-      case Publication.ADMIN_ACTION, Publication.BACK_PRESSURED ->
-          callback.onBackpressure(correlationId);
+  public static ErrorCode interpretErrorCode(long claimResult) {
+    return switch (claimResult) {
+      case Publication.ADMIN_ACTION, Publication.BACK_PRESSURED -> ErrorCode.BACKPRESSURE;
 
-      case Publication.CLOSED, Publication.MAX_POSITION_EXCEEDED ->
-          callback.onCorruptSession(correlationId);
+      case Publication.CLOSED, Publication.MAX_POSITION_EXCEEDED -> ErrorCode.CORRUPT_SESSION;
 
-      case Publication.NOT_CONNECTED -> callback.onNotConnected(correlationId);
+      case Publication.NOT_CONNECTED -> ErrorCode.NOT_CONNECTED;
 
       default -> throw illegal("Unrecognized error code " + claimResult);
-    }
+    };
   }
 }

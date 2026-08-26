@@ -1,14 +1,15 @@
 package stoufexis.jarpc.exchange;
 
 import stoufexis.jarpc.model.ClientCallback;
+import stoufexis.jarpc.model.ErrorCode;
 
 /**
  * Correlation ids must be unique per-request, they are used internally for identifying each request/response pair.
  */
 public interface ExchangeClient {
-  void postOrder(long correlationId, PostOrderRequest request, PostOrderCallback callback);
+  ErrorCode postOrder(long correlationId, PostOrderRequest request, PostOrderCallback callback);
 
-  void cancelAll(long correlationId, CancelAllRequest request, CancelAllCallback callback);
+  ErrorCode cancelAll(long correlationId, CancelAllRequest request, CancelAllCallback callback);
 
   interface PostOrderCallback extends ClientCallback {
     /**

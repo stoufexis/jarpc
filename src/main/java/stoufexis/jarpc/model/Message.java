@@ -1,5 +1,6 @@
 package stoufexis.jarpc.model;
 
+import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -9,9 +10,15 @@ public abstract class Message {
   private final Class<?> clazz;
   private final int messageSize;
 
+  private final BufferClaim claim = new BufferClaim();
+
   public Message(Class<?> clazz, int messageSize) {
     this.clazz = clazz;
     this.messageSize = messageSize;
+  }
+
+  public BufferClaim getClaim() {
+    return claim;
   }
 
   /**

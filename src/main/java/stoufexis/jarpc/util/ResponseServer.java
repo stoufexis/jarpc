@@ -5,65 +5,56 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.Objects;
-import java.util.function.Function;
 
 public class ResponseServer implements AutoCloseable, Agent {
 
-  public abstract class ResponseHandler2 {
+  public abstract static class ResponseHandler implements AutoCloseable {
     private final Long2ObjectHashMap<Publication> clientToPublicationMap =
         new Long2ObjectHashMap<>();
+
+    // FIXME create a dedicated interface that extends ErrorHandler that allows for precise
+    //  modelling of the error conditions
+    protected final ServerErrorHandler errorHandler;
+
+    protected ResponseHandler(ServerErrorHandler errorHandler) {
+      this.errorHandler = errorHandler;
+    }
 
     private void putPublication(long clientId, Publication pub) {
       clientToPublicationMap.put(clientId, pub);
     }
 
-    private void removePublication(long clientId) {
-      clientToPublicationMap.remove(clientId);
+    private Publication removePublication(long clientId) {
+      return clientToPublicationMap.remove(clientId);
     }
 
-    protected Publication getPublication(long clientId) {
+    protected final Publication getPublication(long clientId) {
       return clientToPublicationMap.get(clientId);
+    }
+
+    @Override
+    public final void close() {
+      clientToPublicationMap.values().forEach(CloseHelper::quietClose);
     }
 
     public abstract boolean onMessage(
         long clientId, DirectBuffer buffer, int offset, int length, Header header);
   }
 
-  /** Interface to manage callback from the response server onto a session. */
-  public interface ResponseHandler {
-    /**
-     * Called when a message is received via the request subscription.
-     *
-     * @param buffer containing the data.
-     * @param offset at which the data begins.
-     * @param length of the data in bytes.
-     * @param header representing the metadata for the data.
-     * @param responsePublication to send responses back to the client.
-     * @return <code>true</code> if the message was processed otherwise.
-     */
-    boolean onMessage(
-        DirectBuffer buffer,
-        int offset,
-        int length,
-        Header header,
-        Publication responsePublication);
-  }
-
   private static final int FRAGMENT_LIMIT = 10;
 
   private final Aeron aeron;
-  private final Long2ObjectHashMap<ResponseSession> clientToPublicationMap =
-      new Long2ObjectHashMap<>();
   private final OneToOneConcurrentArrayQueue<Image> availableImages =
       new OneToOneConcurrentArrayQueue<>(1024);
   private final OneToOneConcurrentArrayQueue<Image> unavailableImages =
       new OneToOneConcurrentArrayQueue<>(1024);
-  private final Function<Image, ResponseHandler> handlerFactory;
+  private final ResponseHandler handler;
   private final int requestStreamId;
   private final int responseStreamId;
   private final ChannelUriStringBuilder requestUriBuilder;
@@ -74,16 +65,16 @@ public class ResponseServer implements AutoCloseable, Agent {
   private Subscription serverSubscription;
 
   public ResponseServer(
-      final Aeron aeron,
-      final Function<Image, ResponseHandler> handlerFactory,
-      final String requestEndpoint,
-      final int requestStreamId,
-      final String responseControl,
-      final int responseStreamId,
-      final String requestChannel,
-      final String responseChannel) {
+      Aeron aeron,
+      ResponseHandler handler,
+      String requestEndpoint,
+      int requestStreamId,
+      String responseControl,
+      int responseStreamId,
+      String requestChannel,
+      String responseChannel) {
     this.aeron = aeron;
-    this.handlerFactory = handlerFactory;
+    this.handler = handler;
     this.requestStreamId = requestStreamId;
     this.responseStreamId = responseStreamId;
 
@@ -124,7 +115,7 @@ public class ResponseServer implements AutoCloseable, Agent {
     Image image;
     while (null != (image = availableImages.poll())) {
       workCount++;
-      getOrCreateSession(image);
+      ensurePublicationExists(image);
     }
 
     while (null != (image = unavailableImages.poll())) {
@@ -141,7 +132,6 @@ public class ResponseServer implements AutoCloseable, Agent {
   @Override
   public void close() {
     CloseHelper.quietClose(serverSubscription);
-    clientToPublicationMap.values().forEach(CloseHelper::quietClose);
   }
 
   @Override
@@ -164,54 +154,27 @@ public class ResponseServer implements AutoCloseable, Agent {
 
   private ControlledFragmentHandler.Action onControlledRequestMessage(
       DirectBuffer buffer, int offset, int length, Header header) {
-    ResponseSession session = getOrCreateSession((Image) header.context());
+    Image image = (Image) header.context();
+    ensurePublicationExists(image);
 
-    return session.process(buffer, offset, length, header)
+    return handler.onMessage(image.correlationId(), buffer, offset, length, header)
         ? ControlledFragmentHandler.Action.CONTINUE
         : ControlledFragmentHandler.Action.ABORT;
   }
 
-  private ResponseSession getOrCreateSession(Image image) {
-    ResponseSession session = clientToPublicationMap.get(image.correlationId());
-
-    if (null == session) {
-      Publication responsePublication =
+  private void ensurePublicationExists(Image image) {
+    if (null == handler.getPublication(image.correlationId())) {
+      Publication publication =
           aeron.addPublication(
               responseUriBuilder.responseCorrelationId(image.correlationId()).build(),
               responseStreamId);
 
-      ResponseHandler handler = handlerFactory.apply(image);
-      session = new ResponseSession(responsePublication, handler);
-
-      clientToPublicationMap.put(image.correlationId(), session);
+      handler.putPublication(image.correlationId(), publication);
     }
-
-    return session;
   }
 
   private void removeSession(Image image) {
     requestAssembler.freeSessionBuffer(image.sessionId());
-    ResponseSession session = clientToPublicationMap.remove(image.correlationId());
-    CloseHelper.quietClose(session);
-  }
-
-  private static final class ResponseSession implements AutoCloseable {
-    private final Publication publication;
-    private final ResponseHandler handler;
-
-    ResponseSession(Publication publication, ResponseHandler handler) {
-      this.publication = publication;
-      this.handler = handler;
-    }
-
-    public boolean process(DirectBuffer buffer, int offset, int length, Header header) {
-      return handler.onMessage(buffer, offset, length, header, publication);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void close() {
-      CloseHelper.close(publication);
-    }
+    CloseHelper.quietClose(handler.removePublication(image.correlationId()));
   }
 }

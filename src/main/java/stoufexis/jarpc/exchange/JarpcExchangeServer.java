@@ -2,34 +2,37 @@ package stoufexis.jarpc.exchange;
 
 import io.aeron.Image;
 import io.aeron.Publication;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
-import org.agrona.ErrorHandler;
 import stoufexis.jarpc.model.DecodeFailureResponse;
+import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.util.MessageHeader;
 import stoufexis.jarpc.util.ResponseServer;
+import stoufexis.jarpc.util.ServerErrorHandler;
 
-import java.nio.ByteBuffer;
+import static stoufexis.jarpc.util.Util.interpretErrorCode;
 
-public class JarpcExchangeServer implements ResponseServer.ResponseHandler {
+public class JarpcExchangeServer extends ResponseServer.ResponseHandler {
   private final long clientId;
   private final ExchangeServer exchange;
-  private final ErrorHandler handler;
 
   private final MessageHeader header = new MessageHeader();
   private final PostOrderRequest postOrderRequest = new PostOrderRequest();
   private final CancelAllRequest cancelAllRequest = new CancelAllRequest();
   private final DecodeFailureResponse decodeFailureResponse = new DecodeFailureResponse();
+  private final PostOrderCallbackImpl postOrderCallback = new PostOrderCallbackImpl();
+  private final CancelAllCallbackImpl cancelAllCallback = new CancelAllCallbackImpl();
 
-  public JarpcExchangeServer(ExchangeServer exchange, Image image, ErrorHandler handler) {
+  public JarpcExchangeServer(
+      ServerErrorHandler errorHandler, ExchangeServer exchange, Image image) {
+    super(errorHandler);
     this.exchange = exchange;
     this.clientId = image.correlationId();
-    this.handler = handler;
   }
 
   @Override
-  public boolean onMessage(
-      DirectBuffer buffer, int offset, int length, Header h_, Publication responsePublication) {
+  public boolean onMessage(long clientId, DirectBuffer buffer, int offset, int length, Header h_) {
     try {
       header.decode(buffer, offset, length);
 
@@ -43,45 +46,114 @@ public class JarpcExchangeServer implements ResponseServer.ResponseHandler {
         case Catalog.postOrderId -> {
           try {
             postOrderRequest.decode(buffer, offset, length);
-            return exchange.postOrder(clientId, correlationId, postOrderRequest, null);
+            return exchange.postOrder(clientId, correlationId, postOrderRequest, postOrderCallback);
 
           } catch (RuntimeException e) {
-            // TODO send a decode failure response
+            sendDecodeFailure(clientId, correlationId, messageType);
+            return true;
           }
         }
 
         case Catalog.cancelAllOrdersId -> {
-          //          ExchangeClient.CancelAllCallback callback = removeOrThrow(cancelAllCallbacks,
-          // correlationId);
-          //
-          //          try {
-          //            cancelAllResponse.decode(buffer, offset, length);
-          //            return callback.onResponse(correlationId, cancelAllResponse);
-          //
-          //          } catch (RuntimeException e) {
-          //            callback.onError(correlationId, BaseCallback.ErrorType.DECODE_ERROR, e);
-          //            return true;
-          //          }
+          try {
+            cancelAllRequest.decode(buffer, offset, length);
+            return exchange.cancelAll(clientId, correlationId, cancelAllRequest, cancelAllCallback);
+
+          } catch (RuntimeException e) {
+            sendDecodeFailure(clientId, correlationId, messageType);
+            return true;
+          }
         }
 
         default -> {
-          //          handler.onError(illegal("Unknown message type " + messageType));
+          sendDecodeFailure(clientId, correlationId, messageType);
           return true;
         }
       }
 
     } catch (RuntimeException e) {
-      handler.onError(e);
+      errorHandler.onError(e);
       throw e;
     }
-
-    return false; // TODO remove this
   }
 
+  private void sendDecodeFailure(long clientId, long correlationId, int baseMessageType) {
+    Publication publication = getPublication(clientId);
+    if (publication == null) {
+      errorHandler.onInternalError(clientId, correlationId, ErrorCode.CLIENT_NOT_EXISTS);
+      return;
+    }
+
+    decodeFailureResponse.set(baseMessageType);
+
+    BufferClaim claim = decodeFailureResponse.getClaim();
+    long result = publication.tryClaim(decodeFailureResponse.getMessageSize(), claim);
+
+    if (result < 0) {
+      // Sending a decode failure is best-effort. We rely on client's timeouts in this case to
+      // clean up the hanged callback.
+      errorHandler.onInternalError(clientId, correlationId, interpretErrorCode(result));
+    }
+
+    try {
+      decodeFailureResponse.encode(claim.buffer(), claim.offset());
+      claim.commit();
+    } catch (RuntimeException e) {
+      claim.abort();
+      errorHandler.onInternalError(clientId, correlationId, ErrorCode.ENCODE_ERROR);
+    }
+  }
+
+  // All callback implementations are basically identical.
+  // However, we do not introduce a generic implementation, as it would easily result in megamorphic
+  // dispatch when supporting many response types.
+
   private class PostOrderCallbackImpl implements ExchangeServer.PostOrderCallback {
+
     @Override
-    public boolean onResponse(long clientId, long correlationId, PostOrderResponse t) {
-      return false;
+    public ErrorCode onResponse(long clientId, long correlationId, PostOrderResponse t) {
+      Publication publication = getPublication(clientId);
+      if (publication == null) return ErrorCode.CLIENT_NOT_EXISTS;
+
+      BufferClaim claim = t.getClaim();
+      long result = publication.tryClaim(t.getMessageSize(), claim);
+
+      if (result < 0) {
+        return interpretErrorCode(result);
+      }
+
+      try {
+        t.encode(claim.buffer(), claim.offset());
+        claim.commit();
+        return null;
+      } catch (RuntimeException e) {
+        claim.abort();
+        return ErrorCode.ENCODE_ERROR;
+      }
+    }
+  }
+
+  private class CancelAllCallbackImpl implements ExchangeServer.CancelAllCallback {
+    @Override
+    public ErrorCode onResponse(long clientId, long correlationId, CancelAllResponse t) {
+      Publication publication = getPublication(clientId);
+      if (publication == null) return ErrorCode.CLIENT_NOT_EXISTS;
+
+      BufferClaim claim = t.getClaim();
+      long result = publication.tryClaim(t.getMessageSize(), claim);
+
+      if (result < 0) {
+        return interpretErrorCode(result);
+      }
+
+      try {
+        t.encode(claim.buffer(), claim.offset());
+        claim.commit();
+        return null;
+      } catch (RuntimeException e) {
+        claim.abort();
+        return ErrorCode.ENCODE_ERROR;
+      }
     }
   }
 }

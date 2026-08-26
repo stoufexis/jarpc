@@ -7,7 +7,7 @@ import io.aeron.Publication;
 import org.agrona.CloseHelper;
 import org.jctools.maps.NonBlockingHashMapLong;
 
-final class ServerPublications {
+public final class ServerPublications {
 
   // FIXME this is perhaps not the best data structure for this use-case.
   //  removes leave behind tombstones, which are not re-used since keys do not repeat,

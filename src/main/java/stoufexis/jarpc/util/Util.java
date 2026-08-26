@@ -6,6 +6,7 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import org.jctools.maps.NonBlockingHashMapLong;
 import stoufexis.jarpc.model.ErrorCode;
+import stoufexis.jarpc.server.Images;
 
 public final class Util {
   private Util() {}
@@ -51,5 +52,22 @@ public final class Util {
     return aeron.addPublication(
         requestUriBuilder.responseCorrelationId(subscription.registrationId()).build(),
         requestStreamId);
+  }
+
+  public static Subscription createServerSubscription(
+      Aeron aeron,
+      Images images,
+      String requestEndpoint,
+      String responseControl,
+      int requestStreamId) {
+    return aeron.addSubscription(
+        new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint(requestEndpoint)
+            .responseEndpoint(responseControl)
+            .build(),
+        requestStreamId,
+        images::enqueueAvailableImage,
+        images::enqueueUnavailableImage);
   }
 }

@@ -1,7 +1,6 @@
 package stoufexis.jarpc.exchange.server;
 
 import io.aeron.Aeron;
-import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.BufferClaim;
@@ -10,8 +9,7 @@ import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.server.*;
 
-import java.util.Objects;
-
+import static stoufexis.jarpc.util.Util.createServerSubscription;
 import static stoufexis.jarpc.util.Util.interpretErrorCode;
 
 public final class JarpcExchangeServer extends JarpcServer {
@@ -22,15 +20,15 @@ public final class JarpcExchangeServer extends JarpcServer {
   private final PostOrderCallbackImpl postOrderCallback = new PostOrderCallbackImpl();
   private final CancelAllCallbackImpl cancelAllCallback = new CancelAllCallbackImpl();
 
-  public JarpcExchangeServer(
+  JarpcExchangeServer(
       ExchangeServer exchange,
       ServerErrorHandler errorHandler,
       Images images,
       int responseStreamId,
-      ChannelUriStringBuilder responseUriBuilder,
+      String responseControl,
       Subscription serverSubscription,
       Aeron aeron) {
-    super(errorHandler, images, responseStreamId, responseUriBuilder, serverSubscription, aeron);
+    super(errorHandler, images, responseStreamId, responseControl, serverSubscription, aeron);
     this.exchange = exchange;
   }
 
@@ -42,36 +40,17 @@ public final class JarpcExchangeServer extends JarpcServer {
       int requestStreamId,
       String responseControl,
       int responseStreamId) {
-    Objects.requireNonNull(requestEndpoint, "subscriptionEndpoint must not be null");
-    Objects.requireNonNull(responseControl, "responseEndpoint must not be null");
-
-    ChannelUriStringBuilder requestUriBuilder =
-        new ChannelUriStringBuilder()
-            .media("udp")
-            .endpoint(requestEndpoint)
-            .responseEndpoint(responseControl);
-
-    ChannelUriStringBuilder responseUriBuilder =
-        new ChannelUriStringBuilder()
-            .media("udp")
-            .controlMode("response")
-            .controlEndpoint(responseControl);
-
     Images images = new Images();
 
     Subscription serverSubscription =
-        aeron.addSubscription(
-            requestUriBuilder.build(),
-            requestStreamId,
-            images::enqueueAvailableImage,
-            images::enqueueUnavailableImage);
+        createServerSubscription(aeron, images, requestEndpoint, responseControl, requestStreamId);
 
     return new JarpcExchangeServer(
         exchange,
         serverErrorHandler,
         images,
         responseStreamId,
-        responseUriBuilder,
+        responseControl,
         serverSubscription,
         aeron);
   }

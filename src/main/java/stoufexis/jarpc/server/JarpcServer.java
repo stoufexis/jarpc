@@ -17,10 +17,7 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
 
   private final ServerErrorHandler errorHandler;
   private final Images images;
-  private final int responseStreamId;
-  private final ChannelUriStringBuilder responseUriBuilder;
   private final Subscription serverSubscription;
-  private final Aeron aeron;
   private final ServerPublications publications;
   private final DecodeFailureUtil decodeFailureUtil;
 
@@ -28,16 +25,13 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
       ServerErrorHandler errorHandler,
       Images images,
       int responseStreamId,
-      ChannelUriStringBuilder responseUriBuilder,
+      String responseControl,
       Subscription serverSubscription,
       Aeron aeron) {
     this.errorHandler = errorHandler;
     this.images = images;
-    this.responseStreamId = responseStreamId;
-    this.responseUriBuilder = responseUriBuilder;
     this.serverSubscription = serverSubscription;
-    this.aeron = aeron;
-    this.publications = new ServerPublications();
+    this.publications = new ServerPublications(responseControl, aeron, responseStreamId);
     this.decodeFailureUtil = new DecodeFailureUtil(publications, errorHandler);
   }
 
@@ -48,7 +42,7 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
     Image image;
     while (null != (image = images.pollAvailable())) {
       work++;
-      ensurePublicationExists(image);
+      publications.ensurePublicationExists(image);
     }
 
     while (null != (image = images.pollUnavailable())) {
@@ -69,7 +63,7 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
   private ControlledFragmentHandler.Action onFragment(
       DirectBuffer buffer, int offset, int length, Header aeronHeader) {
     Image image = (Image) aeronHeader.context();
-    ensurePublicationExists(image);
+    publications.ensurePublicationExists(image);
 
     try {
       header.decode(buffer, offset, length);
@@ -93,31 +87,22 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
     }
   }
 
-  private void ensurePublicationExists(Image image) {
-    // FIXME We dont need computeIfAbsent, put/remove only happen in the agent thread.
-    if (null == publications.get(image.correlationId())) {
-      Publication publication =
-          aeron.addPublication(
-              responseUriBuilder.responseCorrelationId(image.correlationId()).build(),
-              responseStreamId);
-
-      publications.put(image.correlationId(), publication);
-    }
-  }
-
   @Override
   public String roleName() {
     return "JarpcServerReceiver";
   }
 
+  /** Not thread-safe */
   protected boolean sendDecodeFailure(long clientId, long correlationId, int baseMessageType) {
     return decodeFailureUtil.sendDecodeFailure(clientId, correlationId, baseMessageType);
   }
 
+  /** Thread-safe */
   protected Publication getPublication(long clientId) {
     return publications.get(clientId);
   }
 
+  /** Will be called exclusively from the agent thread */
   protected abstract boolean onMessage(
       long clientId,
       int messageType,

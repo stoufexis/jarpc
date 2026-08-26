@@ -51,7 +51,6 @@ public class PostOrderRequest extends Message {
   }
 
   public void set(
-      long correlationId,
       int baseAssetId,
       int quoteAssetId,
       long quantityUnscaled,

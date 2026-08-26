@@ -13,6 +13,10 @@ import org.agrona.concurrent.IdleStrategy;
 import stoufexis.jarpc.util.ClassAgent;
 import stoufexis.jarpc.util.MessageHeader;
 
+import java.nio.ByteBuffer;
+
+import static stoufexis.jarpc.util.Util.illegal;
+
 public abstract class JarpcClient {
   private static final int FRAGMENT_LIMIT = 10;
 
@@ -44,8 +48,18 @@ public abstract class JarpcClient {
   protected abstract boolean handleReceivedFragment(
       int messageType, long correlationId, DirectBuffer buffer, int offset, int length);
 
+  /**
+   * Runs in the dedicated Agent thread, can use mutable state. Should not share thread-unsafe state
+   * with other methods of the class.
+   *
+   * @throws RuntimeException in case dispatching fails
+   */
+  protected abstract void handleDecodeFailureResponse(
+      int messageType, long correlationId, ByteBuffer bytes, int bytesSize);
+
   private class ReceiveAgent extends ClassAgent implements ControlledFragmentHandler {
     private final MessageHeader header = new MessageHeader();
+    private final DecodeFailureResponse decodeFailureResponse = new DecodeFailureResponse();
     private final ControlledFragmentHandler assembled = new ControlledFragmentAssembler(this);
 
     @Override
@@ -59,18 +73,37 @@ public abstract class JarpcClient {
       try {
         header.decode(buffer, offset, length);
 
-        boolean dispatchResult =
-            handleReceivedFragment(
-                header.getMessageType(),
-                header.getCorrelationId(),
-                buffer,
-                offset + MessageHeader.HEADER_SIZE,
-                length - MessageHeader.HEADER_SIZE);
+        int messageType = header.getMessageType();
+        long correlationId = header.getCorrelationId();
 
-        return dispatchResult
-            ? ControlledFragmentHandler.Action.CONTINUE
-            : ControlledFragmentHandler.Action.ABORT;
+        if (messageType > 0) {
+          boolean dispatchResult =
+              handleReceivedFragment(
+                  messageType,
+                  correlationId,
+                  buffer,
+                  offset + MessageHeader.HEADER_SIZE,
+                  length - MessageHeader.HEADER_SIZE);
 
+          return dispatchResult
+              ? ControlledFragmentHandler.Action.CONTINUE
+              : ControlledFragmentHandler.Action.ABORT;
+        }
+
+        switch (messageType) {
+          case BaseCatalog.decodeFailure -> {
+            decodeFailureResponse.decode(buffer, offset, length);
+
+            handleDecodeFailureResponse(
+                decodeFailureResponse.getBaseMessageType(),
+                correlationId,
+                decodeFailureResponse.getBytes(),
+                decodeFailureResponse.getBytesSize());
+
+            return ControlledFragmentHandler.Action.CONTINUE;
+          }
+          default -> throw illegal("Unknown failure message type " + messageType);
+        }
       } catch (RuntimeException e) {
         handler.onError(e);
         return ControlledFragmentHandler.Action.CONTINUE;

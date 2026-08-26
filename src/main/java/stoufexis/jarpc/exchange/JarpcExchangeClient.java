@@ -9,8 +9,6 @@ import org.jctools.maps.NonBlockingHashMapLong;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.util.JarpcClient;
 
-import java.nio.ByteBuffer;
-
 import static stoufexis.jarpc.util.Util.*;
 
 public class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
@@ -134,17 +132,16 @@ public class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
   }
 
   @Override
-  protected void handleDecodeFailureResponse(
-      int messageType, long correlationId, ByteBuffer bytes, int bytesSize) {
+  protected void handleDecodeFailureResponse(int messageType, long correlationId) {
 
     switch (messageType) {
       case Catalog.postOrderId ->
           removeCallbackOrThrow(postOrderCallbacks, correlationId)
-              .onServerDecodeError(correlationId, bytes, bytesSize);
+              .onServerDecodeError(correlationId);
 
       case Catalog.cancelAllOrdersId ->
           removeCallbackOrThrow(cancelAllCallbacks, correlationId)
-              .onServerDecodeError(correlationId, bytes, bytesSize);
+              .onServerDecodeError(correlationId);
 
       default -> handler.onError(illegal("Unknown message type " + messageType));
     }

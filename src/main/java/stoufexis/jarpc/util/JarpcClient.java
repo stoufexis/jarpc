@@ -54,8 +54,7 @@ public abstract class JarpcClient {
    *
    * @throws RuntimeException in case dispatching fails
    */
-  protected abstract void handleDecodeFailureResponse(
-      int messageType, long correlationId, ByteBuffer bytes, int bytesSize);
+  protected abstract void handleDecodeFailureResponse(int messageType, long correlationId);
 
   private class ReceiveAgent extends ClassAgent implements ControlledFragmentHandler {
     private final MessageHeader header = new MessageHeader();
@@ -93,13 +92,7 @@ public abstract class JarpcClient {
         switch (messageType) {
           case BaseCatalog.decodeFailure -> {
             decodeFailureResponse.decode(buffer, offset, length);
-
-            handleDecodeFailureResponse(
-                decodeFailureResponse.getBaseMessageType(),
-                correlationId,
-                decodeFailureResponse.getBytes(),
-                decodeFailureResponse.getBytesSize());
-
+            handleDecodeFailureResponse(decodeFailureResponse.getBaseMessageType(), correlationId);
             return ControlledFragmentHandler.Action.CONTINUE;
           }
           default -> throw illegal("Unknown failure message type " + messageType);

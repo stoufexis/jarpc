@@ -5,47 +5,12 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.ErrorHandler;
-import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.Objects;
 
 public class ResponseServer implements AutoCloseable, Agent {
-
-  public abstract static class ResponseHandler implements AutoCloseable {
-    private final Long2ObjectHashMap<Publication> clientToPublicationMap =
-        new Long2ObjectHashMap<>();
-
-    // FIXME create a dedicated interface that extends ErrorHandler that allows for precise
-    //  modelling of the error conditions
-    protected final ServerErrorHandler errorHandler;
-
-    protected ResponseHandler(ServerErrorHandler errorHandler) {
-      this.errorHandler = errorHandler;
-    }
-
-    private void putPublication(long clientId, Publication pub) {
-      clientToPublicationMap.put(clientId, pub);
-    }
-
-    private Publication removePublication(long clientId) {
-      return clientToPublicationMap.remove(clientId);
-    }
-
-    protected final Publication getPublication(long clientId) {
-      return clientToPublicationMap.get(clientId);
-    }
-
-    @Override
-    public final void close() {
-      clientToPublicationMap.values().forEach(CloseHelper::quietClose);
-    }
-
-    public abstract boolean onMessage(
-        long clientId, DirectBuffer buffer, int offset, int length, Header header);
-  }
 
   private static final int FRAGMENT_LIMIT = 10;
 
@@ -54,7 +19,7 @@ public class ResponseServer implements AutoCloseable, Agent {
       new OneToOneConcurrentArrayQueue<>(1024);
   private final OneToOneConcurrentArrayQueue<Image> unavailableImages =
       new OneToOneConcurrentArrayQueue<>(1024);
-  private final ResponseHandler handler;
+  private final JarpcServer handler;
   private final int requestStreamId;
   private final int responseStreamId;
   private final ChannelUriStringBuilder requestUriBuilder;
@@ -66,7 +31,7 @@ public class ResponseServer implements AutoCloseable, Agent {
 
   public ResponseServer(
       Aeron aeron,
-      ResponseHandler handler,
+      JarpcServer handler,
       String requestEndpoint,
       int requestStreamId,
       String responseControl,

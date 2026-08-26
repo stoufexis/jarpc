@@ -1,33 +1,28 @@
 package stoufexis.jarpc.server;
 
 import io.aeron.*;
-import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.Agent;
-import stoufexis.jarpc.model.DecodeFailureResponse;
-import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.model.MessageHeader;
-
-import static stoufexis.jarpc.util.Util.interpretErrorCode;
 
 public abstract class JarpcServer implements Agent, AutoCloseable {
   private static final int FRAGMENT_LIMIT = 10;
 
   private final MessageHeader header = new MessageHeader();
-  private final DecodeFailureResponse decodeFailureResponse = new DecodeFailureResponse();
-  protected final ServerPublications publications = new ServerPublications();
   private final ControlledFragmentAssembler assembled =
       new ControlledFragmentAssembler(this::onFragment);
 
-  protected final ServerErrorHandler errorHandler;
+  private final ServerErrorHandler errorHandler;
   private final Images images;
   private final int responseStreamId;
   private final ChannelUriStringBuilder responseUriBuilder;
   private final Subscription serverSubscription;
   private final Aeron aeron;
+  private final ServerPublications publications;
+  private final DecodeFailureUtil decodeFailureUtil;
 
   protected JarpcServer(
       ServerErrorHandler errorHandler,
@@ -42,6 +37,8 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
     this.responseUriBuilder = responseUriBuilder;
     this.serverSubscription = serverSubscription;
     this.aeron = aeron;
+    this.publications = new ServerPublications();
+    this.decodeFailureUtil = new DecodeFailureUtil(publications, errorHandler);
   }
 
   @Override
@@ -114,38 +111,11 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
   }
 
   protected boolean sendDecodeFailure(long clientId, long correlationId, int baseMessageType) {
-    Publication publication = publications.get(clientId);
-    if (publication == null) {
-      errorHandler.onInternalError(clientId, correlationId, ErrorCode.CLIENT_NOT_EXISTS);
-      return true;
-    }
+    return decodeFailureUtil.sendDecodeFailure(clientId, correlationId, baseMessageType);
+  }
 
-    decodeFailureResponse.set(baseMessageType);
-
-    BufferClaim claim = decodeFailureResponse.getClaim();
-    long result = publication.tryClaim(decodeFailureResponse.getMessageSize(), claim);
-
-    // Sending a decode failure is best-effort.
-    if (result < 0) {
-      ErrorCode code = interpretErrorCode(result);
-
-      if (code == ErrorCode.BACKPRESSURE) {
-        return false;
-      } else {
-        errorHandler.onInternalError(clientId, correlationId, code);
-        return true;
-      }
-    }
-
-    try {
-      decodeFailureResponse.encode(claim.buffer(), claim.offset());
-      claim.commit();
-      return true;
-    } catch (RuntimeException e) {
-      claim.abort();
-      errorHandler.onInternalError(clientId, correlationId, ErrorCode.ENCODE_ERROR);
-      return true;
-    }
+  protected Publication getPublication(long clientId) {
+    return publications.get(clientId);
   }
 
   protected abstract boolean onMessage(

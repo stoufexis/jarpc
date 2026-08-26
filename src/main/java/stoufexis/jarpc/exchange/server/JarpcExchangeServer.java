@@ -6,7 +6,6 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.Agent;
 import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.server.*;
@@ -120,7 +119,7 @@ public final class JarpcExchangeServer extends JarpcServer {
 
     @Override
     public ErrorCode onResponse(long clientId, long correlationId, PostOrderResponse t) {
-      Publication publication = publications.get(clientId);
+      Publication publication = getPublication(clientId);
       if (publication == null) return ErrorCode.CLIENT_NOT_EXISTS;
 
       BufferClaim claim = t.getClaim();
@@ -144,7 +143,7 @@ public final class JarpcExchangeServer extends JarpcServer {
   private class CancelAllCallbackImpl implements ExchangeServer.CancelAllCallback {
     @Override
     public ErrorCode onResponse(long clientId, long correlationId, CancelAllResponse t) {
-      Publication publication = publications.get(clientId);
+      Publication publication = getPublication(clientId);
       if (publication == null) return ErrorCode.CLIENT_NOT_EXISTS;
 
       BufferClaim claim = t.getClaim();

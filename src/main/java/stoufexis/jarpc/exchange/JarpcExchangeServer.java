@@ -9,7 +9,7 @@ import stoufexis.jarpc.util.ServerErrorHandler;
 
 import static stoufexis.jarpc.util.Util.interpretErrorCode;
 
-public class JarpcExchangeServer extends JarpcServer {
+public final class JarpcExchangeServer extends JarpcServer {
   private final ExchangeServer exchange;
 
   private final PostOrderRequest postOrderRequest = new PostOrderRequest();

@@ -3,7 +3,7 @@ package stoufexis.jarpc.model;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class DecodeFailureResponse extends Message {
+public final class DecodeFailureResponse extends Message {
   private static final int MESSAGE_SIZE = 4;
 
   private int baseMessageType;

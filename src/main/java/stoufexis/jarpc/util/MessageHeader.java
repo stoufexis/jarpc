@@ -3,7 +3,7 @@ package stoufexis.jarpc.util;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class MessageHeader {
+public final class MessageHeader {
   public static final int HEADER_SIZE = 12;
 
   private boolean initialized;

@@ -12,7 +12,7 @@ import stoufexis.jarpc.util.JarpcClient;
 
 import static stoufexis.jarpc.util.Util.*;
 
-public class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
+public final class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
   // FIXME this is perhaps not the best data structure for this use-case.
   //  removes leave behind tombstones, which are not re-used since keys do not repeat,
   //  which forces a somewhat expensive periodic compaction.
@@ -37,8 +37,8 @@ public class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
       String responseControl,
       int responseStreamId,
       ErrorHandler handler) {
-    Subscription sub = createSubscription(aeron, responseControl, responseStreamId);
-    Publication pub = createPublication(aeron, requestEndpoint, requestStreamId, sub);
+    Subscription sub = createClientSubscription(aeron, responseControl, responseStreamId);
+    Publication pub = createClientPublication(aeron, requestEndpoint, requestStreamId, sub);
     return new JarpcExchangeClient(pub, sub, handler);
   }
 

@@ -10,7 +10,7 @@ import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.Objects;
 
-public class ResponseServer implements AutoCloseable, Agent {
+public final class ResponseServer implements AutoCloseable, Agent {
 
   private static final int FRAGMENT_LIMIT = 10;
 

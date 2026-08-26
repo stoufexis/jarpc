@@ -4,7 +4,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import stoufexis.jarpc.model.Message;
 
-public class CancelAllRequest extends Message {
+public final class CancelAllRequest extends Message {
 
   public CancelAllRequest() {
     super(CancelAllRequest.class, 0);

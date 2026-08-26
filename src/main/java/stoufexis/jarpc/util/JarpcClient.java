@@ -3,6 +3,7 @@ package stoufexis.jarpc.util;
 import io.aeron.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.Agent;
@@ -11,11 +12,9 @@ import org.agrona.concurrent.IdleStrategy;
 import stoufexis.jarpc.model.BaseCatalog;
 import stoufexis.jarpc.model.DecodeFailureResponse;
 
-import java.nio.ByteBuffer;
-
 import static stoufexis.jarpc.util.Util.illegal;
 
-public abstract class JarpcClient {
+public abstract class JarpcClient implements AutoCloseable {
   private static final int FRAGMENT_LIMIT = 10;
 
   protected final Publication publication;
@@ -29,33 +28,17 @@ public abstract class JarpcClient {
     this.handler = handler;
   }
 
-  protected static Subscription createSubscription(
-      Aeron aeron, String responseControl, int responseStreamId) {
-    ChannelUriStringBuilder responseUriBuilder =
-        new ChannelUriStringBuilder()
-            .media("udp")
-            .controlMode("response")
-            .controlEndpoint(responseControl);
-
-    return aeron.addSubscription(responseUriBuilder.build(), responseStreamId);
-  }
-
-  protected static Publication createPublication(
-      Aeron aeron, String requestEndpoint, int requestStreamId, Subscription subscription) {
-    ChannelUriStringBuilder requestUriBuilder =
-        new ChannelUriStringBuilder().media("udp").endpoint(requestEndpoint);
-
-    return aeron.addPublication(
-        requestUriBuilder.responseCorrelationId(subscription.registrationId()).build(),
-        requestStreamId);
-  }
-
   public final Agent getAgent() {
     return agent;
   }
 
   public final Thread startOnThread(IdleStrategy idleStrategy) {
     return AgentRunner.startOnThread(new AgentRunner(idleStrategy, handler, null, agent));
+  }
+
+  @Override
+  public final void close() {
+    CloseHelper.quietCloseAll(publication, subscription);
   }
 
   /**

@@ -4,7 +4,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import stoufexis.jarpc.model.Message;
 
-public class PostOrderResponse extends Message {
+public final class PostOrderResponse extends Message {
   private int statusCode;
 
   public PostOrderResponse() {

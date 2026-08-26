@@ -4,7 +4,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import stoufexis.jarpc.model.Message;
 
-public class PostOrderRequest extends Message {
+public final class PostOrderRequest extends Message {
   private int baseAssetId;
   private int quoteAssetId;
   private long quantityUnscaled;

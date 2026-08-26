@@ -1,6 +1,9 @@
 package stoufexis.jarpc.util;
 
+import io.aeron.Aeron;
+import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Publication;
+import io.aeron.Subscription;
 import org.jctools.maps.NonBlockingHashMapLong;
 import stoufexis.jarpc.model.ErrorCode;
 
@@ -27,5 +30,26 @@ public final class Util {
 
       default -> throw illegal("Unrecognized error code " + claimResult);
     };
+  }
+
+  public static Subscription createClientSubscription(
+      Aeron aeron, String responseControl, int responseStreamId) {
+    ChannelUriStringBuilder responseUriBuilder =
+        new ChannelUriStringBuilder()
+            .media("udp")
+            .controlMode("response")
+            .controlEndpoint(responseControl);
+
+    return aeron.addSubscription(responseUriBuilder.build(), responseStreamId);
+  }
+
+  public static Publication createClientPublication(
+      Aeron aeron, String requestEndpoint, int requestStreamId, Subscription subscription) {
+    ChannelUriStringBuilder requestUriBuilder =
+        new ChannelUriStringBuilder().media("udp").endpoint(requestEndpoint);
+
+    return aeron.addPublication(
+        requestUriBuilder.responseCorrelationId(subscription.registrationId()).build(),
+        requestStreamId);
   }
 }

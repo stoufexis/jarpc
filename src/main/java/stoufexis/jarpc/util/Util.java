@@ -17,17 +17,17 @@ public final class Util {
     return new IllegalStateException(message);
   }
 
-  public static BaseCallback.ErrorType interpretError(long claimResult) {
-    return switch (claimResult) {
+  public static void interpretError(long claimResult, long correlationId, BaseCallback callback) {
+    switch (claimResult) {
       case Publication.ADMIN_ACTION, Publication.BACK_PRESSURED ->
-          BaseCallback.ErrorType.BACKPRESSURE;
+          callback.onBackpressure(correlationId);
 
       case Publication.CLOSED, Publication.MAX_POSITION_EXCEEDED ->
-          BaseCallback.ErrorType.CORRUPT_SESSION;
+          callback.onCorruptSession(correlationId);
 
-      case Publication.NOT_CONNECTED -> BaseCallback.ErrorType.NOT_CONNECTED;
+      case Publication.NOT_CONNECTED -> callback.onNotConnected(correlationId);
 
       default -> throw illegal("Unrecognized error code " + claimResult);
-    };
+    }
   }
 }

@@ -5,6 +5,7 @@ import io.aeron.Publication;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
+import stoufexis.jarpc.model.DecodeFailureResponse;
 import stoufexis.jarpc.util.MessageHeader;
 import stoufexis.jarpc.util.ResponseServer;
 
@@ -18,6 +19,7 @@ public class JarpcExchangeServer implements ResponseServer.ResponseHandler {
   private final MessageHeader header = new MessageHeader();
   private final PostOrderRequest postOrderRequest = new PostOrderRequest();
   private final CancelAllRequest cancelAllRequest = new CancelAllRequest();
+  private final DecodeFailureResponse decodeFailureResponse = new DecodeFailureResponse();
 
   public JarpcExchangeServer(ExchangeServer exchange, Image image, ErrorHandler handler) {
     this.exchange = exchange;
@@ -61,7 +63,7 @@ public class JarpcExchangeServer implements ResponseServer.ResponseHandler {
         }
 
         default -> {
-          handler.onError(illegal("Unknown message type " + messageType));
+//          handler.onError(illegal("Unknown message type " + messageType));
           return true;
         }
       }

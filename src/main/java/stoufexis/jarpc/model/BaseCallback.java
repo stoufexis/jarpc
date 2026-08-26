@@ -1,23 +1,21 @@
 package stoufexis.jarpc.model;
 
+import java.nio.ByteBuffer;
+
 public interface BaseCallback {
+  void onNotConnected(long correlationId);
 
-  enum ErrorType {
-    NOT_CONNECTED,
-    BACKPRESSURE,
-    TIMEOUT,
-    INTERRUPT,
-    CORRUPT_SESSION,
-    DECODE_ERROR,
-    DUPLICATE_ID
-  }
+  void onBackpressure(long correlationId);
 
-  /**
-   * Called when a request failed to be sent or the response was not readable.
-   *
-   * @param correlationId id of the request
-   * @param type categorization of the error
-   * @param err exception that caused this error. May be {@code null}
-   */
-  void onError(long correlationId, ErrorType type, RuntimeException err);
+  void onTimeout(long correlationId);
+
+  void onInterrupt(long correlationId);
+
+  void onCorruptSession(long correlationId);
+
+  void onClientDecodeError(long correlationId, RuntimeException exception);
+
+  void onServerDecodeError(long correlationId, ByteBuffer message, int messageSize);
+
+  void onDuplicateId(long correlationId);
 }

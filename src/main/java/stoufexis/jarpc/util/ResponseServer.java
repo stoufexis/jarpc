@@ -14,6 +14,26 @@ import java.util.function.Function;
 
 public class ResponseServer implements AutoCloseable, Agent {
 
+  public abstract class ResponseHandler2 {
+    private final Long2ObjectHashMap<Publication> clientToPublicationMap =
+        new Long2ObjectHashMap<>();
+
+    private void putPublication(long clientId, Publication pub) {
+      clientToPublicationMap.put(clientId, pub);
+    }
+
+    private void removePublication(long clientId) {
+      clientToPublicationMap.remove(clientId);
+    }
+
+    protected Publication getPublication(long clientId) {
+      return clientToPublicationMap.get(clientId);
+    }
+
+    public abstract boolean onMessage(
+        long clientId, DirectBuffer buffer, int offset, int length, Header header);
+  }
+
   /** Interface to manage callback from the response server onto a session. */
   public interface ResponseHandler {
     /**

@@ -2,7 +2,7 @@ package stoufexis.jarpc.model;
 
 import java.nio.ByteBuffer;
 
-public interface BaseCallback {
+public interface ClientCallback {
   void onNotConnected(long correlationId);
 
   void onBackpressure(long correlationId);

@@ -2,7 +2,7 @@ package stoufexis.jarpc.util;
 
 import io.aeron.Publication;
 import org.jctools.maps.NonBlockingHashMapLong;
-import stoufexis.jarpc.model.BaseCallback;
+import stoufexis.jarpc.model.ClientCallback;
 
 public final class Util {
   private Util() {}
@@ -17,7 +17,7 @@ public final class Util {
     return new IllegalStateException(message);
   }
 
-  public static void interpretError(long claimResult, long correlationId, BaseCallback callback) {
+  public static void interpretError(long claimResult, long correlationId, ClientCallback callback) {
     switch (claimResult) {
       case Publication.ADMIN_ACTION, Publication.BACK_PRESSURED ->
           callback.onBackpressure(correlationId);

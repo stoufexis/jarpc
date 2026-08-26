@@ -9,7 +9,7 @@ import stoufexis.jarpc.model.DecodeFailureResponse;
 import stoufexis.jarpc.util.MessageHeader;
 import stoufexis.jarpc.util.ResponseServer;
 
-import static stoufexis.jarpc.util.Util.illegal;
+import java.nio.ByteBuffer;
 
 public class JarpcExchangeServer implements ResponseServer.ResponseHandler {
   private final long clientId;
@@ -42,9 +42,11 @@ public class JarpcExchangeServer implements ResponseServer.ResponseHandler {
       switch (messageType) {
         case Catalog.postOrderId -> {
           try {
+            postOrderRequest.decode(buffer, offset, length);
+            return exchange.postOrder(clientId, correlationId, postOrderRequest, null);
 
           } catch (RuntimeException e) {
-            throw new RuntimeException(e);
+            // TODO send a decode failure response
           }
         }
 
@@ -63,7 +65,7 @@ public class JarpcExchangeServer implements ResponseServer.ResponseHandler {
         }
 
         default -> {
-//          handler.onError(illegal("Unknown message type " + messageType));
+          //          handler.onError(illegal("Unknown message type " + messageType));
           return true;
         }
       }
@@ -73,6 +75,13 @@ public class JarpcExchangeServer implements ResponseServer.ResponseHandler {
       throw e;
     }
 
-    return false;
+    return false; // TODO remove this
+  }
+
+  private class PostOrderCallbackImpl implements ExchangeServer.PostOrderCallback {
+    @Override
+    public boolean onResponse(long clientId, long correlationId, PostOrderResponse t) {
+      return false;
+    }
   }
 }

@@ -20,7 +20,7 @@ public abstract class JarpcClient implements AutoCloseable {
   protected final Publication publication;
   protected final Subscription subscription;
   protected final ErrorHandler handler;
-  private final Agent agent = new ReceiveAgent();
+  private final Agent agent = new ClientReceiveAgent();
 
   protected JarpcClient(Publication publication, Subscription subscription, ErrorHandler handler) {
     this.publication = publication;
@@ -30,10 +30,6 @@ public abstract class JarpcClient implements AutoCloseable {
 
   public final Agent getAgent() {
     return agent;
-  }
-
-  public final Thread startOnThread(IdleStrategy idleStrategy) {
-    return AgentRunner.startOnThread(new AgentRunner(idleStrategy, handler, null, agent));
   }
 
   @Override
@@ -58,7 +54,7 @@ public abstract class JarpcClient implements AutoCloseable {
    */
   protected abstract void handleDecodeFailureResponse(int messageType, long correlationId);
 
-  private class ReceiveAgent extends ClassAgent implements ControlledFragmentHandler {
+  private class ClientReceiveAgent extends ClassAgent implements ControlledFragmentHandler {
     private final MessageHeader header = new MessageHeader();
     private final DecodeFailureResponse decodeFailureResponse = new DecodeFailureResponse();
     private final ControlledFragmentHandler assembled = new ControlledFragmentAssembler(this);

@@ -10,7 +10,7 @@ import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.Objects;
 
-public final class ResponseServer implements AutoCloseable, Agent {
+public final class ResponseServer implements AutoCloseable {
 
   private static final int FRAGMENT_LIMIT = 10;
 
@@ -23,8 +23,7 @@ public final class ResponseServer implements AutoCloseable, Agent {
   private final ChannelUriStringBuilder responseUriBuilder;
   private final int responseStreamId;
 
-  private final ControlledFragmentAssembler requestAssembler =
-      new ControlledFragmentAssembler(this::onControlledRequestMessage);
+  private final Agent agent = new ServerReceiveAgent();
 
   ResponseServer(
       Aeron aeron,
@@ -85,39 +84,70 @@ public final class ResponseServer implements AutoCloseable, Agent {
         responseStreamId);
   }
 
-  /**
-   * Poll the server process messages and state.
-   *
-   * @return amount of work done.
-   */
-  public int doWork() {
-    int workCount = 0;
-
-    Image image;
-    while (null != (image = availableImages.poll())) {
-      workCount++;
-      ensurePublicationExists(image);
-    }
-
-    while (null != (image = unavailableImages.poll())) {
-      workCount++;
-      removeSession(image);
-    }
-
-    workCount += serverSubscription.controlledPoll(requestAssembler, FRAGMENT_LIMIT);
-
-    return workCount;
+  public Agent getAgent() {
+    return agent;
   }
 
   /** {@inheritDoc} */
   @Override
   public void close() {
     CloseHelper.quietClose(serverSubscription);
+    handler.closePublications();
   }
 
-  @Override
-  public String roleName() {
-    return "ResponseServer";
+  private class ServerReceiveAgent extends ClassAgent implements ControlledFragmentHandler {
+    private final ControlledFragmentAssembler requestAssembler =
+        new ControlledFragmentAssembler(this);
+
+    /**
+     * Poll the server process messages and state.
+     *
+     * @return amount of work done.
+     */
+    public int doWork() {
+      int work = 0;
+
+      Image image;
+      while (null != (image = availableImages.poll())) {
+        work++;
+        ensurePublicationExists(image);
+      }
+
+      while (null != (image = unavailableImages.poll())) {
+        work++;
+        removeSession(image);
+      }
+
+      return work + serverSubscription.controlledPoll(requestAssembler, FRAGMENT_LIMIT);
+    }
+
+    @Override
+    public ControlledFragmentHandler.Action onFragment(
+        DirectBuffer buffer, int offset, int length, Header header) {
+      Image image = (Image) header.context();
+      ensurePublicationExists(image);
+
+      return handler.onMessage(image.correlationId(), buffer, offset, length, header)
+          ? ControlledFragmentHandler.Action.CONTINUE
+          : ControlledFragmentHandler.Action.ABORT;
+    }
+
+    private void ensurePublicationExists(Image image) {
+      // We dont need computeIfAbsent, put/remove only happen in the agent thread.
+      if (null == handler.getPublication(image.correlationId())) {
+        Publication publication =
+            aeron.addPublication(
+                responseUriBuilder.responseCorrelationId(image.correlationId()).build(),
+                responseStreamId);
+
+        handler.putPublication(image.correlationId(), publication);
+      }
+    }
+
+    private void removeSession(Image image) {
+      requestAssembler.freeSessionBuffer(image.sessionId());
+      CloseHelper.quietClose(handler.removePublication(image.correlationId()));
+    }
   }
 
   // FIXME need to figure out a more graceful error path
@@ -133,32 +163,5 @@ public final class ResponseServer implements AutoCloseable, Agent {
     if (!unavailableImages.offer(image)) {
       throw new RuntimeException("Unable to enqueue removed image");
     }
-  }
-
-  private ControlledFragmentHandler.Action onControlledRequestMessage(
-      DirectBuffer buffer, int offset, int length, Header header) {
-    Image image = (Image) header.context();
-    ensurePublicationExists(image);
-
-    return handler.onMessage(image.correlationId(), buffer, offset, length, header)
-        ? ControlledFragmentHandler.Action.CONTINUE
-        : ControlledFragmentHandler.Action.ABORT;
-  }
-
-  private void ensurePublicationExists(Image image) {
-    // We dont need computeIfAbsent, put/remove only happen in the agent thread.
-    if (null == handler.getPublication(image.correlationId())) {
-      Publication publication =
-          aeron.addPublication(
-              responseUriBuilder.responseCorrelationId(image.correlationId()).build(),
-              responseStreamId);
-
-      handler.putPublication(image.correlationId(), publication);
-    }
-  }
-
-  private void removeSession(Image image) {
-    requestAssembler.freeSessionBuffer(image.sessionId());
-    CloseHelper.quietClose(handler.removePublication(image.correlationId()));
   }
 }

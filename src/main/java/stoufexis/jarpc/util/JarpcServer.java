@@ -11,7 +11,7 @@ import stoufexis.jarpc.model.ErrorCode;
 
 import static stoufexis.jarpc.util.Util.interpretErrorCode;
 
-public abstract class JarpcServer implements AutoCloseable {
+public abstract class JarpcServer {
 
   // FIXME this is perhaps not the best data structure for this use-case.
   //  removes leave behind tombstones, which are not re-used since keys do not repeat,
@@ -76,6 +76,10 @@ public abstract class JarpcServer implements AutoCloseable {
     return clientToPublicationMap.remove(clientId);
   }
 
+  final void closePublications() {
+    clientToPublicationMap.values().forEach(CloseHelper::quietClose);
+  }
+
   final boolean onMessage(long clientId, DirectBuffer buffer, int offset, int length, Header h_) {
     try {
       header.decode(buffer, offset, length);
@@ -100,9 +104,4 @@ public abstract class JarpcServer implements AutoCloseable {
       DirectBuffer buffer,
       int offset,
       int length);
-
-  @Override
-  public final void close() {
-    clientToPublicationMap.values().forEach(CloseHelper::quietClose);
-  }
 }

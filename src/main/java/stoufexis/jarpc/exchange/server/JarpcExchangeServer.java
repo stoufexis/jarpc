@@ -1,12 +1,17 @@
 package stoufexis.jarpc.exchange.server;
 
+import io.aeron.Aeron;
+import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Publication;
+import io.aeron.Subscription;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.Agent;
 import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.server.JarpcServer;
-import stoufexis.jarpc.server.ServerErrorHandler;
+import stoufexis.jarpc.server.*;
+
+import java.util.Objects;
 
 import static stoufexis.jarpc.util.Util.interpretErrorCode;
 
@@ -18,9 +23,58 @@ public final class JarpcExchangeServer extends JarpcServer {
   private final PostOrderCallbackImpl postOrderCallback = new PostOrderCallbackImpl();
   private final CancelAllCallbackImpl cancelAllCallback = new CancelAllCallbackImpl();
 
-  public JarpcExchangeServer(ServerErrorHandler errorHandler, ExchangeServer exchange) {
-    super(errorHandler);
+  public JarpcExchangeServer(
+      ExchangeServer exchange,
+      ServerErrorHandler errorHandler,
+      Images images,
+      int responseStreamId,
+      ChannelUriStringBuilder responseUriBuilder,
+      Subscription serverSubscription,
+      Aeron aeron) {
+    super(errorHandler, images, responseStreamId, responseUriBuilder, serverSubscription, aeron);
     this.exchange = exchange;
+  }
+
+  public static JarpcExchangeServer create(
+      ExchangeServer exchange,
+      ServerErrorHandler serverErrorHandler,
+      Aeron aeron,
+      String requestEndpoint,
+      int requestStreamId,
+      String responseControl,
+      int responseStreamId) {
+    Objects.requireNonNull(requestEndpoint, "subscriptionEndpoint must not be null");
+    Objects.requireNonNull(responseControl, "responseEndpoint must not be null");
+
+    ChannelUriStringBuilder requestUriBuilder =
+        new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint(requestEndpoint)
+            .responseEndpoint(responseControl);
+
+    ChannelUriStringBuilder responseUriBuilder =
+        new ChannelUriStringBuilder()
+            .media("udp")
+            .controlMode("response")
+            .controlEndpoint(responseControl);
+
+    Images images = new Images();
+
+    Subscription serverSubscription =
+        aeron.addSubscription(
+            requestUriBuilder.build(),
+            requestStreamId,
+            images::enqueueAvailableImage,
+            images::enqueueUnavailableImage);
+
+    return new JarpcExchangeServer(
+        exchange,
+        serverErrorHandler,
+        images,
+        responseStreamId,
+        responseUriBuilder,
+        serverSubscription,
+        aeron);
   }
 
   @Override
@@ -66,7 +120,7 @@ public final class JarpcExchangeServer extends JarpcServer {
 
     @Override
     public ErrorCode onResponse(long clientId, long correlationId, PostOrderResponse t) {
-      Publication publication = getPublication(clientId);
+      Publication publication = publications.get(clientId);
       if (publication == null) return ErrorCode.CLIENT_NOT_EXISTS;
 
       BufferClaim claim = t.getClaim();
@@ -90,7 +144,7 @@ public final class JarpcExchangeServer extends JarpcServer {
   private class CancelAllCallbackImpl implements ExchangeServer.CancelAllCallback {
     @Override
     public ErrorCode onResponse(long clientId, long correlationId, CancelAllResponse t) {
-      Publication publication = getPublication(clientId);
+      Publication publication = publications.get(clientId);
       if (publication == null) return ErrorCode.CLIENT_NOT_EXISTS;
 
       BufferClaim claim = t.getClaim();

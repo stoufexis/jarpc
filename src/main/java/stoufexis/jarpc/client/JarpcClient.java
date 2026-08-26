@@ -2,39 +2,82 @@ package stoufexis.jarpc.client;
 
 import io.aeron.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
-import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.Agent;
 import stoufexis.jarpc.model.BaseCatalog;
 import stoufexis.jarpc.model.DecodeFailureResponse;
-import stoufexis.jarpc.util.ClassAgent;
 import stoufexis.jarpc.model.MessageHeader;
 
 import static stoufexis.jarpc.util.Util.illegal;
 
-public abstract class JarpcClient implements AutoCloseable {
+public abstract class JarpcClient implements AutoCloseable, Agent {
   private static final int FRAGMENT_LIMIT = 10;
 
-  protected final Publication publication;
-  protected final Subscription subscription;
-  protected final ErrorHandler handler;
-  private final Agent agent = new ClientReceiveAgent();
+  private final Publication publication;
+  private final Subscription subscription;
+  private final ErrorHandler handler;
+  private final ControlledFragmentHandler assembled;
+
+  private final MessageHeader header = new MessageHeader();
+  private final DecodeFailureResponse decodeFailureResponse = new DecodeFailureResponse();
 
   protected JarpcClient(Publication publication, Subscription subscription, ErrorHandler handler) {
     this.publication = publication;
     this.subscription = subscription;
     this.handler = handler;
-  }
-
-  public final Agent getAgent() {
-    return agent;
+    this.assembled =
+        new ControlledFragmentAssembler(
+            (buffer, offset, length, _) ->
+                onMessage(buffer, offset, length)
+                    ? ControlledFragmentHandler.Action.CONTINUE
+                    : ControlledFragmentHandler.Action.ABORT);
   }
 
   @Override
-  public final void close() {
+  public int doWork() {
+    return subscription.controlledPoll(assembled, FRAGMENT_LIMIT);
+  }
+
+  @Override
+  public String roleName() {
+    return "JarpcClientReceiver";
+  }
+
+  @Override
+  public void close() {
     CloseHelper.quietCloseAll(publication, subscription);
+  }
+
+  private boolean onMessage(DirectBuffer buffer, int offset, int length) {
+    try {
+      header.decode(buffer, offset, length);
+
+      int messageType = header.getMessageType();
+      long correlationId = header.getCorrelationId();
+
+      if (messageType > 0) {
+        return handleReceivedFragment(
+            messageType,
+            correlationId,
+            buffer,
+            offset + MessageHeader.HEADER_SIZE,
+            length - MessageHeader.HEADER_SIZE);
+      }
+
+      switch (messageType) {
+        case BaseCatalog.decodeFailure -> {
+          decodeFailureResponse.decode(buffer, offset, length);
+          handleDecodeFailureResponse(decodeFailureResponse.getBaseMessageType(), correlationId);
+          return true;
+        }
+        default -> throw illegal("Unknown failure message type " + messageType);
+      }
+    } catch (RuntimeException e) {
+      handler.onError(e);
+      return true;
+    }
   }
 
   /**
@@ -53,52 +96,4 @@ public abstract class JarpcClient implements AutoCloseable {
    * @throws RuntimeException in case dispatching fails
    */
   protected abstract void handleDecodeFailureResponse(int messageType, long correlationId);
-
-  private class ClientReceiveAgent extends ClassAgent implements ControlledFragmentHandler {
-    private final MessageHeader header = new MessageHeader();
-    private final DecodeFailureResponse decodeFailureResponse = new DecodeFailureResponse();
-    private final ControlledFragmentHandler assembled = new ControlledFragmentAssembler(this);
-
-    @Override
-    public int doWork() {
-      return subscription.controlledPoll(assembled, FRAGMENT_LIMIT);
-    }
-
-    @Override
-    public ControlledFragmentHandler.Action onFragment(
-        DirectBuffer buffer, int offset, int length, Header h_) {
-      try {
-        header.decode(buffer, offset, length);
-
-        int messageType = header.getMessageType();
-        long correlationId = header.getCorrelationId();
-
-        if (messageType > 0) {
-          boolean dispatchResult =
-              handleReceivedFragment(
-                  messageType,
-                  correlationId,
-                  buffer,
-                  offset + MessageHeader.HEADER_SIZE,
-                  length - MessageHeader.HEADER_SIZE);
-
-          return dispatchResult
-              ? ControlledFragmentHandler.Action.CONTINUE
-              : ControlledFragmentHandler.Action.ABORT;
-        }
-
-        switch (messageType) {
-          case BaseCatalog.decodeFailure -> {
-            decodeFailureResponse.decode(buffer, offset, length);
-            handleDecodeFailureResponse(decodeFailureResponse.getBaseMessageType(), correlationId);
-            return ControlledFragmentHandler.Action.CONTINUE;
-          }
-          default -> throw illegal("Unknown failure message type " + messageType);
-        }
-      } catch (RuntimeException e) {
-        handler.onError(e);
-        return ControlledFragmentHandler.Action.CONTINUE;
-      }
-    }
-  }
 }

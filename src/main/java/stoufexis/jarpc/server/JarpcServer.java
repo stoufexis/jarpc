@@ -1,41 +1,120 @@
 package stoufexis.jarpc.server;
 
-import io.aeron.Publication;
+import io.aeron.*;
 import io.aeron.logbuffer.BufferClaim;
+import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.jctools.maps.NonBlockingHashMapLong;
+import org.agrona.concurrent.Agent;
 import stoufexis.jarpc.model.DecodeFailureResponse;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.model.MessageHeader;
 
 import static stoufexis.jarpc.util.Util.interpretErrorCode;
 
-public abstract class JarpcServer {
-
-  // FIXME this is perhaps not the best data structure for this use-case.
-  //  removes leave behind tombstones, which are not re-used since keys do not repeat,
-  //  which forces a somewhat expensive periodic compaction.
-  //  Consider replacing this with a purpose-built data structure instead.
-  private final NonBlockingHashMapLong<Publication> clientToPublicationMap =
-      new NonBlockingHashMapLong<>();
+public abstract class JarpcServer implements Agent, AutoCloseable {
+  private static final int FRAGMENT_LIMIT = 10;
 
   private final MessageHeader header = new MessageHeader();
   private final DecodeFailureResponse decodeFailureResponse = new DecodeFailureResponse();
+  protected final ServerPublications publications = new ServerPublications();
+  private final ControlledFragmentAssembler assembled =
+      new ControlledFragmentAssembler(this::onFragment);
 
   protected final ServerErrorHandler errorHandler;
+  private final Images images;
+  private final int responseStreamId;
+  private final ChannelUriStringBuilder responseUriBuilder;
+  private final Subscription serverSubscription;
+  private final Aeron aeron;
 
-  protected JarpcServer(ServerErrorHandler errorHandler) {
+  protected JarpcServer(
+      ServerErrorHandler errorHandler,
+      Images images,
+      int responseStreamId,
+      ChannelUriStringBuilder responseUriBuilder,
+      Subscription serverSubscription,
+      Aeron aeron) {
     this.errorHandler = errorHandler;
+    this.images = images;
+    this.responseStreamId = responseStreamId;
+    this.responseUriBuilder = responseUriBuilder;
+    this.serverSubscription = serverSubscription;
+    this.aeron = aeron;
   }
 
-  protected final Publication getPublication(long clientId) {
-    return clientToPublicationMap.get(clientId);
+  @Override
+  public int doWork() {
+    int work = 0;
+
+    Image image;
+    while (null != (image = images.pollAvailable())) {
+      work++;
+      ensurePublicationExists(image);
+    }
+
+    while (null != (image = images.pollUnavailable())) {
+      work++;
+      assembled.freeSessionBuffer(image.sessionId());
+      CloseHelper.quietClose(publications.remove(image.correlationId()));
+    }
+
+    return work + serverSubscription.controlledPoll(assembled, FRAGMENT_LIMIT);
+  }
+
+  @Override
+  public void close() {
+    CloseHelper.quietClose(serverSubscription);
+    publications.closeAll();
+  }
+
+  private ControlledFragmentHandler.Action onFragment(
+      DirectBuffer buffer, int offset, int length, Header aeronHeader) {
+    Image image = (Image) aeronHeader.context();
+    ensurePublicationExists(image);
+
+    try {
+      header.decode(buffer, offset, length);
+
+      boolean result =
+          onMessage(
+              image.correlationId(),
+              header.getMessageType(),
+              header.getCorrelationId(),
+              buffer,
+              offset + MessageHeader.HEADER_SIZE,
+              length - MessageHeader.HEADER_SIZE);
+
+      return result
+          ? ControlledFragmentHandler.Action.CONTINUE
+          : ControlledFragmentHandler.Action.ABORT;
+
+    } catch (RuntimeException e) {
+      errorHandler.onError(e);
+      throw e;
+    }
+  }
+
+  private void ensurePublicationExists(Image image) {
+    // FIXME We dont need computeIfAbsent, put/remove only happen in the agent thread.
+    if (null == publications.get(image.correlationId())) {
+      Publication publication =
+          aeron.addPublication(
+              responseUriBuilder.responseCorrelationId(image.correlationId()).build(),
+              responseStreamId);
+
+      publications.put(image.correlationId(), publication);
+    }
+  }
+
+  @Override
+  public String roleName() {
+    return "JarpcServerReceiver";
   }
 
   protected boolean sendDecodeFailure(long clientId, long correlationId, int baseMessageType) {
-    Publication publication = getPublication(clientId);
+    Publication publication = publications.get(clientId);
     if (publication == null) {
       errorHandler.onInternalError(clientId, correlationId, ErrorCode.CLIENT_NOT_EXISTS);
       return true;
@@ -66,35 +145,6 @@ public abstract class JarpcServer {
       claim.abort();
       errorHandler.onInternalError(clientId, correlationId, ErrorCode.ENCODE_ERROR);
       return true;
-    }
-  }
-
-  final void putPublication(long clientId, Publication pub) {
-    clientToPublicationMap.put(clientId, pub);
-  }
-
-  final Publication removePublication(long clientId) {
-    return clientToPublicationMap.remove(clientId);
-  }
-
-  final void closePublications() {
-    clientToPublicationMap.values().forEach(CloseHelper::quietClose);
-  }
-
-  final boolean onMessage(long clientId, DirectBuffer buffer, int offset, int length, Header h_) {
-    try {
-      header.decode(buffer, offset, length);
-
-      return onMessage(
-          clientId,
-          header.getMessageType(),
-          header.getCorrelationId(),
-          buffer,
-          offset + MessageHeader.HEADER_SIZE,
-          length - MessageHeader.HEADER_SIZE);
-    } catch (RuntimeException e) {
-      errorHandler.onError(e);
-      throw e;
     }
   }
 

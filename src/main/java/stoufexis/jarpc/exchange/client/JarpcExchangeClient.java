@@ -27,8 +27,11 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
   private final NonBlockingHashMapLong<CancelAllCallback> cancelAllCallbacks =
       new NonBlockingHashMapLong<>();
 
+  private final Publication publication;
+
   JarpcExchangeClient(Publication publication, Subscription subscription, ErrorHandler handler) {
     super(publication, subscription, handler);
+    this.publication = publication;
   }
 
   public static JarpcExchangeClient create(

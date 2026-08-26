@@ -32,7 +32,7 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
     this.images = images;
     this.serverSubscription = serverSubscription;
     this.publications = new ServerPublications(responseControl, aeron, responseStreamId);
-    this.decodeFailureUtil = new DecodeFailureUtil(publications, errorHandler);
+    this.decodeFailureUtil = new DecodeFailureUtil(errorHandler);
   }
 
   @Override
@@ -63,10 +63,12 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
   private ControlledFragmentHandler.Action onFragment(
       DirectBuffer buffer, int offset, int length, Header aeronHeader) {
     Image image = (Image) aeronHeader.context();
-    publications.ensurePublicationExists(image);
+    Publication publication = publications.ensurePublicationExists(image);
 
     try {
       header.decode(buffer, offset, length);
+
+      decodeFailureUtil.setPublication(publication);
 
       boolean result =
           onMessage(
@@ -75,7 +77,8 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
               header.getCorrelationId(),
               buffer,
               offset + MessageHeader.HEADER_SIZE,
-              length - MessageHeader.HEADER_SIZE);
+              length - MessageHeader.HEADER_SIZE,
+              decodeFailureUtil);
 
       return result
           ? ControlledFragmentHandler.Action.CONTINUE
@@ -92,11 +95,6 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
     return "JarpcServerReceiver";
   }
 
-  /** Not thread-safe */
-  protected boolean sendDecodeFailure(long clientId, long correlationId, int baseMessageType) {
-    return decodeFailureUtil.sendDecodeFailure(clientId, correlationId, baseMessageType);
-  }
-
   /** Thread-safe */
   protected Publication getPublication(long clientId) {
     return publications.get(clientId);
@@ -109,5 +107,6 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
       long correlationId,
       DirectBuffer buffer,
       int offset,
-      int length);
+      int length,
+      DecodeFailureUtil decodeFailureUtil);
 }

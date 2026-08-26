@@ -30,16 +30,19 @@ public final class ServerPublications {
     this.responseStreamId = responseStreamId;
   }
 
-  void ensurePublicationExists(Image image) {
+  Publication ensurePublicationExists(Image image) {
     // We don't need computeIfAbsent, put/remove only happen in the agent thread.
-    if (null == get(image.correlationId())) {
-      Publication publication =
+    Publication publication = get(image.correlationId());
+    if (null == publication) {
+      publication =
           aeron.addPublication(
               responseUriBuilder.responseCorrelationId(image.correlationId()).build(),
               responseStreamId);
 
       put(image.correlationId(), publication);
     }
+
+    return publication;
   }
 
   void put(long clientId, Publication pub) {

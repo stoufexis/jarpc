@@ -62,7 +62,8 @@ public final class JarpcExchangeServer extends JarpcServer {
       long correlationId,
       DirectBuffer buffer,
       int offset,
-      int length) {
+      int length,
+      DecodeFailureUtil decodeFailureUtil) {
     switch (messageType) {
       case Catalog.postOrderId -> {
         try {
@@ -70,7 +71,7 @@ public final class JarpcExchangeServer extends JarpcServer {
           return exchange.postOrder(clientId, correlationId, postOrderRequest, postOrderCallback);
 
         } catch (RuntimeException e) {
-          return sendDecodeFailure(clientId, correlationId, messageType);
+          return decodeFailureUtil.sendDecodeFailure(clientId, correlationId, messageType);
         }
       }
 
@@ -80,12 +81,12 @@ public final class JarpcExchangeServer extends JarpcServer {
           return exchange.cancelAll(clientId, correlationId, cancelAllRequest, cancelAllCallback);
 
         } catch (RuntimeException e) {
-          return sendDecodeFailure(clientId, correlationId, messageType);
+          return decodeFailureUtil.sendDecodeFailure(clientId, correlationId, messageType);
         }
       }
 
       default -> {
-        return sendDecodeFailure(clientId, correlationId, messageType);
+        return decodeFailureUtil.sendDecodeFailure(clientId, correlationId, messageType);
       }
     }
   }

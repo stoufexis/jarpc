@@ -9,18 +9,21 @@ import static stoufexis.jarpc.util.Util.interpretErrorCode;
 
 public class DecodeFailureUtil {
 
-  protected final ServerPublications publications;
   protected final ServerErrorHandler errorHandler;
 
   private final DecodeFailureResponse decodeFailureResponse = new DecodeFailureResponse();
 
-  public DecodeFailureUtil(ServerPublications publications, ServerErrorHandler errorHandler) {
-    this.publications = publications;
+  private Publication publication;
+
+  public DecodeFailureUtil(ServerErrorHandler errorHandler) {
     this.errorHandler = errorHandler;
   }
 
+  public void setPublication(Publication publication) {
+    this.publication = publication;
+  }
+
   public boolean sendDecodeFailure(long clientId, long correlationId, int baseMessageType) {
-    Publication publication = publications.get(clientId);
     if (publication == null) {
       errorHandler.onInternalError(clientId, correlationId, ErrorCode.CLIENT_NOT_EXISTS);
       return true;

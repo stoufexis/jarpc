@@ -1,4 +1,4 @@
-package stoufexis.jarpc.util;
+package stoufexis.jarpc.server;
 
 import org.agrona.ErrorHandler;
 import stoufexis.jarpc.model.ErrorCode;

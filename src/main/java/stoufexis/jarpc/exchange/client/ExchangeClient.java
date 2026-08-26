@@ -1,6 +1,10 @@
-package stoufexis.jarpc.exchange;
+package stoufexis.jarpc.exchange.client;
 
-import stoufexis.jarpc.model.ClientCallback;
+import stoufexis.jarpc.exchange.model.CancelAllRequest;
+import stoufexis.jarpc.exchange.model.CancelAllResponse;
+import stoufexis.jarpc.exchange.model.PostOrderRequest;
+import stoufexis.jarpc.exchange.model.PostOrderResponse;
+import stoufexis.jarpc.client.ClientCallback;
 import stoufexis.jarpc.model.ErrorCode;
 
 /**

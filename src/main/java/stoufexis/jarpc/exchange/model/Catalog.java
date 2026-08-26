@@ -1,4 +1,4 @@
-package stoufexis.jarpc.exchange;
+package stoufexis.jarpc.exchange.model;
 
 public final class Catalog {
   public static final int postOrderId = 1;

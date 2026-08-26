@@ -1,4 +1,4 @@
-package stoufexis.jarpc.util;
+package stoufexis.jarpc.server;
 
 import io.aeron.Publication;
 import io.aeron.logbuffer.BufferClaim;
@@ -8,6 +8,7 @@ import org.agrona.DirectBuffer;
 import org.jctools.maps.NonBlockingHashMapLong;
 import stoufexis.jarpc.model.DecodeFailureResponse;
 import stoufexis.jarpc.model.ErrorCode;
+import stoufexis.jarpc.model.MessageHeader;
 
 import static stoufexis.jarpc.util.Util.interpretErrorCode;
 

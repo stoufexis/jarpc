@@ -1,4 +1,4 @@
-package stoufexis.jarpc.util;
+package stoufexis.jarpc.client;
 
 import io.aeron.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -9,6 +9,8 @@ import org.agrona.ErrorHandler;
 import org.agrona.concurrent.Agent;
 import stoufexis.jarpc.model.BaseCatalog;
 import stoufexis.jarpc.model.DecodeFailureResponse;
+import stoufexis.jarpc.util.ClassAgent;
+import stoufexis.jarpc.model.MessageHeader;
 
 import static stoufexis.jarpc.util.Util.illegal;
 

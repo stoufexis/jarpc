@@ -1,11 +1,12 @@
-package stoufexis.jarpc.exchange;
+package stoufexis.jarpc.exchange.server;
 
 import io.aeron.Publication;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
+import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.util.JarpcServer;
-import stoufexis.jarpc.util.ServerErrorHandler;
+import stoufexis.jarpc.server.JarpcServer;
+import stoufexis.jarpc.server.ServerErrorHandler;
 
 import static stoufexis.jarpc.util.Util.interpretErrorCode;
 

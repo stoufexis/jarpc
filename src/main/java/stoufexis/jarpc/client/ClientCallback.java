@@ -1,4 +1,4 @@
-package stoufexis.jarpc.model;
+package stoufexis.jarpc.client;
 
 public interface ClientCallback {
   void onClientDecodeError(long correlationId, RuntimeException exception);

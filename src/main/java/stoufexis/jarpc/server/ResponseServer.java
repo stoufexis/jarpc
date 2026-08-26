@@ -1,4 +1,4 @@
-package stoufexis.jarpc.util;
+package stoufexis.jarpc.server;
 
 import io.aeron.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -7,6 +7,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import stoufexis.jarpc.util.ClassAgent;
 
 import java.util.Objects;
 

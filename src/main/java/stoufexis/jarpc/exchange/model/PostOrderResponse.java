@@ -1,31 +1,43 @@
-package stoufexis.jarpc.exchange;
+package stoufexis.jarpc.exchange.model;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import stoufexis.jarpc.model.Message;
 
-public final class CancelAllRequest extends Message {
+public final class PostOrderResponse extends Message {
+  private int statusCode;
 
-  public CancelAllRequest() {
-    super(CancelAllRequest.class, 0);
+  public PostOrderResponse() {
+    super(PostOrderResponse.class, 4);
   }
 
   public void reset() {
     uninitialize();
+    statusCode = 0;
+  }
+
+  public int getStatusCode() {
+    return statusCode;
   }
 
   public void set(int statusCode) {
     initialize();
+
+    this.statusCode = statusCode;
   }
 
   @Override
   public void decode(DirectBuffer buffer, int offset, int length) {
     checkSize(length);
     initialize();
+
+    this.statusCode = buffer.getInt(offset);
   }
 
   @Override
   public void encode(MutableDirectBuffer buffer, int offset) {
     checkInitialized();
+
+    buffer.putInt(offset, this.statusCode);
   }
 }

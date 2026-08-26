@@ -1,4 +1,4 @@
-package stoufexis.jarpc.util;
+package stoufexis.jarpc.model;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

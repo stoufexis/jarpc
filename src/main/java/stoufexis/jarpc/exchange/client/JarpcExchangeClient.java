@@ -1,4 +1,4 @@
-package stoufexis.jarpc.exchange;
+package stoufexis.jarpc.exchange.client;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
@@ -7,8 +7,9 @@ import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.jctools.maps.NonBlockingHashMapLong;
+import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.util.JarpcClient;
+import stoufexis.jarpc.client.JarpcClient;
 
 import static stoufexis.jarpc.util.Util.*;
 

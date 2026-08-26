@@ -1,8 +1,6 @@
 package stoufexis.jarpc.util;
 
-import io.aeron.ControlledFragmentAssembler;
-import io.aeron.Publication;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
@@ -29,6 +27,27 @@ public abstract class JarpcClient {
     this.publication = publication;
     this.subscription = subscription;
     this.handler = handler;
+  }
+
+  protected static Subscription createSubscription(
+      Aeron aeron, String responseControl, int responseStreamId) {
+    ChannelUriStringBuilder responseUriBuilder =
+        new ChannelUriStringBuilder()
+            .media("udp")
+            .controlMode("response")
+            .controlEndpoint(responseControl);
+
+    return aeron.addSubscription(responseUriBuilder.build(), responseStreamId);
+  }
+
+  protected static Publication createPublication(
+      Aeron aeron, String requestEndpoint, int requestStreamId, Subscription subscription) {
+    ChannelUriStringBuilder requestUriBuilder =
+        new ChannelUriStringBuilder().media("udp").endpoint(requestEndpoint);
+
+    return aeron.addPublication(
+        requestUriBuilder.responseCorrelationId(subscription.registrationId()).build(),
+        requestStreamId);
   }
 
   public final Agent getAgent() {

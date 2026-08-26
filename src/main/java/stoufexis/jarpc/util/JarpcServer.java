@@ -5,14 +5,20 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.Long2ObjectHashMap;
+import org.jctools.maps.NonBlockingHashMapLong;
 import stoufexis.jarpc.model.DecodeFailureResponse;
 import stoufexis.jarpc.model.ErrorCode;
 
 import static stoufexis.jarpc.util.Util.interpretErrorCode;
 
 public abstract class JarpcServer implements AutoCloseable {
-  private final Long2ObjectHashMap<Publication> clientToPublicationMap = new Long2ObjectHashMap<>();
+
+  // FIXME this is perhaps not the best data structure for this use-case.
+  //  removes leave behind tombstones, which are not re-used since keys do not repeat,
+  //  which forces a somewhat expensive periodic compaction.
+  //  Consider replacing this with a purpose-built data structure instead.
+  private final NonBlockingHashMapLong<Publication> clientToPublicationMap =
+      new NonBlockingHashMapLong<>();
 
   private final MessageHeader header = new MessageHeader();
   private final DecodeFailureResponse decodeFailureResponse = new DecodeFailureResponse();

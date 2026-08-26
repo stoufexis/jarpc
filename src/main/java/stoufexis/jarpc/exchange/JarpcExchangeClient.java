@@ -1,5 +1,6 @@
 package stoufexis.jarpc.exchange;
 
+import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.BufferClaim;
@@ -25,9 +26,20 @@ public class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
   private final NonBlockingHashMapLong<CancelAllCallback> cancelAllCallbacks =
       new NonBlockingHashMapLong<>();
 
-  public JarpcExchangeClient(
-      Publication publication, Subscription subscription, ErrorHandler handler) {
+  JarpcExchangeClient(Publication publication, Subscription subscription, ErrorHandler handler) {
     super(publication, subscription, handler);
+  }
+
+  public static JarpcExchangeClient create(
+      Aeron aeron,
+      String requestEndpoint,
+      int requestStreamId,
+      String responseControl,
+      int responseStreamId,
+      ErrorHandler handler) {
+    Subscription sub = createSubscription(aeron, responseControl, responseStreamId);
+    Publication pub = createPublication(aeron, requestEndpoint, requestStreamId, sub);
+    return new JarpcExchangeClient(pub, sub, handler);
   }
 
   // Publication

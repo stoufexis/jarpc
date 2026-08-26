@@ -15,47 +15,74 @@ public class ResponseServer implements AutoCloseable, Agent {
   private static final int FRAGMENT_LIMIT = 10;
 
   private final Aeron aeron;
-  private final OneToOneConcurrentArrayQueue<Image> availableImages =
-      new OneToOneConcurrentArrayQueue<>(1024);
-  private final OneToOneConcurrentArrayQueue<Image> unavailableImages =
-      new OneToOneConcurrentArrayQueue<>(1024);
+  private final OneToOneConcurrentArrayQueue<Image> availableImages;
+  private final OneToOneConcurrentArrayQueue<Image> unavailableImages;
   private final JarpcServer handler;
-  private final int requestStreamId;
-  private final int responseStreamId;
-  private final ChannelUriStringBuilder requestUriBuilder;
+
+  private final Subscription serverSubscription;
   private final ChannelUriStringBuilder responseUriBuilder;
+  private final int responseStreamId;
+
   private final ControlledFragmentAssembler requestAssembler =
       new ControlledFragmentAssembler(this::onControlledRequestMessage);
 
-  private Subscription serverSubscription;
+  ResponseServer(
+      Aeron aeron,
+      OneToOneConcurrentArrayQueue<Image> availableImages,
+      OneToOneConcurrentArrayQueue<Image> unavailableImages,
+      JarpcServer handler,
+      Subscription serverSubscription,
+      ChannelUriStringBuilder responseUriBuilder,
+      int responseStreamId) {
+    this.aeron = aeron;
+    this.availableImages = availableImages;
+    this.unavailableImages = unavailableImages;
+    this.handler = handler;
+    this.serverSubscription = serverSubscription;
+    this.responseUriBuilder = responseUriBuilder;
+    this.responseStreamId = responseStreamId;
+  }
 
-  public ResponseServer(
+  public static ResponseServer create(
       Aeron aeron,
       JarpcServer handler,
       String requestEndpoint,
       int requestStreamId,
       String responseControl,
-      int responseStreamId,
-      String requestChannel,
-      String responseChannel) {
-    this.aeron = aeron;
-    this.handler = handler;
-    this.requestStreamId = requestStreamId;
-    this.responseStreamId = responseStreamId;
-
+      int responseStreamId) {
     Objects.requireNonNull(requestEndpoint, "subscriptionEndpoint must not be null");
     Objects.requireNonNull(responseControl, "responseEndpoint must not be null");
 
-    requestUriBuilder =
-        null == requestChannel
-            ? new ChannelUriStringBuilder()
-            : new ChannelUriStringBuilder(requestChannel);
-    requestUriBuilder.media("udp").endpoint(requestEndpoint).responseEndpoint(responseControl);
-    responseUriBuilder =
-        null == responseChannel
-            ? new ChannelUriStringBuilder()
-            : new ChannelUriStringBuilder(responseChannel);
-    responseUriBuilder.media("udp").controlMode("response").controlEndpoint(responseControl);
+    ChannelUriStringBuilder requestUriBuilder =
+        new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint(requestEndpoint)
+            .responseEndpoint(responseControl);
+
+    ChannelUriStringBuilder responseUriBuilder =
+        new ChannelUriStringBuilder()
+            .media("udp")
+            .controlMode("response")
+            .controlEndpoint(responseControl);
+
+    OneToOneConcurrentArrayQueue<Image> availableImg = new OneToOneConcurrentArrayQueue<>(1024);
+    OneToOneConcurrentArrayQueue<Image> unavailableImg = new OneToOneConcurrentArrayQueue<>(1024);
+
+    Subscription serverSubscription =
+        aeron.addSubscription(
+            requestUriBuilder.build(),
+            requestStreamId,
+            image -> enqueueAvailableImage(availableImg, image),
+            image -> enqueueUnavailableImage(unavailableImg, image));
+
+    return new ResponseServer(
+        aeron,
+        availableImg,
+        unavailableImg,
+        handler,
+        serverSubscription,
+        responseUriBuilder,
+        responseStreamId);
   }
 
   /**
@@ -65,17 +92,6 @@ public class ResponseServer implements AutoCloseable, Agent {
    */
   public int doWork() {
     int workCount = 0;
-
-    if (null == serverSubscription) {
-      serverSubscription =
-          aeron.addSubscription(
-              requestUriBuilder.build(),
-              requestStreamId,
-              this::enqueueAvailableImage,
-              this::enqueueUnavailableImage);
-
-      workCount++;
-    }
 
     Image image;
     while (null != (image = availableImages.poll())) {
@@ -105,13 +121,15 @@ public class ResponseServer implements AutoCloseable, Agent {
   }
 
   // FIXME need to figure out a more graceful error path
-  private void enqueueAvailableImage(Image image) {
+  private static void enqueueAvailableImage(
+      OneToOneConcurrentArrayQueue<Image> availableImages, Image image) {
     if (!availableImages.offer(image)) {
       throw new RuntimeException("Unable to enqueue new image");
     }
   }
 
-  private void enqueueUnavailableImage(Image image) {
+  private static void enqueueUnavailableImage(
+      OneToOneConcurrentArrayQueue<Image> unavailableImages, Image image) {
     if (!unavailableImages.offer(image)) {
       throw new RuntimeException("Unable to enqueue removed image");
     }
@@ -128,6 +146,7 @@ public class ResponseServer implements AutoCloseable, Agent {
   }
 
   private void ensurePublicationExists(Image image) {
+    // We dont need computeIfAbsent, put/remove only happen in the agent thread.
     if (null == handler.getPublication(image.correlationId())) {
       Publication publication =
           aeron.addPublication(

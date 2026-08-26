@@ -140,7 +140,7 @@ public class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
           removeCallbackOrThrow(cancelAllCallbacks, correlationId)
               .onServerDecodeError(correlationId);
 
-      default -> handler.onError(illegal("Unknown message type " + messageType));
+      default -> throw illegal("Unknown message type " + messageType);
     }
   }
 }

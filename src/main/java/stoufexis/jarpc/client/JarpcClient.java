@@ -21,7 +21,8 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
   private final ControlledFragmentHandler assembled;
 
   private final MessageHeader header = new MessageHeader();
-  private final ProcessingFailureResponse processingFailureResponse = new ProcessingFailureResponse();
+  private final ProcessingFailureResponse processingFailureResponse =
+      new ProcessingFailureResponse();
 
   protected JarpcClient(Publication publication, Subscription subscription, ErrorHandler handler) {
     this.publication = publication;
@@ -33,6 +34,10 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
                 onMessage(buffer, offset, length)
                     ? ControlledFragmentHandler.Action.CONTINUE
                     : ControlledFragmentHandler.Action.ABORT);
+  }
+
+  public boolean isConnected() {
+    return publication.isConnected() && subscription.isConnected();
   }
 
   @Override
@@ -69,7 +74,8 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
       switch (messageType) {
         case BaseCatalog.processingFailure -> {
           processingFailureResponse.decode(buffer, offset, length);
-          handleProcessingFailureResponse(processingFailureResponse.getBaseMessageType(), correlationId);
+          handleProcessingFailureResponse(
+              processingFailureResponse.getBaseMessageType(), correlationId);
           return true;
         }
         default -> throw illegal("Unknown failure message type " + messageType);

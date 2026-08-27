@@ -10,6 +10,7 @@ import stoufexis.jarpc.exchange.client.ExchangeClient;
 import stoufexis.jarpc.exchange.client.JarpcExchangeClient;
 import stoufexis.jarpc.exchange.model.PostOrderRequest;
 import stoufexis.jarpc.exchange.model.PostOrderResponse;
+import stoufexis.jarpc.model.ErrorCode;
 
 public class ClientMain {
 
@@ -42,29 +43,41 @@ public class ClientMain {
 
       AgentRunner.startOnThread(runner);
 
+      while (!client.isConnected()) {
+        Thread.sleep(100);
+      }
+
       PostOrderRequest request = new PostOrderRequest();
-      request.set(1, 2, 1, 0, 100, 0);
-      System.out.println("Sending " + request.toString());
-      client.postOrder(
-          1,
-          request,
-          new ExchangeClient.PostOrderCallback() {
-            @Override
-            public boolean onResponse(long correlationId, PostOrderResponse t) {
-              System.out.println("Received " + t.toString());
-              return true;
-            }
 
-            @Override
-            public void onClientDecodeError(long correlationId, RuntimeException exception) {
-              System.out.println(exception);
-            }
+      for (int i = 0; i < 5; i++) {
 
-            @Override
-            public void onServerDecodeError(long correlationId) {
-              System.out.println("Server decode error");
-            }
-          });
+        request.set(1 + i, 2 + i, 1 + i, 0, 100 + i, 0);
+        System.out.println("Sending " + request.toString());
+        ErrorCode code =
+            client.postOrder(
+                i + 1,
+                request,
+                new ExchangeClient.PostOrderCallback() {
+                  @Override
+                  public boolean onResponse(long correlationId, PostOrderResponse t) {
+                    System.out.println("Received " + t.toString());
+                    return true;
+                  }
+
+                  @Override
+                  public void onClientDecodeError(long correlationId, RuntimeException exception) {
+                    System.out.println(exception);
+                  }
+
+                  @Override
+                  public void onServerDecodeError(long correlationId) {
+                    System.out.println("Server decode error");
+                  }
+                });
+
+        System.out.println("Sent " + code);
+        Thread.sleep(500);
+      }
 
       Thread.sleep(5000);
     } catch (InterruptedException e) {

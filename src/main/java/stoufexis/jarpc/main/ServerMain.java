@@ -23,8 +23,9 @@ public class ServerMain {
       PostOrderResponse response = new PostOrderResponse();
       response.set(1);
       System.out.println("Sending " + response.toString());
-      callback.onResponse(clientId, correlationId, response);
-      return true;
+      ErrorCode code = callback.onResponse(clientId, correlationId, response);
+      System.out.println("Sent " + code);
+      return code == null;
     }
 
     @Override
@@ -34,8 +35,9 @@ public class ServerMain {
       CancelAllResponse response = new CancelAllResponse();
       response.set(1);
       System.out.println("Sending " + response.toString());
-      callback.onResponse(clientId, correlationId, response);
-      return true;
+      ErrorCode code = callback.onResponse(clientId, correlationId, response);
+      System.out.println("Sent " + code);
+      return code == null;
     }
   }
 

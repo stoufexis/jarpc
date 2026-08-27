@@ -30,7 +30,7 @@ public class ProcessingFailureUtil {
       ErrorCode code = interpretErrorCode(result);
 
       // FIXME should retry on not connected too?
-      if (code == ErrorCode.BACKPRESSURE || code == ErrorCode.NOT_CONNECTED) {
+      if (code == ErrorCode.BACKPRESSURE /* || code == ErrorCode.NOT_CONNECTED*/) {
         return false;
       } else {
         errorHandler.onInternalError(clientId, correlationId, code);

@@ -145,7 +145,7 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
   }
 
   @Override
-  protected void handleDecodeFailureResponse(int messageType, long correlationId) {
+  protected void handleProcessingFailureResponse(int messageType, long correlationId) {
 
     switch (messageType) {
       case Catalog.postOrderId ->

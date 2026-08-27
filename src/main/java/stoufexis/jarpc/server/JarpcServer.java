@@ -19,7 +19,7 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
   private final Images images;
   private final Subscription serverSubscription;
   private final ServerPublications publications;
-  private final DecodeFailureUtil decodeFailureUtil;
+  private final ProcessingFailureUtil processingFailureUtil;
 
   protected JarpcServer(
       ServerErrorHandler errorHandler,
@@ -32,7 +32,7 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
     this.images = images;
     this.serverSubscription = serverSubscription;
     this.publications = new ServerPublications(responseControl, aeron, responseStreamId);
-    this.decodeFailureUtil = new DecodeFailureUtil(errorHandler);
+    this.processingFailureUtil = new ProcessingFailureUtil(errorHandler);
   }
 
   @Override
@@ -55,30 +55,48 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
   }
 
   @Override
+  public String roleName() {
+    return "JarpcServerReceiver";
+  }
+
+  @Override
   public void close() {
     CloseHelper.quietClose(serverSubscription);
     publications.closeAll();
   }
 
+  /** Thread-safe */
+  protected Publication getPublication(long clientId) {
+    return publications.get(clientId);
+  }
+
   private ControlledFragmentHandler.Action onFragment(
       DirectBuffer buffer, int offset, int length, Header aeronHeader) {
-    Image image = (Image) aeronHeader.context();
-    Publication publication = publications.ensurePublicationExists(image);
-
     try {
+      Image image = (Image) aeronHeader.context();
+      Publication publication = publications.ensurePublicationExists(image);
+
       header.decode(buffer, offset, length);
 
-      decodeFailureUtil.setPublication(publication);
+      long clientId = image.correlationId();
+      int messageType = header.getMessageType();
+      long correlationId = header.getCorrelationId();
 
-      boolean result =
-          onMessage(
-              image.correlationId(),
-              header.getMessageType(),
-              header.getCorrelationId(),
-              buffer,
-              offset + MessageHeader.HEADER_SIZE,
-              length - MessageHeader.HEADER_SIZE,
-              decodeFailureUtil);
+      boolean result;
+      try {
+        result =
+            onMessage(
+                clientId,
+                messageType,
+                correlationId,
+                buffer,
+                offset + MessageHeader.HEADER_SIZE,
+                length - MessageHeader.HEADER_SIZE);
+      } catch (RuntimeException e) {
+        result =
+            processingFailureUtil.sendProcessingFailure(
+                publication, clientId, correlationId, messageType);
+      }
 
       return result
           ? ControlledFragmentHandler.Action.CONTINUE
@@ -90,23 +108,16 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
     }
   }
 
-  @Override
-  public String roleName() {
-    return "JarpcServerReceiver";
-  }
-
-  /** Thread-safe */
-  protected Publication getPublication(long clientId) {
-    return publications.get(clientId);
-  }
-
-  /** Will be called exclusively from the agent thread */
+  /**
+   * Will be called exclusively from the agent thread
+   *
+   * @throws RuntimeException if processing fails
+   */
   protected abstract boolean onMessage(
       long clientId,
       int messageType,
       long correlationId,
       DirectBuffer buffer,
       int offset,
-      int length,
-      DecodeFailureUtil decodeFailureUtil);
+      int length);
 }

@@ -7,7 +7,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.Agent;
 import stoufexis.jarpc.model.BaseCatalog;
-import stoufexis.jarpc.model.DecodeFailureResponse;
+import stoufexis.jarpc.model.ProcessingFailureResponse;
 import stoufexis.jarpc.model.MessageHeader;
 
 import static stoufexis.jarpc.util.Util.illegal;
@@ -21,7 +21,7 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
   private final ControlledFragmentHandler assembled;
 
   private final MessageHeader header = new MessageHeader();
-  private final DecodeFailureResponse decodeFailureResponse = new DecodeFailureResponse();
+  private final ProcessingFailureResponse processingFailureResponse = new ProcessingFailureResponse();
 
   protected JarpcClient(Publication publication, Subscription subscription, ErrorHandler handler) {
     this.publication = publication;
@@ -67,9 +67,9 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
       }
 
       switch (messageType) {
-        case BaseCatalog.decodeFailure -> {
-          decodeFailureResponse.decode(buffer, offset, length);
-          handleDecodeFailureResponse(decodeFailureResponse.getBaseMessageType(), correlationId);
+        case BaseCatalog.processingFailure -> {
+          processingFailureResponse.decode(buffer, offset, length);
+          handleProcessingFailureResponse(processingFailureResponse.getBaseMessageType(), correlationId);
           return true;
         }
         default -> throw illegal("Unknown failure message type " + messageType);
@@ -95,5 +95,5 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
    *
    * @throws RuntimeException in case dispatching fails
    */
-  protected abstract void handleDecodeFailureResponse(int messageType, long correlationId);
+  protected abstract void handleProcessingFailureResponse(int messageType, long correlationId);
 }

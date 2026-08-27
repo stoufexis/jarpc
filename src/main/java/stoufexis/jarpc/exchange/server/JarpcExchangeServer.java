@@ -9,8 +9,7 @@ import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.server.*;
 
-import static stoufexis.jarpc.util.Util.createServerSubscription;
-import static stoufexis.jarpc.util.Util.interpretErrorCode;
+import static stoufexis.jarpc.util.Util.*;
 
 public final class JarpcExchangeServer extends JarpcServer {
   private final ExchangeServer exchange;
@@ -62,32 +61,19 @@ public final class JarpcExchangeServer extends JarpcServer {
       long correlationId,
       DirectBuffer buffer,
       int offset,
-      int length,
-      DecodeFailureUtil decodeFailureUtil) {
+      int length) {
     switch (messageType) {
       case Catalog.postOrderId -> {
-        try {
-          postOrderRequest.decode(buffer, offset, length);
-          return exchange.postOrder(clientId, correlationId, postOrderRequest, postOrderCallback);
-
-        } catch (RuntimeException e) {
-          return decodeFailureUtil.sendDecodeFailure(clientId, correlationId, messageType);
-        }
+        postOrderRequest.decode(buffer, offset, length);
+        return exchange.postOrder(clientId, correlationId, postOrderRequest, postOrderCallback);
       }
 
       case Catalog.cancelAllOrdersId -> {
-        try {
-          cancelAllRequest.decode(buffer, offset, length);
-          return exchange.cancelAll(clientId, correlationId, cancelAllRequest, cancelAllCallback);
-
-        } catch (RuntimeException e) {
-          return decodeFailureUtil.sendDecodeFailure(clientId, correlationId, messageType);
-        }
+        cancelAllRequest.decode(buffer, offset, length);
+        return exchange.cancelAll(clientId, correlationId, cancelAllRequest, cancelAllCallback);
       }
 
-      default -> {
-        return decodeFailureUtil.sendDecodeFailure(clientId, correlationId, messageType);
-      }
+      default -> throw illegal("Unknown message type " + messageType);
     }
   }
 

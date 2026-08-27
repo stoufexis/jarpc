@@ -20,7 +20,7 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
   //  which forces a somewhat expensive periodic compaction.
   //  Consider replacing this with a purpose-built data structure instead.
 
-  // FIXME requests should timeout after a while
+  // FIXME requests should timeout after a while of inactivity
 
   private final NonBlockingHashMapLong<PostOrderCallback> postOrderCallbacks =
       new NonBlockingHashMapLong<>();

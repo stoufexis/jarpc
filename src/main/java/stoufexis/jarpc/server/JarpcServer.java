@@ -22,12 +22,12 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
   private final ProcessingFailureUtil processingFailureUtil;
 
   protected JarpcServer(
+      Aeron aeron,
       ServerErrorHandler errorHandler,
       Images images,
       int responseStreamId,
       String responseControl,
-      Subscription serverSubscription,
-      Aeron aeron) {
+      Subscription serverSubscription) {
     this.errorHandler = errorHandler;
     this.images = images;
     this.serverSubscription = serverSubscription;
@@ -63,11 +63,6 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
   public void close() {
     CloseHelper.quietClose(serverSubscription);
     publications.closeAll();
-  }
-
-  /** Thread-safe */
-  protected Publication getPublication(long clientId) {
-    return publications.get(clientId);
   }
 
   private ControlledFragmentHandler.Action onFragment(
@@ -120,4 +115,12 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
       DirectBuffer buffer,
       int offset,
       int length);
+
+  protected abstract class ServerCallback {
+
+    /** Thread-safe */
+    protected Publication getPublication(long clientId) {
+      return publications.get(clientId);
+    }
+  }
 }

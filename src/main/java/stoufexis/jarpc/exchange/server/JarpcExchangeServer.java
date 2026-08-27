@@ -20,21 +20,21 @@ public final class JarpcExchangeServer extends JarpcServer {
   private final CancelAllCallbackImpl cancelAllCallback = new CancelAllCallbackImpl();
 
   JarpcExchangeServer(
+      Aeron aeron,
       ExchangeServer exchange,
       ServerErrorHandler errorHandler,
       Images images,
       int responseStreamId,
       String responseControl,
-      Subscription serverSubscription,
-      Aeron aeron) {
-    super(errorHandler, images, responseStreamId, responseControl, serverSubscription, aeron);
+      Subscription serverSubscription) {
+    super(aeron, errorHandler, images, responseStreamId, responseControl, serverSubscription);
     this.exchange = exchange;
   }
 
   public static JarpcExchangeServer create(
+      Aeron aeron,
       ExchangeServer exchange,
       ServerErrorHandler serverErrorHandler,
-      Aeron aeron,
       String requestEndpoint,
       int requestStreamId,
       String responseControl,
@@ -45,13 +45,13 @@ public final class JarpcExchangeServer extends JarpcServer {
         createServerSubscription(aeron, images, requestEndpoint, responseControl, requestStreamId);
 
     return new JarpcExchangeServer(
+        aeron,
         exchange,
         serverErrorHandler,
         images,
         responseStreamId,
         responseControl,
-        serverSubscription,
-        aeron);
+        serverSubscription);
   }
 
   @Override
@@ -81,7 +81,8 @@ public final class JarpcExchangeServer extends JarpcServer {
   // However, we do not introduce a generic implementation, as it would easily result in megamorphic
   // dispatch when supporting many response types.
 
-  private class PostOrderCallbackImpl implements ExchangeServer.PostOrderCallback {
+  private class PostOrderCallbackImpl extends ServerCallback
+      implements ExchangeServer.PostOrderCallback {
 
     @Override
     public ErrorCode onResponse(long clientId, long correlationId, PostOrderResponse t) {
@@ -106,7 +107,9 @@ public final class JarpcExchangeServer extends JarpcServer {
     }
   }
 
-  private class CancelAllCallbackImpl implements ExchangeServer.CancelAllCallback {
+  private class CancelAllCallbackImpl extends ServerCallback
+      implements ExchangeServer.CancelAllCallback {
+
     @Override
     public ErrorCode onResponse(long clientId, long correlationId, CancelAllResponse t) {
       Publication publication = getPublication(clientId);

@@ -7,6 +7,7 @@ import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.ErrorCode;
+import stoufexis.jarpc.model.MessageHeader;
 import stoufexis.jarpc.server.*;
 
 import static stoufexis.jarpc.util.Util.*;
@@ -68,7 +69,7 @@ public final class JarpcExchangeServer extends JarpcServer {
         return exchange.postOrder(clientId, correlationId, postOrderRequest, postOrderCallback);
       }
 
-      case Catalog.cancelAllOrdersId -> {
+      case Catalog.cancelAllId -> {
         cancelAllRequest.decode(buffer, offset, length);
         return exchange.cancelAll(clientId, correlationId, cancelAllRequest, cancelAllCallback);
       }
@@ -89,15 +90,18 @@ public final class JarpcExchangeServer extends JarpcServer {
       Publication publication = getPublication(clientId);
       if (publication == null) return ErrorCode.CLIENT_NOT_EXISTS;
 
+      MessageHeader header = t.getHeader();
       BufferClaim claim = t.getClaim();
-      long result = publication.tryClaim(t.getMessageSize(), claim);
+      long result = publication.tryClaim(t.getMessageSize() + MessageHeader.HEADER_SIZE, claim);
 
       if (result < 0) {
         return interpretErrorCode(result);
       }
 
       try {
-        t.encode(claim.buffer(), claim.offset());
+        header.set(correlationId, Catalog.postOrderId);
+        header.encode(claim.buffer(), claim.offset());
+        t.encode(claim.buffer(), claim.offset() + MessageHeader.HEADER_SIZE);
         claim.commit();
         return null;
       } catch (RuntimeException e) {
@@ -115,15 +119,18 @@ public final class JarpcExchangeServer extends JarpcServer {
       Publication publication = getPublication(clientId);
       if (publication == null) return ErrorCode.CLIENT_NOT_EXISTS;
 
+      MessageHeader header = t.getHeader();
       BufferClaim claim = t.getClaim();
-      long result = publication.tryClaim(t.getMessageSize(), claim);
+      long result = publication.tryClaim(t.getMessageSize() + MessageHeader.HEADER_SIZE, claim);
 
       if (result < 0) {
         return interpretErrorCode(result);
       }
 
       try {
-        t.encode(claim.buffer(), claim.offset());
+        header.set(correlationId, Catalog.postOrderId);
+        header.encode(claim.buffer(), claim.offset());
+        t.encode(claim.buffer(), claim.offset() + MessageHeader.HEADER_SIZE);
         claim.commit();
         return null;
       } catch (RuntimeException e) {

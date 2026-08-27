@@ -10,6 +10,7 @@ import org.jctools.maps.NonBlockingHashMapLong;
 import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.client.JarpcClient;
+import stoufexis.jarpc.model.MessageHeader;
 
 import static stoufexis.jarpc.util.Util.*;
 
@@ -57,8 +58,10 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
       return ErrorCode.DUPLICATE_ID;
     }
 
+    MessageHeader header = request.getHeader();
     BufferClaim claim = request.getClaim();
-    long result = publication.tryClaim(request.getMessageSize(), claim);
+
+    long result = publication.tryClaim(request.getMessageSize() + MessageHeader.HEADER_SIZE, claim);
 
     if (result < 0) {
       postOrderCallbacks.remove(correlationId);
@@ -66,7 +69,9 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
     }
 
     try {
-      request.encode(claim.buffer(), claim.offset());
+      header.set(correlationId, Catalog.postOrderId);
+      header.encode(claim.buffer(), claim.offset());
+      request.encode(claim.buffer(), claim.offset() + MessageHeader.HEADER_SIZE);
       claim.commit();
       return null;
     } catch (RuntimeException e) {
@@ -84,8 +89,10 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
       return ErrorCode.DUPLICATE_ID;
     }
 
+    MessageHeader header = request.getHeader();
     BufferClaim claim = request.getClaim();
-    long result = publication.tryClaim(request.getMessageSize(), claim);
+
+    long result = publication.tryClaim(request.getMessageSize() + MessageHeader.HEADER_SIZE, claim);
 
     if (result < 0) {
       cancelAllCallbacks.remove(correlationId);
@@ -93,7 +100,9 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
     }
 
     try {
-      request.encode(claim.buffer(), claim.offset());
+      header.set(correlationId, Catalog.cancelAllId);
+      header.encode(claim.buffer(), claim.offset());
+      request.encode(claim.buffer(), claim.offset() + MessageHeader.HEADER_SIZE);
       claim.commit();
       return null;
     } catch (RuntimeException e) {
@@ -127,7 +136,7 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
         }
       }
 
-      case Catalog.cancelAllOrdersId -> {
+      case Catalog.cancelAllId -> {
         CancelAllCallback callback = removeCallbackOrThrow(cancelAllCallbacks, correlationId);
 
         try {
@@ -152,7 +161,7 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
           removeCallbackOrThrow(postOrderCallbacks, correlationId)
               .onServerDecodeError(correlationId);
 
-      case Catalog.cancelAllOrdersId ->
+      case Catalog.cancelAllId ->
           removeCallbackOrThrow(cancelAllCallbacks, correlationId)
               .onServerDecodeError(correlationId);
 

@@ -11,6 +11,7 @@ public abstract class Message {
   private final int messageSize;
 
   private final BufferClaim claim = new BufferClaim();
+  private final MessageHeader header = new MessageHeader();
 
   public Message(Class<?> clazz, int messageSize) {
     this.clazz = clazz;
@@ -19,6 +20,10 @@ public abstract class Message {
 
   public BufferClaim getClaim() {
     return claim;
+  }
+
+  public MessageHeader getHeader() {
+    return header;
   }
 
   /**

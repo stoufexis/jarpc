@@ -18,7 +18,8 @@ public class ProcessingFailureUtil {
     this.errorHandler = errorHandler;
   }
 
-  public boolean sendProcessingFailure(Publication publication, long clientId, long correlationId, int baseMessageType) {
+  public boolean sendProcessingFailure(
+      Publication publication, long clientId, long correlationId, int baseMessageType) {
     processingFailureResponse.set(baseMessageType);
 
     BufferClaim claim = processingFailureResponse.getClaim();
@@ -28,7 +29,8 @@ public class ProcessingFailureUtil {
     if (result < 0) {
       ErrorCode code = interpretErrorCode(result);
 
-      if (code == ErrorCode.BACKPRESSURE) {
+      // FIXME should retry on not connected too?
+      if (code == ErrorCode.BACKPRESSURE || code == ErrorCode.NOT_CONNECTED) {
         return false;
       } else {
         errorHandler.onInternalError(clientId, correlationId, code);

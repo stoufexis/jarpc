@@ -66,7 +66,7 @@ public class ClientMain {
             }
           });
 
-      Thread.sleep(2500);
+      Thread.sleep(5000);
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }

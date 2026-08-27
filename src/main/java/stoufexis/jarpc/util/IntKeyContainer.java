@@ -1,14 +1,16 @@
 package stoufexis.jarpc.util;
 
+import stoufexis.jarpc.model.ErrorCode;
+
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-public final class Callbacks<T> {
-  public static final int NO_SPACE = ConcurrentIntStack.EMPTY;
+import static stoufexis.jarpc.util.Util.illegal;
 
+public final class IntKeyContainer<T> {
   private final ConcurrentIntStack stack;
   private final AtomicReferenceArray<T> array;
 
-  public Callbacks(int size) {
+  public IntKeyContainer(int size) {
     this.stack = new ConcurrentIntStack(size);
     this.array = new AtomicReferenceArray<>(size);
   }
@@ -18,7 +20,7 @@ public final class Callbacks<T> {
 
   public int put(T callback) {
     int i = stack.pop();
-    if (i == NO_SPACE) return NO_SPACE;
+    if (i == ErrorCode.BACKPRESSURE) return ErrorCode.BACKPRESSURE;
     array.set(i, callback);
     return i;
   }
@@ -33,5 +35,16 @@ public final class Callbacks<T> {
 
   public T get(int i) {
     return array.get(i);
+  }
+
+  public T fetchOrThrow(int key, boolean remove) {
+    T value;
+    if (remove) {
+      value = remove(key);
+    } else {
+      value = get(key);
+    }
+    if (value == null) throw illegal("Callback not registered for correlation id " + key);
+    return value;
   }
 }

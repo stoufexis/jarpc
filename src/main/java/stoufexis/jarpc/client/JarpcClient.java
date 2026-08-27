@@ -60,7 +60,7 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
       header.decode(buffer, offset, length);
 
       int messageType = header.getMessageType();
-      long correlationId = header.getCorrelationId();
+      int correlationId = header.getCorrelationId();
       boolean last = header.isLast();
 
       if (messageType > 0) {
@@ -71,17 +71,17 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
             buffer,
             offset + MessageHeader.HEADER_SIZE,
             length - MessageHeader.HEADER_SIZE);
+
+      } else if (messageType == BaseCatalog.processingFailure) {
+        processingFailureResponse.decode(buffer, offset, length);
+        handleProcessingFailureResponse(
+            processingFailureResponse.getBaseMessageType(), correlationId, last);
+        return true;
+
+      } else {
+        throw illegal("Unknown failure message type " + messageType);
       }
 
-      switch (messageType) {
-        case BaseCatalog.processingFailure -> {
-          processingFailureResponse.decode(buffer, offset, length);
-          handleProcessingFailureResponse(
-              processingFailureResponse.getBaseMessageType(), correlationId, last);
-          return true;
-        }
-        default -> throw illegal("Unknown failure message type " + messageType);
-      }
     } catch (RuntimeException e) {
       handler.onError(e);
       return true;
@@ -96,7 +96,7 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
    */
   protected abstract boolean handleReceivedFragment(
       int messageType,
-      long correlationId,
+      int correlationId,
       boolean last,
       DirectBuffer buffer,
       int offset,
@@ -109,5 +109,5 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
    * @throws RuntimeException in case dispatching fails
    */
   protected abstract void handleProcessingFailureResponse(
-      int messageType, long correlationId, boolean last);
+      int messageType, int correlationId, boolean last);
 }

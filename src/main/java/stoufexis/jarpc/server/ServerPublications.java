@@ -1,7 +1,6 @@
 package stoufexis.jarpc.server;
 
 import io.aeron.Aeron;
-import io.aeron.Image;
 import io.aeron.Publication;
 import org.agrona.CloseHelper;
 import org.jctools.maps.NonBlockingHashMapLong;
@@ -27,12 +26,12 @@ public final class ServerPublications {
     this.responseStreamId = responseStreamId;
   }
 
-  Publication ensurePublicationExists(Image image) {
+  Publication ensurePublicationExists(long clientId) {
     // We don't need computeIfAbsent, put/remove only happen in the agent thread.
-    Publication publication = clientToPublicationMap.get(image.correlationId());
+    Publication publication = clientToPublicationMap.get(clientId);
     if (null == publication) {
-      publication = createServerPublication(aeron, image, responseControl, responseStreamId);
-      clientToPublicationMap.put(image.correlationId(), publication);
+      publication = createServerPublication(aeron, clientId, responseControl, responseStreamId);
+      clientToPublicationMap.put(clientId, publication);
     }
 
     return publication;

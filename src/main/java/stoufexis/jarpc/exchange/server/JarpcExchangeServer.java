@@ -59,7 +59,7 @@ public final class JarpcExchangeServer extends JarpcServer {
   protected boolean onMessage(
       long clientId,
       int messageType,
-      long correlationId,
+      int correlationId,
       DirectBuffer buffer,
       int offset,
       int length) {
@@ -86,8 +86,8 @@ public final class JarpcExchangeServer extends JarpcServer {
       implements ExchangeServer.PostOrderCallback {
 
     @Override
-    public ErrorCode onResponse(
-        long clientId, long correlationId, boolean last, PostOrderResponse t) {
+    public int onResponse(
+        long clientId, int correlationId, boolean last, PostOrderResponse t) {
 
       Publication publication = getPublication(clientId);
       if (publication == null) return ErrorCode.CLIENT_NOT_EXISTS;
@@ -105,7 +105,7 @@ public final class JarpcExchangeServer extends JarpcServer {
         header.encode(claim.buffer(), claim.offset());
         t.encode(claim.buffer(), claim.offset() + MessageHeader.HEADER_SIZE);
         claim.commit();
-        return null;
+        return 1;
       } catch (RuntimeException e) {
         claim.abort();
         return ErrorCode.ENCODE_ERROR;
@@ -117,8 +117,8 @@ public final class JarpcExchangeServer extends JarpcServer {
       implements ExchangeServer.CancelAllCallback {
 
     @Override
-    public ErrorCode onResponse(
-        long clientId, long correlationId, boolean last, CancelAllResponse t) {
+    public int onResponse(
+        long clientId, int correlationId, boolean last, CancelAllResponse t) {
 
       Publication publication = getPublication(clientId);
       if (publication == null) return ErrorCode.CLIENT_NOT_EXISTS;
@@ -136,7 +136,7 @@ public final class JarpcExchangeServer extends JarpcServer {
         header.encode(claim.buffer(), claim.offset());
         t.encode(claim.buffer(), claim.offset() + MessageHeader.HEADER_SIZE);
         claim.commit();
-        return null;
+        return 1;
       } catch (RuntimeException e) {
         claim.abort();
         return ErrorCode.ENCODE_ERROR;

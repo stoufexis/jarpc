@@ -42,7 +42,7 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
     Image image;
     while (null != (image = images.pollAvailable())) {
       work++;
-      publications.ensurePublicationExists(image);
+      publications.ensurePublicationExists(image.correlationId());
     }
 
     while (null != (image = images.pollUnavailable())) {
@@ -68,14 +68,13 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
   private ControlledFragmentHandler.Action onFragment(
       DirectBuffer buffer, int offset, int length, Header aeronHeader) {
     try {
-      Image image = (Image) aeronHeader.context();
-      Publication publication = publications.ensurePublicationExists(image);
+      long clientId = ((Image) aeronHeader.context()).correlationId();
+      Publication publication = publications.ensurePublicationExists(clientId);
 
       header.decode(buffer, offset, length);
 
-      long clientId = image.correlationId();
       int messageType = header.getMessageType();
-      long correlationId = header.getCorrelationId();
+      int correlationId = header.getCorrelationId();
 
       boolean result;
       try {
@@ -111,7 +110,7 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
   protected abstract boolean onMessage(
       long clientId,
       int messageType,
-      long correlationId,
+      int correlationId,
       DirectBuffer buffer,
       int offset,
       int length);

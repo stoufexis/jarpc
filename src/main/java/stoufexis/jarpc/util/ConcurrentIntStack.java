@@ -1,8 +1,6 @@
 package stoufexis.jarpc.util;
 
 final class ConcurrentIntStack {
-  static final int EMPTY = -1;
-
   private final int size;
 
   ConcurrentIntStack(int size) {

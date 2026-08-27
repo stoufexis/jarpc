@@ -4,10 +4,10 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 public final class MessageHeader {
-  public static final int HEADER_SIZE = 13;
+  public static final int HEADER_SIZE = 9;
 
   private boolean initialized;
-  private long correlationId;
+  private int correlationId;
   private int messageType;
   private boolean last;
 
@@ -18,7 +18,7 @@ public final class MessageHeader {
     last = false;
   }
 
-  public long getCorrelationId() {
+  public int getCorrelationId() {
     return correlationId;
   }
 
@@ -30,7 +30,7 @@ public final class MessageHeader {
     return last;
   }
 
-  public void set(long correlationId, int messageType, boolean last) {
+  public void set(int correlationId, int messageType, boolean last) {
     initialized = true;
     this.correlationId = correlationId;
     this.messageType = messageType;
@@ -43,9 +43,9 @@ public final class MessageHeader {
   public void decode(DirectBuffer buffer, int offset, int length) {
     checkSize(length);
     this.initialized = true;
-    this.correlationId = buffer.getLong(offset);
-    this.messageType = buffer.getInt(offset + 8);
-    this.last = buffer.getByte(offset + 12) != 0;
+    this.correlationId = buffer.getInt(offset);
+    this.messageType = buffer.getInt(offset + 4);
+    this.last = buffer.getByte(offset + 8) != 0;
   }
 
   /**
@@ -54,8 +54,8 @@ public final class MessageHeader {
   public void encode(MutableDirectBuffer buffer, int offset) {
     checkInitialized();
     buffer.putLong(offset, correlationId);
-    buffer.putInt(offset + 8, messageType);
-    buffer.putByte(offset + 12, (byte) (last ? 1 : 0));
+    buffer.putInt(offset + 4, messageType);
+    buffer.putByte(offset + 8, (byte) (last ? 1 : 0));
   }
 
   private void checkInitialized() {

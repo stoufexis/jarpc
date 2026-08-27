@@ -23,7 +23,7 @@ public class ProcessingFailureUtil {
   public boolean sendProcessingFailure(
       Publication publication,
       long clientId,
-      long correlationId,
+      int correlationId,
       boolean last,
       int baseMessageType) {
     processingFailureResponse.set(baseMessageType);
@@ -37,7 +37,7 @@ public class ProcessingFailureUtil {
 
     // Sending a decode failure is best-effort.
     if (result < 0) {
-      ErrorCode code = interpretErrorCode(result);
+      int code = interpretErrorCode(result);
 
       // FIXME should retry on not connected too?
       if (code == ErrorCode.BACKPRESSURE /* || code == ErrorCode.NOT_CONNECTED*/) {

@@ -10,7 +10,6 @@ import stoufexis.jarpc.exchange.client.ExchangeClient;
 import stoufexis.jarpc.exchange.client.JarpcExchangeClient;
 import stoufexis.jarpc.exchange.model.PostOrderRequest;
 import stoufexis.jarpc.exchange.model.PostOrderResponse;
-import stoufexis.jarpc.model.ErrorCode;
 
 public class ClientMain {
 
@@ -31,6 +30,7 @@ public class ClientMain {
         //
         JarpcExchangeClient client =
             JarpcExchangeClient.create(
+                100,
                 aeron,
                 Constants.serverRequest,
                 Constants.requestStreamId,
@@ -53,24 +53,23 @@ public class ClientMain {
 
         request.set(1 + i, 2 + i, 1 + i, 0, 100 + i, 0);
         System.out.println("Sending " + request.toString());
-        ErrorCode code =
+        int code =
             client.postOrder(
-                i + 1,
                 request,
                 new ExchangeClient.PostOrderCallback() {
                   @Override
-                  public boolean onResponse(long correlationId, boolean last, PostOrderResponse t) {
+                  public boolean onResponse(boolean last, int correlationId, PostOrderResponse t) {
                     System.out.println("Received " + t.toString());
                     return true;
                   }
 
                   @Override
-                  public void onClientDecodeError(long correlationId, RuntimeException exception) {
+                  public void onClientDecodeError(int correlationId, RuntimeException exception) {
                     System.out.println(exception);
                   }
 
                   @Override
-                  public void onServerDecodeError(long correlationId) {
+                  public void onServerDecodeError(int correlationId) {
                     System.out.println("Server decode error");
                   }
                 });

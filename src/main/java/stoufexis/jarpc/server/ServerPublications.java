@@ -1,11 +1,12 @@
 package stoufexis.jarpc.server;
 
 import io.aeron.Aeron;
-import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Image;
 import io.aeron.Publication;
 import org.agrona.CloseHelper;
 import org.jctools.maps.NonBlockingHashMapLong;
+
+import static stoufexis.jarpc.util.Util.createServerPublication;
 
 public final class ServerPublications {
 
@@ -16,16 +17,12 @@ public final class ServerPublications {
   private final NonBlockingHashMapLong<Publication> clientToPublicationMap =
       new NonBlockingHashMapLong<>();
 
-  private final ChannelUriStringBuilder responseUriBuilder;
+  private final String responseControl;
   private final Aeron aeron;
   private final int responseStreamId;
 
   ServerPublications(String responseControl, Aeron aeron, int responseStreamId) {
-    this.responseUriBuilder =
-        new ChannelUriStringBuilder()
-            .media("udp")
-            .controlMode("response")
-            .controlEndpoint(responseControl);
+    this.responseControl = responseControl;
     this.aeron = aeron;
     this.responseStreamId = responseStreamId;
   }
@@ -34,11 +31,7 @@ public final class ServerPublications {
     // We don't need computeIfAbsent, put/remove only happen in the agent thread.
     Publication publication = clientToPublicationMap.get(image.correlationId());
     if (null == publication) {
-      publication =
-          aeron.addPublication(
-              responseUriBuilder.responseCorrelationId(image.correlationId()).build(),
-              responseStreamId);
-
+      publication = createServerPublication(aeron, image, responseControl, responseStreamId);
       clientToPublicationMap.put(image.correlationId(), publication);
     }
 

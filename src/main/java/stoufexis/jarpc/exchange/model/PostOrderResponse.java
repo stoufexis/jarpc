@@ -40,4 +40,9 @@ public final class PostOrderResponse extends Message {
 
     buffer.putInt(offset, this.statusCode);
   }
+
+  @Override
+  public String toString() {
+    return "PostOrderResponse{initialized=" + isInitialized() + ",statusCode=" + statusCode + "}";
+  }
 }

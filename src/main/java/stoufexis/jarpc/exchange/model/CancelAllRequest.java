@@ -14,7 +14,7 @@ public final class CancelAllRequest extends Message {
     uninitialize();
   }
 
-  public void set(int statusCode) {
+  public void set() {
     initialize();
   }
 
@@ -27,5 +27,10 @@ public final class CancelAllRequest extends Message {
   @Override
   public void encode(MutableDirectBuffer buffer, int offset) {
     checkInitialized();
+  }
+
+  @Override
+  public String toString() {
+    return "CancelAllRequest{initialized=" + isInitialized() + "}";
   }
 }

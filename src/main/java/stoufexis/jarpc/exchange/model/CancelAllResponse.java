@@ -40,4 +40,9 @@ public final class CancelAllResponse extends Message {
 
     buffer.putInt(offset, this.statusCode);
   }
+
+  @Override
+  public String toString() {
+    return "CancelAllResponse{initialized=" + isInitialized() + ",statusCode=" + statusCode + "}";
+  }
 }

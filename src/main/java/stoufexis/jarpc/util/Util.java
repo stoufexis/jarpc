@@ -1,9 +1,6 @@
 package stoufexis.jarpc.util;
 
-import io.aeron.Aeron;
-import io.aeron.ChannelUriStringBuilder;
-import io.aeron.Publication;
-import io.aeron.Subscription;
+import io.aeron.*;
 import org.jctools.maps.NonBlockingHashMapLong;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.server.Images;
@@ -35,39 +32,44 @@ public final class Util {
 
   public static Subscription createClientSubscription(
       Aeron aeron, String responseControl, int responseStreamId) {
-    ChannelUriStringBuilder responseUriBuilder =
+    return aeron.addSubscription(
         new ChannelUriStringBuilder()
             .media("udp")
             .controlMode("response")
-            .controlEndpoint(responseControl);
-
-    return aeron.addSubscription(responseUriBuilder.build(), responseStreamId);
+            .controlEndpoint(responseControl)
+            .build(),
+        responseStreamId);
   }
 
   public static Publication createClientPublication(
       Aeron aeron, String requestEndpoint, int requestStreamId, Subscription subscription) {
-    ChannelUriStringBuilder requestUriBuilder =
-        new ChannelUriStringBuilder().media("udp").endpoint(requestEndpoint);
-
     return aeron.addPublication(
-        requestUriBuilder.responseCorrelationId(subscription.registrationId()).build(),
+        new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint(requestEndpoint)
+            .responseCorrelationId(subscription.registrationId())
+            .build(),
         requestStreamId);
   }
 
   public static Subscription createServerSubscription(
-      Aeron aeron,
-      Images images,
-      String requestEndpoint,
-      String responseControl,
-      int requestStreamId) {
+      Aeron aeron, Images images, String requestEndpoint, int requestStreamId) {
     return aeron.addSubscription(
-        new ChannelUriStringBuilder()
-            .media("udp")
-            .endpoint(requestEndpoint)
-            .responseEndpoint(responseControl)
-            .build(),
+        new ChannelUriStringBuilder().media("udp").endpoint(requestEndpoint).build(),
         requestStreamId,
         images::enqueueAvailableImage,
         images::enqueueUnavailableImage);
+  }
+
+  public static Publication createServerPublication(
+      Aeron aeron, Image image, String responseControl, int responseStreamId) {
+    return aeron.addPublication(
+        new ChannelUriStringBuilder()
+            .media("udp")
+            .controlMode("response")
+            .controlEndpoint(responseControl)
+            .responseCorrelationId(image.correlationId())
+            .build(),
+        responseStreamId);
   }
 }

@@ -90,4 +90,23 @@ public final class PostOrderRequest extends Message {
     buffer.putLong(offset + 20, this.rateUnscaled);
     buffer.putInt(offset + 28, this.rateScale);
   }
+
+  @Override
+  public String toString() {
+    return "PostOrderRequest{initialized="
+        + isInitialized()
+        + ",baseAssetId="
+        + baseAssetId
+        + ",quoteAssetId="
+        + quoteAssetId
+        + ",quantityUnscaled="
+        + quantityUnscaled
+        + ",quantityScale="
+        + quantityScale
+        + ",rateUnscaled="
+        + rateUnscaled
+        + ",rateScale="
+        + rateScale
+        + "}";
+  }
 }

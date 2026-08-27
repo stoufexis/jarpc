@@ -42,7 +42,7 @@ public final class JarpcExchangeServer extends JarpcServer {
     Images images = new Images();
 
     Subscription serverSubscription =
-        createServerSubscription(aeron, images, requestEndpoint, responseControl, requestStreamId);
+        createServerSubscription(aeron, images, requestEndpoint, requestStreamId);
 
     return new JarpcExchangeServer(
         aeron,

@@ -69,7 +69,7 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
     }
 
     try {
-      header.set(correlationId, Catalog.postOrderId);
+      header.set(correlationId, Catalog.postOrderId, true);
       header.encode(claim.buffer(), claim.offset());
       request.encode(claim.buffer(), claim.offset() + MessageHeader.HEADER_SIZE);
       claim.commit();
@@ -100,7 +100,7 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
     }
 
     try {
-      header.set(correlationId, Catalog.cancelAllId);
+      header.set(correlationId, Catalog.cancelAllId, true);
       header.encode(claim.buffer(), claim.offset());
       request.encode(claim.buffer(), claim.offset() + MessageHeader.HEADER_SIZE);
       claim.commit();
@@ -120,15 +120,20 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
 
   @Override
   protected boolean handleReceivedFragment(
-      int messageType, long correlationId, DirectBuffer buffer, int offset, int length) {
+      int messageType,
+      long correlationId,
+      boolean last,
+      DirectBuffer buffer,
+      int offset,
+      int length) {
 
     switch (messageType) {
       case Catalog.postOrderId -> {
-        PostOrderCallback callback = removeCallbackOrThrow(postOrderCallbacks, correlationId);
+        PostOrderCallback callback = getCallbackOrThrow(postOrderCallbacks, correlationId, last);
 
         try {
           postOrderResponse.decode(buffer, offset, length);
-          return callback.onResponse(correlationId, postOrderResponse);
+          return callback.onResponse(correlationId, last, postOrderResponse);
 
         } catch (RuntimeException e) {
           callback.onClientDecodeError(correlationId, e);
@@ -137,11 +142,11 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
       }
 
       case Catalog.cancelAllId -> {
-        CancelAllCallback callback = removeCallbackOrThrow(cancelAllCallbacks, correlationId);
+        CancelAllCallback callback = getCallbackOrThrow(cancelAllCallbacks, correlationId, last);
 
         try {
           cancelAllResponse.decode(buffer, offset, length);
-          return callback.onResponse(correlationId, cancelAllResponse);
+          return callback.onResponse(correlationId, last, cancelAllResponse);
 
         } catch (RuntimeException e) {
           callback.onClientDecodeError(correlationId, e);
@@ -154,15 +159,15 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
   }
 
   @Override
-  protected void handleProcessingFailureResponse(int messageType, long correlationId) {
+  protected void handleProcessingFailureResponse(int messageType, long correlationId, boolean last) {
 
     switch (messageType) {
       case Catalog.postOrderId ->
-          removeCallbackOrThrow(postOrderCallbacks, correlationId)
+          getCallbackOrThrow(postOrderCallbacks, correlationId, last)
               .onServerDecodeError(correlationId);
 
       case Catalog.cancelAllId ->
-          removeCallbackOrThrow(cancelAllCallbacks, correlationId)
+          getCallbackOrThrow(cancelAllCallbacks, correlationId, last)
               .onServerDecodeError(correlationId);
 
       default -> throw illegal("Unknown message type " + messageType);

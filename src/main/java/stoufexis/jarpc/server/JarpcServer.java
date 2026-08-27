@@ -90,7 +90,7 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
       } catch (RuntimeException e) {
         result =
             processingFailureUtil.sendProcessingFailure(
-                publication, clientId, correlationId, messageType);
+                publication, clientId, correlationId, /*last:*/ true, messageType);
       }
 
       return result
@@ -106,7 +106,7 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
   /**
    * Will be called exclusively from the agent thread
    *
-   * @throws RuntimeException if processing fails
+   * @throws RuntimeException if decoding fails.
    */
   protected abstract boolean onMessage(
       long clientId,

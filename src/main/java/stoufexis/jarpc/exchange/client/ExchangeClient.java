@@ -25,7 +25,7 @@ public interface ExchangeClient {
      * @return true when the response was accepted, false when it was not and delivery must be
      * re-tried
      */
-    boolean onResponse(long correlationId, PostOrderResponse t);
+    boolean onResponse(long correlationId, boolean last, PostOrderResponse t);
   }
 
   interface CancelAllCallback extends ClientCallback {
@@ -38,6 +38,6 @@ public interface ExchangeClient {
      * @return true when the response was accepted, false when it was not and delivery must be
      * re-tried
      */
-    boolean onResponse(long correlationId, CancelAllResponse t);
+    boolean onResponse(long correlationId, boolean last, CancelAllResponse t);
   }
 }

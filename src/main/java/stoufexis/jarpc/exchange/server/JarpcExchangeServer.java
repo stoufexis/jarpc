@@ -86,7 +86,9 @@ public final class JarpcExchangeServer extends JarpcServer {
       implements ExchangeServer.PostOrderCallback {
 
     @Override
-    public ErrorCode onResponse(long clientId, long correlationId, PostOrderResponse t) {
+    public ErrorCode onResponse(
+        long clientId, long correlationId, boolean last, PostOrderResponse t) {
+
       Publication publication = getPublication(clientId);
       if (publication == null) return ErrorCode.CLIENT_NOT_EXISTS;
 
@@ -99,7 +101,7 @@ public final class JarpcExchangeServer extends JarpcServer {
       }
 
       try {
-        header.set(correlationId, Catalog.postOrderId);
+        header.set(correlationId, Catalog.postOrderId, last);
         header.encode(claim.buffer(), claim.offset());
         t.encode(claim.buffer(), claim.offset() + MessageHeader.HEADER_SIZE);
         claim.commit();
@@ -115,7 +117,9 @@ public final class JarpcExchangeServer extends JarpcServer {
       implements ExchangeServer.CancelAllCallback {
 
     @Override
-    public ErrorCode onResponse(long clientId, long correlationId, CancelAllResponse t) {
+    public ErrorCode onResponse(
+        long clientId, long correlationId, boolean last, CancelAllResponse t) {
+
       Publication publication = getPublication(clientId);
       if (publication == null) return ErrorCode.CLIENT_NOT_EXISTS;
 
@@ -128,7 +132,7 @@ public final class JarpcExchangeServer extends JarpcServer {
       }
 
       try {
-        header.set(correlationId, Catalog.postOrderId);
+        header.set(correlationId, Catalog.postOrderId, last);
         header.encode(claim.buffer(), claim.offset());
         t.encode(claim.buffer(), claim.offset() + MessageHeader.HEADER_SIZE);
         claim.commit();

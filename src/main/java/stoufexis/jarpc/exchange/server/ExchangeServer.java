@@ -15,7 +15,9 @@ public interface ExchangeServer {
    * request object must be completely used before the method returns, it must not be referenced in
    * anything that outlives the method.
    *
-   * <p>Throwing an error results in a decode failure response to the client
+   * <p>Throwing an error results in a decode failure response to the client, which terminates a
+   * response stream. Implementations should prefer sending application-level error messages instead
+   * of throwing.
    */
   boolean postOrder(
       long clientId, long correlationId, PostOrderRequest request, PostOrderCallback callback);
@@ -24,18 +26,20 @@ public interface ExchangeServer {
    * request object must be completely used before the method returns, it must not be referenced in
    * anything that outlives the method.
    *
-   * <p>Throwing an error results in a decode failure response to the client
+   * <p>Throwing an error results in a decode failure response to the client, which terminates a
+   * response stream. Implementations should prefer sending application-level error messages instead
+   * of throwing.
    */
   boolean cancelAll(
       long clientId, long correlationId, CancelAllRequest request, CancelAllCallback callback);
 
   interface PostOrderCallback {
 
-    ErrorCode onResponse(long clientId, long correlationId, PostOrderResponse t);
+    ErrorCode onResponse(long clientId, long correlationId, boolean last, PostOrderResponse t);
   }
 
   interface CancelAllCallback {
 
-    ErrorCode onResponse(long clientId, long correlationId, CancelAllResponse t);
+    ErrorCode onResponse(long clientId, long correlationId, boolean last, CancelAllResponse t);
   }
 }

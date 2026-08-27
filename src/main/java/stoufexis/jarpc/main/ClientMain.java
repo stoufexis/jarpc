@@ -59,7 +59,7 @@ public class ClientMain {
                 request,
                 new ExchangeClient.PostOrderCallback() {
                   @Override
-                  public boolean onResponse(long correlationId, PostOrderResponse t) {
+                  public boolean onResponse(long correlationId, boolean last, PostOrderResponse t) {
                     System.out.println("Received " + t.toString());
                     return true;
                   }

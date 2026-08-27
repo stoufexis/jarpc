@@ -61,11 +61,13 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
 
       int messageType = header.getMessageType();
       long correlationId = header.getCorrelationId();
+      boolean last = header.isLast();
 
       if (messageType > 0) {
         return handleReceivedFragment(
             messageType,
             correlationId,
+            last,
             buffer,
             offset + MessageHeader.HEADER_SIZE,
             length - MessageHeader.HEADER_SIZE);
@@ -75,7 +77,7 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
         case BaseCatalog.processingFailure -> {
           processingFailureResponse.decode(buffer, offset, length);
           handleProcessingFailureResponse(
-              processingFailureResponse.getBaseMessageType(), correlationId);
+              processingFailureResponse.getBaseMessageType(), correlationId, last);
           return true;
         }
         default -> throw illegal("Unknown failure message type " + messageType);
@@ -93,7 +95,12 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
    * @throws RuntimeException in case dispatching fails
    */
   protected abstract boolean handleReceivedFragment(
-      int messageType, long correlationId, DirectBuffer buffer, int offset, int length);
+      int messageType,
+      long correlationId,
+      boolean last,
+      DirectBuffer buffer,
+      int offset,
+      int length);
 
   /**
    * Runs in the dedicated Agent thread, can use mutable state. Should not share thread-unsafe state
@@ -101,5 +108,6 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
    *
    * @throws RuntimeException in case dispatching fails
    */
-  protected abstract void handleProcessingFailureResponse(int messageType, long correlationId);
+  protected abstract void handleProcessingFailureResponse(
+      int messageType, long correlationId, boolean last);
 }

@@ -8,8 +8,13 @@ import stoufexis.jarpc.server.Images;
 public final class Util {
   private Util() {}
 
-  public static <T> T removeCallbackOrThrow(NonBlockingHashMapLong<T> map, long key) {
-    T value = map.remove(key);
+  public static <T> T getCallbackOrThrow(NonBlockingHashMapLong<T> map, long key, boolean last) {
+    T value;
+    if (last) {
+      value = map.remove(key);
+    } else {
+      value = map.get(key);
+    }
     if (value == null) throw illegal("Callback not registered for correlation id " + key);
     return value;
   }

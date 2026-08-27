@@ -23,7 +23,7 @@ public class ServerMain {
       PostOrderResponse response = new PostOrderResponse();
       response.set(1);
       System.out.println("Sending " + response.toString());
-      ErrorCode code = callback.onResponse(clientId, correlationId, response);
+      ErrorCode code = callback.onResponse(clientId, correlationId, true, response);
       System.out.println("Sent " + code);
       return code == null;
     }
@@ -35,7 +35,7 @@ public class ServerMain {
       CancelAllResponse response = new CancelAllResponse();
       response.set(1);
       System.out.println("Sending " + response.toString());
-      ErrorCode code = callback.onResponse(clientId, correlationId, response);
+      ErrorCode code = callback.onResponse(clientId, correlationId, true, response);
       System.out.println("Sent " + code);
       return code == null;
     }

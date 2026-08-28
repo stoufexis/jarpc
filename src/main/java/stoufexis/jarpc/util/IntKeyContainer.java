@@ -25,12 +25,8 @@ public final class IntKeyContainer<T> {
     return i;
   }
 
-  public T remove(int i) {
-    T callback = array.getAndSet(i, null);
-    if (callback == null) return null;
-
-    stack.push(i);
-    return callback;
+  public void remove(int i) {
+    if (array.getAndSet(i, null) != null) stack.push(i);
   }
 
   public T get(int i) {

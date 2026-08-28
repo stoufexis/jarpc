@@ -1,17 +1,26 @@
 package stoufexis.jarpc.util;
 
+import static stoufexis.jarpc.util.Util.illegal;
+
+// [1,2,3,4,5]
+//    |
 final class ConcurrentIntStack {
-  private final int size;
+  private int headPos = 0;
+  private final int[] ints;
 
   ConcurrentIntStack(int size) {
-    this.size = size;
+    this.ints = new int[size];
+    for (int i = 1; i <= size; i++) {
+      ints[i] = i;
+    }
   }
 
-  int pop() {
-    throw new UnsupportedOperationException();
+  synchronized int pop() {
+    return ints[headPos++];
   }
 
-  void push(int i) {
-    throw new UnsupportedOperationException();
+  synchronized void push(int i) {
+    if (headPos <= 0) throw illegal("Pushed into a full stack");
+    ints[--headPos] = i;
   }
 }

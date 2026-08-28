@@ -53,6 +53,10 @@ public final class MessageHeader {
    */
   public void encode(MutableDirectBuffer buffer, int offset) {
     checkInitialized();
+    // FIXME correlationId is an int, but this writes 8 bytes. On little-endian the putInt
+    //  below happens to overwrite exactly the sign-extension bytes, so it works by accident.
+    //  On big-endian the correlationId lands in bytes 4-7 and is destroyed by that putInt, so
+    //  every correlationId decodes as 0. Should be putInt.
     buffer.putLong(offset, correlationId);
     buffer.putInt(offset + 4, messageType);
     buffer.putByte(offset + 8, (byte) (last ? 1 : 0));

@@ -59,18 +59,15 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
     try {
       header.decode(buffer, offset, length);
 
+      offset += MessageHeader.HEADER_SIZE;
+      length -= MessageHeader.HEADER_SIZE;
+
       int messageType = header.getMessageType();
       int correlationId = header.getCorrelationId();
       boolean last = header.isLast();
 
       if (messageType > 0) {
-        return handleReceivedFragment(
-            messageType,
-            correlationId,
-            last,
-            buffer,
-            offset + MessageHeader.HEADER_SIZE,
-            length - MessageHeader.HEADER_SIZE);
+        return handleReceivedFragment(messageType, correlationId, last, buffer, offset, length);
 
       } else if (messageType == BaseCatalog.processingFailure) {
         processingFailureResponse.decode(buffer, offset, length);
@@ -108,6 +105,6 @@ public abstract class JarpcClient implements AutoCloseable, Agent {
    *
    * @throws RuntimeException in case dispatching fails
    */
-  protected abstract void handleProcessingFailureResponse(
+  protected abstract boolean handleProcessingFailureResponse(
       int messageType, int correlationId, boolean last);
 }

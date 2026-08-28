@@ -20,6 +20,7 @@ import static stoufexis.jarpc.util.Util.*;
  */
 public final class JarpcExchangeClient extends JarpcClient implements ExchangeClient {
   // FIXME requests should timeout after a while of inactivity
+  // FIXME requests should support ad hoc aborts
 
   private final IntKeyContainer<PostOrderCallback> postOrderCallbacks;
   private final IntKeyContainer<CancelAllCallback> cancelAllCallbacks;
@@ -124,48 +125,65 @@ public final class JarpcExchangeClient extends JarpcClient implements ExchangeCl
       int offset,
       int length) {
 
+    boolean accepted;
+
     switch (messageType) {
       case Catalog.postOrderId -> {
-        PostOrderCallback callback = postOrderCallbacks.fetchOrThrow(correlationId, last);
+        PostOrderCallback callback = postOrderCallbacks.getOrThrow(correlationId);
 
         try {
           postOrderResponse.decode(buffer, offset, length);
-          return callback.onResponse(last, correlationId, postOrderResponse);
-
         } catch (RuntimeException e) {
-          callback.onClientDecodeError(correlationId, e);
-          return true;
+          accepted = callback.onClientDecodeError(correlationId, e);
+          if (last && accepted) postOrderCallbacks.remove(correlationId);
+          return accepted;
         }
+
+        accepted = callback.onResponse(last, correlationId, postOrderResponse);
+        if (last && accepted) postOrderCallbacks.remove(correlationId);
       }
 
       case Catalog.cancelAllId -> {
-        CancelAllCallback callback = cancelAllCallbacks.fetchOrThrow(correlationId, last);
+        CancelAllCallback callback = cancelAllCallbacks.getOrThrow(correlationId);
 
         try {
           cancelAllResponse.decode(buffer, offset, length);
-          return callback.onResponse(last, correlationId, cancelAllResponse);
-
         } catch (RuntimeException e) {
-          callback.onClientDecodeError(correlationId, e);
-          return true;
+          accepted = callback.onClientDecodeError(correlationId, e);
+          if (last && accepted) cancelAllCallbacks.remove(correlationId);
+          return accepted;
         }
+
+        accepted = callback.onResponse(last, correlationId, cancelAllResponse);
+        if (last && accepted) cancelAllCallbacks.remove(correlationId);
       }
 
       default -> throw illegal("Unknown message type " + messageType);
     }
+
+    return accepted;
   }
 
   @Override
-  protected void handleProcessingFailureResponse(int messageType, int correlationId, boolean last) {
+  protected boolean handleProcessingFailureResponse(
+      int messageType, int correlationId, boolean last) {
+
+    boolean accepted;
 
     switch (messageType) {
-      case Catalog.postOrderId ->
-          postOrderCallbacks.fetchOrThrow(correlationId, last).onServerDecodeError(correlationId);
+      case Catalog.postOrderId -> {
+        accepted = postOrderCallbacks.getOrThrow(correlationId).onServerDecodeError(correlationId);
+        if (accepted && last) postOrderCallbacks.remove(correlationId);
+      }
 
-      case Catalog.cancelAllId ->
-          cancelAllCallbacks.fetchOrThrow(correlationId, last).onServerDecodeError(correlationId);
+      case Catalog.cancelAllId -> {
+        accepted = cancelAllCallbacks.getOrThrow(correlationId).onServerDecodeError(correlationId);
+        if (accepted && last) cancelAllCallbacks.remove(correlationId);
+      }
 
       default -> throw illegal("Unknown message type " + messageType);
     }
+
+    return accepted;
   }
 }

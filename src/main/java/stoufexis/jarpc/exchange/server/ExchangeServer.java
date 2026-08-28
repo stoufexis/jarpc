@@ -4,7 +4,6 @@ import stoufexis.jarpc.exchange.model.CancelAllRequest;
 import stoufexis.jarpc.exchange.model.CancelAllResponse;
 import stoufexis.jarpc.exchange.model.PostOrderRequest;
 import stoufexis.jarpc.exchange.model.PostOrderResponse;
-import stoufexis.jarpc.model.ErrorCode;
 
 /**
  * Correlation ids must be unique per-request, they are used internally for identifying each

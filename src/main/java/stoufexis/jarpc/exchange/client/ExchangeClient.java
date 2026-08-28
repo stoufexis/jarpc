@@ -20,6 +20,8 @@ public interface ExchangeClient {
      * Response object must be used and released by the time the method exits. Do not store or
      * re-use the object beyond this method's scope.
      *
+     * <p>Implementations should not throw.
+     *
      * @param t
      * @return true when the response was accepted, false when it was not and delivery must be
      *     re-tried
@@ -31,6 +33,8 @@ public interface ExchangeClient {
     /**
      * Response object must be used and released by the time the method exits. Do not store or
      * re-use the object beyond this method's scope.
+     *
+     * <p>Implementations should not throw.
      *
      * @param t
      * @return true when the response was accepted, false when it was not and delivery must be

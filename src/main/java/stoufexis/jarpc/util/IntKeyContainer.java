@@ -37,13 +37,8 @@ public final class IntKeyContainer<T> {
     return array.get(i);
   }
 
-  public T fetchOrThrow(int key, boolean remove) {
-    T value;
-    if (remove) {
-      value = remove(key);
-    } else {
-      value = get(key);
-    }
+  public T getOrThrow(int key) {
+    T value = get(key);
     if (value == null) throw illegal("Callback not registered for correlation id " + key);
     return value;
   }

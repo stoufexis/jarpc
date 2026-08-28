@@ -72,11 +72,16 @@ public final class PostOrderRequest extends Message {
     initialize();
 
     this.baseAssetId = buffer.getInt(offset);
-    this.quoteAssetId = buffer.getInt(offset + 4);
-    this.quantityUnscaled = buffer.getLong(offset + 8);
-    this.quantityScale = buffer.getInt(offset + 16);
-    this.rateUnscaled = buffer.getLong(offset + 20);
-    this.rateScale = buffer.getInt(offset + 28);
+    offset += 4;
+    this.quoteAssetId = buffer.getInt(offset);
+    offset += 4;
+    this.quantityUnscaled = buffer.getLong(offset);
+    offset += 8;
+    this.quantityScale = buffer.getInt(offset);
+    offset += 4;
+    this.rateUnscaled = buffer.getLong(offset);
+    offset += 8;
+    this.rateScale = buffer.getInt(offset);
   }
 
   @Override
@@ -84,11 +89,16 @@ public final class PostOrderRequest extends Message {
     checkInitialized();
 
     buffer.putInt(offset, this.baseAssetId);
-    buffer.putInt(offset + 4, this.quoteAssetId);
-    buffer.putLong(offset + 8, this.quantityUnscaled);
-    buffer.putInt(offset + 16, this.quantityScale);
-    buffer.putLong(offset + 20, this.rateUnscaled);
-    buffer.putInt(offset + 28, this.rateScale);
+    offset += 4;
+    buffer.putInt(offset, this.quoteAssetId);
+    offset += 4;
+    buffer.putLong(offset, this.quantityUnscaled);
+    offset += 8;
+    buffer.putInt(offset, this.quantityScale);
+    offset += 4;
+    buffer.putLong(offset, this.rateUnscaled);
+    offset += 8;
+    buffer.putInt(offset, this.rateScale);
   }
 
   @Override

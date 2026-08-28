@@ -64,13 +64,16 @@ public class ClientMain {
                   }
 
                   @Override
-                  public void onClientDecodeError(int correlationId, RuntimeException exception) {
+                  public boolean onClientDecodeError(
+                      int correlationId, RuntimeException exception) {
                     System.out.println(exception);
+                    return true;
                   }
 
                   @Override
-                  public void onServerDecodeError(int correlationId) {
+                  public boolean onServerDecodeError(int correlationId) {
                     System.out.println("Server decode error");
+                    return true;
                   }
                 });
 

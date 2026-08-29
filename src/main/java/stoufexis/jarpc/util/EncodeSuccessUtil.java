@@ -11,11 +11,10 @@ public abstract class EncodeSuccessUtil implements Encode {
   protected int offset;
   protected MutableDirectBuffer buffer;
 
-  public final void setSuccess(
-      long correlationId, MutableDirectBuffer buffer, int offset, BufferClaim claim) {
+  public final void setSuccess(long correlationId, int offset, BufferClaim claim) {
     this.correlationId = correlationId;
     this.offset = offset;
-    this.buffer = buffer;
+    this.buffer = claim.buffer();
     this.claim = claim;
   }
 

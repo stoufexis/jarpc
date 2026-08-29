@@ -19,16 +19,21 @@ public abstract class EncodeFailUtil implements Encode {
 
   @Override
   public final long correlationId() {
-    throw illegal("claim failed");
+    fail();
+    return 0; // unreachable, simply here to please the compiler
   }
 
   @Override
   public final void commit() {
-    throw illegal("claim failed");
+    fail();
   }
 
   @Override
   public final void abort() {
+    fail();
+  }
+
+  protected final void fail() {
     throw illegal("claim failed");
   }
 }

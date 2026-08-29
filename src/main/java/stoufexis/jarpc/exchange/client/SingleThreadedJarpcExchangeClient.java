@@ -72,30 +72,30 @@ public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpc
 
   @Override
   public PostOrderRequestEncode claimPostOrder() {
-    ErrorCode result = tryClaim(POST_ORDER_REQUEST_SIZE);
+    ErrorCode result = publisher.tryClaim(POST_ORDER_REQUEST_SIZE);
     if (result != null) {
       postOrderRequestEncodeFail.setErrorCode(result);
       return postOrderRequestEncodeFail;
     }
 
-    long id = nextCorrelationId();
-    int newOffset = encodeHeader(id, POST_ORDER_MESSAGE_TYPE);
-    postOrderRequestEncodeSuccess.setSuccess(id, newOffset, getClaim());
+    long id = publisher.nextCorrelationId();
+    int newOffset = publisher.encodeHeader(id, POST_ORDER_MESSAGE_TYPE);
+    postOrderRequestEncodeSuccess.setSuccess(id, newOffset, publisher.getClaim());
 
     return postOrderRequestEncodeSuccess;
   }
 
   @Override
   public CancelAllRequestEncode claimCancelAll() {
-    ErrorCode result = tryClaim(CANCEL_ALL_REQUEST_SIZE);
+    ErrorCode result = publisher.tryClaim(CANCEL_ALL_REQUEST_SIZE);
     if (result != null) {
       cancelAllRequestEncodeFail.setErrorCode(result);
       return cancelAllRequestEncodeFail;
     }
 
-    long id = nextCorrelationId();
-    int newOffset = encodeHeader(id, CANCEL_ALL_MESSAGE_TYPE);
-    cancelAllRequestEncodeSuccess.setSuccess(id, newOffset, getClaim());
+    long id = publisher.nextCorrelationId();
+    int newOffset = publisher.encodeHeader(id, CANCEL_ALL_MESSAGE_TYPE);
+    cancelAllRequestEncodeSuccess.setSuccess(id, newOffset, publisher.getClaim());
 
     return cancelAllRequestEncodeSuccess;
   }

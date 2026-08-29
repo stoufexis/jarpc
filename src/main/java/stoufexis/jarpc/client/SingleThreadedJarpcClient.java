@@ -3,29 +3,25 @@ package stoufexis.jarpc.client;
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
-import org.agrona.MutableDirectBuffer;
-import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.model.MessageHeaderCodec;
 import stoufexis.jarpc.model.Poll;
 import stoufexis.jarpc.model.ProcessingFailureCodec;
 
 import static stoufexis.jarpc.util.Util.illegal;
-import static stoufexis.jarpc.util.Util.interpretErrorCode;
 
 public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll {
 
-  private final BufferClaim claim = new BufferClaim();
   private final Publication publication;
-  private long correlationId = 0;
   private final Subscription subscription;
   private final ControlledFragmentHandler fragmentHandler;
   private final ErrorHandler errorHandler;
+
+  protected final Publisher publisher;
 
   protected SingleThreadedJarpcClient(
       Publication publication, Subscription subscription, ErrorHandler errorHandler) {
@@ -33,26 +29,7 @@ public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll {
     this.publication = publication;
     this.subscription = subscription;
     this.errorHandler = errorHandler;
-  }
-
-  protected final long nextCorrelationId() {
-    return correlationId++;
-  }
-
-  protected final ErrorCode tryClaim(int length) {
-    long result = publication.tryClaim(length + MessageHeaderCodec.HEADER_SIZE, claim);
-    return result <= 0 ? interpretErrorCode(result) : null;
-  }
-
-  protected BufferClaim getClaim() {
-    return claim;
-  }
-
-  protected final int encodeHeader(long correlationId, int messageType) {
-    MutableDirectBuffer buffer = claim.buffer();
-    int offset = claim.offset();
-    MessageHeaderCodec.encode(buffer, offset, correlationId, messageType);
-    return offset + MessageHeaderCodec.HEADER_SIZE;
+    this.publisher = new Publisher(publication);
   }
 
   protected abstract boolean onProcessingFailure(int baseMessageType, long correlationId);

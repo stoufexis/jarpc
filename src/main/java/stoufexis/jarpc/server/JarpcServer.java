@@ -6,7 +6,6 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.Agent;
-import stoufexis.jarpc.model.MessageHeader;
 
 public abstract class JarpcServer implements Agent, AutoCloseable {
   private static final int FRAGMENT_LIMIT = 10;

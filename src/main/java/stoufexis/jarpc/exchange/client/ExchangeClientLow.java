@@ -13,7 +13,7 @@ public interface ExchangeClientLow {
 
   CancelAllRequestEncode claimCancelAll();
 
-  int poll(PostOrderResponseHandler postOrderHandler, CancelAllResponseHandler cancelAllCallback);
+  int poll(int limit);
 
   interface PostOrderResponseHandler extends ClientCallback {
     boolean onResponse(long correlationId, PostOrderResponseDecode t);

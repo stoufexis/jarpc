@@ -7,7 +7,6 @@ import org.agrona.ErrorHandler;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.SleepingIdleStrategy;
 import stoufexis.jarpc.exchange.client.ExchangeClient;
-import stoufexis.jarpc.exchange.client.JarpcExchangeClient;
 import stoufexis.jarpc.exchange.model.PostOrderRequest;
 import stoufexis.jarpc.exchange.model.PostOrderResponse;
 

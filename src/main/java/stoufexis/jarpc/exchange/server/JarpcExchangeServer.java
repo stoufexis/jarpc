@@ -7,7 +7,6 @@ import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.model.MessageHeader;
 import stoufexis.jarpc.server.*;
 
 import static stoufexis.jarpc.util.Util.*;

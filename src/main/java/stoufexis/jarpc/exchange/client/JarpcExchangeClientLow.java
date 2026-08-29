@@ -1,23 +1,30 @@
 package stoufexis.jarpc.exchange.client;
 
+import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.BufferClaim;
+import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
 import org.agrona.MutableDirectBuffer;
-import stoufexis.jarpc.exchange.model.CancelAllRequestEncode;
-import stoufexis.jarpc.exchange.model.Catalog;
-import stoufexis.jarpc.exchange.model.PostOrderRequestEncode;
-import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.model.MessageHeader;
-import stoufexis.jarpc.model.MessageHeaderEncode;
-import stoufexis.jarpc.util.EncodeFailUtil;
-import stoufexis.jarpc.util.EncodeSuccessUtil;
+import stoufexis.jarpc.client.JarpcClient;
+import stoufexis.jarpc.client.PollFragmentHandler;
+import stoufexis.jarpc.exchange.model.*;
+import stoufexis.jarpc.model.MessageHeaderCodec;
+import stoufexis.jarpc.util.*;
 
-import static stoufexis.jarpc.util.Util.illegal;
-import static stoufexis.jarpc.util.Util.interpretErrorCode;
+import static stoufexis.jarpc.util.Util.*;
+import static stoufexis.jarpc.util.Util.createClientPublication;
 
 /** Meant to be used by a single thread. */
-public class JarpcExchangeClientLow implements ExchangeClientLow {
+public class JarpcExchangeClientLow extends JarpcClient implements ExchangeClientLow {
+  private static final int POST_ORDER_REQUEST_SIZE = 32;
+  private static final int CANCEL_ALL_REQUEST_SIZE = 0;
+  private static final int POST_ORDER_RESPONSE_SIZE = 4;
+  private static final int CANCEL_ALL_RESPONSE_SIZE = 4;
+  private static final int POST_ORDER_MESSAGE_TYPE = 1;
+  private static final int CANCEL_ALL_MESSAGE_TYPE = 2;
+
   private long correlationId = 0;
 
   private final BufferClaim claim = new BufferClaim();
@@ -34,18 +41,35 @@ public class JarpcExchangeClientLow implements ExchangeClientLow {
   private final CancelAllRequestEncodeFail cancelAllRequestEncodeFail =
       new CancelAllRequestEncodeFail();
 
-  private final Publication publication;
-  private final Subscription subscription;
+  JarpcExchangeClientLow(
+      Publication publication,
+      Subscription subscription,
+      PostOrderResponseHandler postOrderHandler,
+      CancelAllResponseHandler cancelAllHandler,
+      ErrorHandler errorHandler) {
+    super(
+        publication,
+        subscription,
+        new ExchangeFragmentHandler(errorHandler, postOrderHandler, cancelAllHandler));
+  }
 
-  public JarpcExchangeClientLow(Publication publication, Subscription subscription) {
-    this.publication = publication;
-    this.subscription = subscription;
+  public static JarpcExchangeClientLow create(
+      Aeron aeron,
+      String requestEndpoint,
+      int requestStreamId,
+      String responseControl,
+      int responseStreamId,
+      PostOrderResponseHandler postOrderHandler,
+      CancelAllResponseHandler cancelAllHandler,
+      ErrorHandler handler) {
+    Subscription sub = createClientSubscription(aeron, responseControl, responseStreamId);
+    Publication pub = createClientPublication(aeron, requestEndpoint, requestStreamId, sub);
+    return new JarpcExchangeClientLow(pub, sub, postOrderHandler, cancelAllHandler, handler);
   }
 
   @Override
   public PostOrderRequestEncode claimPostOrder() {
-    long result =
-        publication.tryClaim(Catalog.postOrder.requestSize() + MessageHeader.HEADER_SIZE, claim);
+    long result = publication.tryClaim(POST_ORDER_REQUEST_SIZE + MessageHeaderCodec.HEADER_SIZE, claim);
 
     if (result < 0) {
       postOrderRequestEncodeFail.setErrorCode(interpretErrorCode(result));
@@ -55,16 +79,15 @@ public class JarpcExchangeClientLow implements ExchangeClientLow {
     long id = correlationId++;
     int offset = claim.offset();
     MutableDirectBuffer buffer = claim.buffer();
-    MessageHeaderEncode.encode(buffer, offset, id, Catalog.postOrder.messageTypeId());
-    postOrderRequestEncodeSuccess.setSuccess(id, buffer, offset + MessageHeader.HEADER_SIZE, claim);
+    MessageHeaderCodec.encode(buffer, offset, id, POST_ORDER_MESSAGE_TYPE);
+    postOrderRequestEncodeSuccess.setSuccess(id, buffer, offset + MessageHeaderCodec.HEADER_SIZE, claim);
 
     return postOrderRequestEncodeSuccess;
   }
 
   @Override
   public CancelAllRequestEncode claimCancelAll() {
-    long result =
-        publication.tryClaim(Catalog.cancelAll.requestSize() + MessageHeader.HEADER_SIZE, claim);
+    long result = publication.tryClaim(CANCEL_ALL_REQUEST_SIZE + MessageHeaderCodec.HEADER_SIZE, claim);
 
     if (result < 0) {
       cancelAllRequestEncodeFail.setErrorCode(interpretErrorCode(result));
@@ -74,16 +97,79 @@ public class JarpcExchangeClientLow implements ExchangeClientLow {
     long id = correlationId++;
     int offset = claim.offset();
     MutableDirectBuffer buffer = claim.buffer();
-    MessageHeaderEncode.encode(buffer, offset, id, Catalog.cancelAll.messageTypeId());
-    cancelAllRequestEncodeSuccess.setSuccess(id, buffer, offset + MessageHeader.HEADER_SIZE, claim);
+    MessageHeaderCodec.encode(buffer, offset, id, CANCEL_ALL_MESSAGE_TYPE);
+    cancelAllRequestEncodeSuccess.setSuccess(id, buffer, offset + MessageHeaderCodec.HEADER_SIZE, claim);
 
     return cancelAllRequestEncodeSuccess;
   }
 
   @Override
-  public int poll(
-      PostOrderResponseHandler postOrderHandler, CancelAllResponseHandler cancelAllCallback) {
-    return 0;
+  public int poll(int limit) {
+    return super.poll(limit);
+  }
+
+  private static final class ExchangeFragmentHandler extends PollFragmentHandler {
+    private final PostOrderResponseDecodeImpl postOrderResponseDecode =
+        new PostOrderResponseDecodeImpl();
+
+    private final CancelAllResponseDecodeImpl cancelAllResponseDecode =
+        new CancelAllResponseDecodeImpl();
+
+    private final PostOrderResponseHandler postOrderResponseHandler;
+    private final CancelAllResponseHandler cancelAllResponseHandler;
+
+    private ExchangeFragmentHandler(
+        ErrorHandler handler,
+        PostOrderResponseHandler postOrderResponseHandler,
+        CancelAllResponseHandler cancelAllResponseHandler) {
+      super(handler);
+      this.postOrderResponseHandler = postOrderResponseHandler;
+      this.cancelAllResponseHandler = cancelAllResponseHandler;
+    }
+
+    @Override
+    protected boolean onProcessingFailure(int baseMessageType, long correlationId) {
+      switch (baseMessageType) {
+        case POST_ORDER_MESSAGE_TYPE -> {
+          return postOrderResponseHandler.onServerDecodeError(correlationId);
+        }
+
+        case CANCEL_ALL_MESSAGE_TYPE -> {
+          return cancelAllResponseHandler.onServerDecodeError(correlationId);
+        }
+
+        default -> throw illegal("Unknown message type " + baseMessageType);
+      }
+    }
+
+    @Override
+    protected boolean onMessage(
+        int messageType, long correlationId, DirectBuffer buffer, int offset, int length) {
+
+      switch (messageType) {
+        case POST_ORDER_MESSAGE_TYPE -> {
+          if (length != POST_ORDER_RESPONSE_SIZE) {
+            postOrderResponseDecode.set(buffer, offset);
+            return postOrderResponseHandler.onResponse(correlationId, postOrderResponseDecode);
+
+          } else {
+            return postOrderResponseHandler.onClientDecodeError(correlationId);
+          }
+        }
+
+        case CANCEL_ALL_MESSAGE_TYPE -> {
+          if (length != CANCEL_ALL_RESPONSE_SIZE) {
+            cancelAllResponseDecode.set(buffer, offset);
+            return cancelAllResponseHandler.onResponse(correlationId, cancelAllResponseDecode);
+
+          } else {
+            return cancelAllResponseHandler.onClientDecodeError(correlationId);
+          }
+        }
+
+        default -> throw illegal("Unknown message type " + messageType);
+      }
+    }
   }
 
   private static final class PostOrderRequestEncodeSuccess extends EncodeSuccessUtil
@@ -157,4 +243,20 @@ public class JarpcExchangeClientLow implements ExchangeClientLow {
 
   private static final class CancelAllRequestEncodeFail extends EncodeFailUtil
       implements CancelAllRequestEncode {}
+
+  private static final class PostOrderResponseDecodeImpl extends DecodeUtil
+      implements PostOrderResponseDecode {
+    @Override
+    public int getStatusCode() {
+      return buffer.getInt(offset);
+    }
+  }
+
+  private static final class CancelAllResponseDecodeImpl extends DecodeUtil
+      implements CancelAllResponseDecode {
+    @Override
+    public int getStatusCode() {
+      return buffer.getInt(offset);
+    }
+  }
 }

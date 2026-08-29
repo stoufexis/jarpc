@@ -1,7 +1,9 @@
 package stoufexis.jarpc.exchange.model;
 
-public final class Catalog {
-  public static final int postOrderId = 1;
+import stoufexis.jarpc.model.Metadata;
 
-  public static final int cancelAllId = 2;
+public final class Catalog {
+  public static final Metadata postOrder = new Metadata(1, 32, 4);
+
+  public static final Metadata cancelAll = new Metadata(2, 0, 4);
 }

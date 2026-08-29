@@ -11,7 +11,7 @@ public final class Util {
     return new IllegalStateException(message);
   }
 
-  public static int interpretErrorCode(long claimResult) {
+  public static ErrorCode interpretErrorCode(long claimResult) {
     return switch (claimResult) {
       case Publication.ADMIN_ACTION, Publication.BACK_PRESSURED -> ErrorCode.BACKPRESSURE;
       case Publication.CLOSED, Publication.MAX_POSITION_EXCEEDED -> ErrorCode.CORRUPT_SESSION;

@@ -42,6 +42,17 @@ public final class Util {
         requestStreamId);
   }
 
+  public static Publication createExclusiveClientPublication(
+      Aeron aeron, String requestEndpoint, int requestStreamId, Subscription subscription) {
+    return aeron.addExclusivePublication(
+        new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint(requestEndpoint)
+            .responseCorrelationId(subscription.registrationId())
+            .build(),
+        requestStreamId);
+  }
+
   public static Subscription createServerSubscription(
       Aeron aeron, Images images, String requestEndpoint, int requestStreamId) {
     return aeron.addSubscription(

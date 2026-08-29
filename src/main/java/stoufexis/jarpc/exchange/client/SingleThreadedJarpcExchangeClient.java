@@ -6,7 +6,6 @@ import io.aeron.Subscription;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import stoufexis.jarpc.client.SingleThreadedJarpcClient;
-import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.util.*;
 
@@ -65,7 +64,8 @@ public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpc
       CancelAllResponseHandler cancelAllHandler,
       ErrorHandler handler) {
     Subscription sub = createClientSubscription(aeron, responseControl, responseStreamId);
-    Publication pub = createClientPublication(aeron, requestEndpoint, requestStreamId, sub);
+    Publication pub =
+        createExclusiveClientPublication(aeron, requestEndpoint, requestStreamId, sub);
     return new SingleThreadedJarpcExchangeClient(
         pub, sub, postOrderHandler, cancelAllHandler, handler);
   }

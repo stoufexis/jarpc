@@ -1,6 +1,6 @@
 package stoufexis.jarpc.exchange.client;
 
-import stoufexis.jarpc.client.ClientCallback;
+import stoufexis.jarpc.client.ClientHandler;
 import stoufexis.jarpc.model.Encode;
 import stoufexis.jarpc.model.Poll;
 
@@ -16,11 +16,11 @@ public interface SingleThreadedExchangeClient extends Poll {
 
   CancelAllRequestEncode claimCancelAll();
 
-  interface PostOrderResponseHandler extends ClientCallback {
+  interface PostOrderResponseHandler extends ClientHandler {
     boolean onResponse(long correlationId, PostOrderResponseDecode t);
   }
 
-  interface CancelAllResponseHandler extends ClientCallback {
+  interface CancelAllResponseHandler extends ClientHandler {
     boolean onResponse(long correlationId, CancelAllResponseDecode t);
   }
 

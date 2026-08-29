@@ -4,7 +4,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Futures-based client. This produces relatively high GC pressure and high latency compared to the
- * single-threaded variant, but it is easier to use across different programming styles.
+ * single-threaded variant, but it is simple to use across many programming styles.
  */
 public interface FuturesExchangeClient {
 

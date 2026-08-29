@@ -1,10 +1,16 @@
 package stoufexis.jarpc.exchange.client;
 
+import io.aeron.Publication;
+import io.aeron.Subscription;
+import org.agrona.ErrorHandler;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import java.util.concurrent.CompletableFuture;
+
+import stoufexis.jarpc.client.ClientErrorHandler;
 import stoufexis.jarpc.exchange.client.SingleThreadedExchangeClient.*;
+import stoufexis.jarpc.exchange.server.ExchangeServer;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.util.PublicationError;
 
@@ -17,16 +23,23 @@ public class FuturesJarpcExchangeClient implements FuturesExchangeClient, Agent 
   private final ManyToOneConcurrentArrayQueue<RequestPair<CancelAllRequest, CancelAllResponse>>
       cancelAllRequests;
 
-  private final Long2ObjectHashMap<CompletableFuture<PostOrderResponse>> postOrderCallbacks;
-  private final Long2ObjectHashMap<CompletableFuture<CancelAllResponse>> cancelAllCallbacks;
+  private final ClientErrorHandler errorHandler;
 
   FuturesJarpcExchangeClient(
-      SingleThreadedJarpcExchangeClient singleThreadedClient, int queueCapacity) {
-    this.singleThreadedClient = singleThreadedClient;
+      Publication publication,
+      Subscription subscription,
+      ClientErrorHandler errorHandler,
+      int queueCapacity) {
+    this.singleThreadedClient =
+        new SingleThreadedJarpcExchangeClient(
+            publication,
+            subscription,
+            postOrderResponseHandler,
+            cancelAllResponseHandler,
+            errorHandler);
     this.postOrderRequests = new ManyToOneConcurrentArrayQueue<>(queueCapacity);
     this.cancelAllRequests = new ManyToOneConcurrentArrayQueue<>(queueCapacity);
-    this.postOrderCallbacks = new Long2ObjectHashMap<>();
-    this.cancelAllCallbacks = new Long2ObjectHashMap<>();
+    this.errorHandler = errorHandler;
   }
 
   @Override
@@ -41,8 +54,57 @@ public class FuturesJarpcExchangeClient implements FuturesExchangeClient, Agent 
     return cancelAllRequests.offer(new RequestPair<>(request, response));
   }
 
+  private final Long2ObjectHashMap<CompletableFuture<PostOrderResponse>> postOrderCallbacks =
+      new Long2ObjectHashMap<>();
+
+  private final Long2ObjectHashMap<CompletableFuture<CancelAllResponse>> cancelAllCallbacks =
+      new Long2ObjectHashMap<>();
+
   private RequestPair<PostOrderRequest, PostOrderResponse> postOrder = null;
   private RequestPair<CancelAllRequest, CancelAllResponse> cancelAll = null;
+
+  private final PostOrderResponseHandler postOrderResponseHandler =
+      new PostOrderResponseHandler() {
+        @Override
+        public boolean onResponse(long correlationId, PostOrderResponseDecode t) {
+          CompletableFuture<PostOrderResponse> callback = postOrderCallbacks.get(correlationId);
+          if (callback == null) {
+            errorHandler.onCallbackNotFound(correlationId, "PostOrder");
+          } else {
+            callback.complete(new PostOrderResponse(t.getStatusCode()));
+          }
+
+          return true;
+        }
+
+        @Override
+        public boolean onClientDecodeError(long correlationId) {
+          return false;
+        }
+
+        @Override
+        public boolean onServerDecodeError(long correlationId) {
+          return false;
+        }
+      };
+
+  private final CancelAllResponseHandler cancelAllResponseHandler =
+      new CancelAllResponseHandler() {
+        @Override
+        public boolean onResponse(long correlationId, CancelAllResponseDecode t) {
+          return false;
+        }
+
+        @Override
+        public boolean onClientDecodeError(long correlationId) {
+          return false;
+        }
+
+        @Override
+        public boolean onServerDecodeError(long correlationId) {
+          return false;
+        }
+      };
 
   @Override
   public int doWork() {
@@ -60,6 +122,7 @@ public class FuturesJarpcExchangeClient implements FuturesExchangeClient, Agent 
       } else if (encode.code() != null) {
         postOrder.response.completeExceptionally(new PublicationError(encode.code()));
         postOrder = null;
+        work++;
       } else {
         postOrderCallbacks.put(encode.correlationId(), postOrder.response);
         encode.setBaseAssetId(postOrder.request.baseAssetId());
@@ -85,6 +148,7 @@ public class FuturesJarpcExchangeClient implements FuturesExchangeClient, Agent 
         return work;
       } else if (encode.code() != null) {
         cancelAll.response.completeExceptionally(new PublicationError(encode.code()));
+        work++;
         cancelAll = null;
       } else {
         cancelAllCallbacks.put(encode.correlationId(), cancelAll.response);
@@ -93,6 +157,8 @@ public class FuturesJarpcExchangeClient implements FuturesExchangeClient, Agent 
         cancelAll = null;
       }
     }
+
+    work += singleThreadedClient.poll(1);
 
     return work;
   }

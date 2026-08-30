@@ -4,17 +4,11 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
-import java.util.concurrent.CompletableFuture;
 
 import stoufexis.jarpc.client.ClientErrorHandler;
-import stoufexis.jarpc.error.ClientDecodeError;
-import stoufexis.jarpc.error.ServerDecodeError;
 import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.error.PublicationError;
 import stoufexis.jarpc.util.MPSCRingBuffer;
-
-import static stoufexis.jarpc.util.Util.illegal;
 
 // FIXME add timeouts and ad-hoc cancel
 

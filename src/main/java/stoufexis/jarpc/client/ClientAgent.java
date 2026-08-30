@@ -27,7 +27,9 @@ public abstract class ClientAgent<T> implements Agent {
     this.errorHandler = errorHandler;
   }
 
-  protected final boolean handleErrorCode(ErrorCode code) {
+  protected final boolean handleError() {
+    ErrorCode code = claimHandle.getCode();
+
     if (code == ErrorCode.BACKPRESSURE) {
       return false;
     } else {
@@ -47,6 +49,7 @@ public abstract class ClientAgent<T> implements Agent {
     }
 
     if (populated && processRequest(scratch)) {
+      claimHandle.commit();
       populated = false;
       work++;
     }

@@ -127,13 +127,10 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
     protected boolean processRequest(PostOrderRequestScratch scratch) {
       PostOrderRequestEncode encode = singleThreadedClient.claimPostOrder(claimHandle);
 
-      if (encode == null) {
-        return handleErrorCode(claimHandle.getCode());
-      }
+      if (encode == null) return handleError();
 
       postOrderCallbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());
       encode.set(scratch);
-      claimHandle.commit();
       return true;
     }
   }
@@ -151,13 +148,10 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
     protected boolean processRequest(CancelAllRequestScratch scratch) {
       CancelAllRequestEncode encode = singleThreadedClient.claimCancelAll(claimHandle);
 
-      if (encode == null) {
-        return handleErrorCode(claimHandle.getCode());
-      }
+      if (encode == null) return handleError();
 
       cancelAllCallbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());
       encode.set(scratch);
-      claimHandle.commit();
       return true;
     }
   }

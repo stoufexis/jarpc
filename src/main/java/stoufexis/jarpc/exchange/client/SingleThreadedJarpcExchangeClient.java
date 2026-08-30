@@ -1,10 +1,10 @@
 package stoufexis.jarpc.exchange.client;
 
-import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
+import stoufexis.jarpc.client.ClientConfig;
 import stoufexis.jarpc.client.SingleThreadedJarpcClient;
 import stoufexis.jarpc.exchange.model.CancelAllRequestEncode;
 import stoufexis.jarpc.exchange.model.CancelAllResponseDecode;
@@ -25,17 +25,11 @@ public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpc
   private static final int POST_ORDER_MESSAGE_TYPE = 1;
   private static final int CANCEL_ALL_MESSAGE_TYPE = 2;
 
-  private final PostOrderRequestEncodeSuccess postOrderRequestEncodeSuccess =
-      new PostOrderRequestEncodeSuccess();
+  private final PostOrderRequestEncodeImpl postOrderRequestEncode =
+      new PostOrderRequestEncodeImpl();
 
-  private final PostOrderRequestEncodeFail postOrderRequestEncodeFail =
-      new PostOrderRequestEncodeFail();
-
-  private final CancelAllRequestEncodeSuccess cancelAllRequestEncodeSuccess =
-      new CancelAllRequestEncodeSuccess();
-
-  private final CancelAllRequestEncodeFail cancelAllRequestEncodeFail =
-      new CancelAllRequestEncodeFail();
+  private final CancelAllRequestEncodeImpl cancelAllRequestEncode =
+      new CancelAllRequestEncodeImpl();
 
   private final PostOrderResponseDecodeImpl postOrderResponseDecode =
       new PostOrderResponseDecodeImpl();
@@ -58,49 +52,47 @@ public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpc
   }
 
   public static SingleThreadedJarpcExchangeClient create(
-      Aeron aeron,
-      String requestEndpoint,
-      int requestStreamId,
-      String responseControl,
-      int responseStreamId,
+      ClientConfig cfg,
       PostOrderResponseHandler postOrderHandler,
       CancelAllResponseHandler cancelAllHandler,
-      ErrorHandler handler) {
-    Subscription sub = createClientSubscription(aeron, responseControl, responseStreamId);
+      ErrorHandler errorHandler) {
+    Subscription sub =
+        createClientSubscription(cfg.aeron(), cfg.responseControl(), cfg.responseStreamId());
     Publication pub =
-        createExclusiveClientPublication(aeron, requestEndpoint, requestStreamId, sub);
+        createExclusiveClientPublication(
+            cfg.aeron(), cfg.requestEndpoint(), cfg.requestStreamId(), sub);
     return new SingleThreadedJarpcExchangeClient(
-        pub, sub, postOrderHandler, cancelAllHandler, handler);
+        pub, sub, postOrderHandler, cancelAllHandler, errorHandler);
   }
 
   @Override
   public PostOrderRequestEncode claimPostOrder() {
     ErrorCode result = publisher.tryClaim(POST_ORDER_REQUEST_SIZE);
+
     if (result != null) {
-      postOrderRequestEncodeFail.setErrorCode(result);
-      return postOrderRequestEncodeFail;
+      postOrderRequestEncode.setFailed(result);
+    } else {
+      long id = publisher.nextCorrelationId();
+      int newOffset = publisher.encodeHeader(id, POST_ORDER_MESSAGE_TYPE);
+      postOrderRequestEncode.setSuccess(id, newOffset, publisher.getClaim());
     }
 
-    long id = publisher.nextCorrelationId();
-    int newOffset = publisher.encodeHeader(id, POST_ORDER_MESSAGE_TYPE);
-    postOrderRequestEncodeSuccess.setSuccess(id, newOffset, publisher.getClaim());
-
-    return postOrderRequestEncodeSuccess;
+    return postOrderRequestEncode;
   }
 
   @Override
   public CancelAllRequestEncode claimCancelAll() {
     ErrorCode result = publisher.tryClaim(CANCEL_ALL_REQUEST_SIZE);
+
     if (result != null) {
-      cancelAllRequestEncodeFail.setErrorCode(result);
-      return cancelAllRequestEncodeFail;
+      cancelAllRequestEncode.setFailed(result);
+    } else {
+      long id = publisher.nextCorrelationId();
+      int newOffset = publisher.encodeHeader(id, CANCEL_ALL_MESSAGE_TYPE);
+      cancelAllRequestEncode.setSuccess(id, newOffset, publisher.getClaim());
     }
 
-    long id = publisher.nextCorrelationId();
-    int newOffset = publisher.encodeHeader(id, CANCEL_ALL_MESSAGE_TYPE);
-    cancelAllRequestEncodeSuccess.setSuccess(id, newOffset, publisher.getClaim());
-
-    return cancelAllRequestEncodeSuccess;
+    return cancelAllRequestEncode;
   }
 
   @Override
@@ -146,76 +138,46 @@ public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpc
     }
   }
 
-  private static final class PostOrderRequestEncodeSuccess extends EncodeSuccessUtil
+  private static final class PostOrderRequestEncodeImpl extends EncodeUtil
       implements PostOrderRequestEncode {
     @Override
     public void setBaseAssetId(int baseAssetId) {
+      checkFailed();
       buffer.putInt(offset, baseAssetId);
     }
 
     @Override
     public void setQuoteAssetId(int quoteAssetId) {
+      checkFailed();
       buffer.putInt(offset + 4, quoteAssetId);
     }
 
     @Override
     public void setQuantityUnscaled(long quantityUnscaled) {
+      checkFailed();
       buffer.putLong(offset + 8, quantityUnscaled);
     }
 
     @Override
     public void setQuantityScale(int quantityScale) {
+      checkFailed();
       buffer.putInt(offset + 16, quantityScale);
     }
 
     @Override
     public void setRateUnscaled(long rateUnscaled) {
+      checkFailed();
       buffer.putLong(offset + 20, rateUnscaled);
     }
 
     @Override
     public void setRateScale(int rateScale) {
+      checkFailed();
       buffer.putInt(offset + 28, rateScale);
     }
   }
 
-  private static final class PostOrderRequestEncodeFail extends EncodeFailUtil
-      implements PostOrderRequestEncode {
-    @Override
-    public void setBaseAssetId(int baseAssetId) {
-      fail();
-    }
-
-    @Override
-    public void setQuoteAssetId(int quoteAssetId) {
-      fail();
-    }
-
-    @Override
-    public void setQuantityUnscaled(long quantityUnscaled) {
-      fail();
-    }
-
-    @Override
-    public void setQuantityScale(int quantityScale) {
-      fail();
-    }
-
-    @Override
-    public void setRateUnscaled(long rateUnscaled) {
-      fail();
-    }
-
-    @Override
-    public void setRateScale(int rateScale) {
-      fail();
-    }
-  }
-
-  private static final class CancelAllRequestEncodeSuccess extends EncodeSuccessUtil
-      implements CancelAllRequestEncode {}
-
-  private static final class CancelAllRequestEncodeFail extends EncodeFailUtil
+  private static final class CancelAllRequestEncodeImpl extends EncodeUtil
       implements CancelAllRequestEncode {}
 
   private static final class PostOrderResponseDecodeImpl extends DecodeUtil

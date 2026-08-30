@@ -5,15 +5,20 @@ import io.aeron.Subscription;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 
+import stoufexis.jarpc.client.ClientAgent;
+import stoufexis.jarpc.client.ClientConfig;
 import stoufexis.jarpc.client.ClientErrorHandler;
 import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.util.MPSCRingBuffer;
 import stoufexis.jarpc.util.ResponseHandlerUtil;
 
+import static stoufexis.jarpc.util.Util.createClientSubscription;
+import static stoufexis.jarpc.util.Util.createExclusiveClientPublication;
+
 // FIXME add timeouts and ad-hoc cancel
 
-public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, Agent {
+public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, Agent {
 
   private final SingleThreadedJarpcExchangeClient singleThreadedClient;
 
@@ -24,6 +29,9 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
 
   private final Long2ObjectHashMap<PostOrderResponseHandler> postOrderCallbacks;
   private final Long2ObjectHashMap<CancelAllResponseHandler> cancelAllCallbacks;
+
+  private final PostOrderClientAgent postOrderClientAgent;
+  private final CancelAllClientAgent cancelAllClientAgent;
 
   ConcurrentJarpcExchangeClient(
       Publication publication,
@@ -36,12 +44,24 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
         new SingleThreadedJarpcExchangeClient(
             publication,
             subscription,
-            new PostOrderResponseHandlerImpl(postOrderCallbacks, errorHandler, "PostOrder"),
-            new CancelAllResponseHandlerImpl(cancelAllCallbacks, errorHandler, "CancelAll"),
+            new PostOrderHandler(),
+            new CancelAllHandler(),
             errorHandler);
     this.postOrderRequests = new MPSCRingBuffer<>(queueCapacity, PostOrderRequestScratch::new);
     this.cancelAllRequests = new MPSCRingBuffer<>(queueCapacity, CancelAllRequestScratch::new);
     this.errorHandler = errorHandler;
+    this.postOrderClientAgent = new PostOrderClientAgent();
+    this.cancelAllClientAgent = new CancelAllClientAgent();
+  }
+
+  public static ConcurrentJarpcExchangeClient create(
+      ClientConfig cfg, ClientErrorHandler handler, int queueCapacity) {
+    Subscription sub =
+        createClientSubscription(cfg.aeron(), cfg.responseControl(), cfg.responseStreamId());
+    Publication pub =
+        createExclusiveClientPublication(
+            cfg.aeron(), cfg.requestEndpoint(), cfg.requestStreamId(), sub);
+    return new ConcurrentJarpcExchangeClient(pub, sub, handler, queueCapacity);
   }
 
   @Override
@@ -54,14 +74,10 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
     return cancelAllRequests.offer(CancelAllRequestScratch::setter, request, response);
   }
 
-  private static final class PostOrderResponseHandlerImpl
-      extends ResponseHandlerUtil<PostOrderResponseHandler> implements PostOrderResponseHandler {
-
-    PostOrderResponseHandlerImpl(
-        Long2ObjectHashMap<PostOrderResponseHandler> callbacks,
-        ClientErrorHandler errorHandler,
-        String label) {
-      super(callbacks, errorHandler, label);
+  private final class PostOrderHandler extends ResponseHandlerUtil<PostOrderResponseHandler>
+      implements PostOrderResponseHandler {
+    PostOrderHandler() {
+      super(postOrderCallbacks, errorHandler, "PostOrder");
     }
 
     @Override
@@ -78,14 +94,10 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
     }
   }
 
-  private static final class CancelAllResponseHandlerImpl
-      extends ResponseHandlerUtil<CancelAllResponseHandler> implements CancelAllResponseHandler {
-
-    CancelAllResponseHandlerImpl(
-        Long2ObjectHashMap<CancelAllResponseHandler> callbacks,
-        ClientErrorHandler errorHandler,
-        String label) {
-      super(callbacks, errorHandler, label);
+  private final class CancelAllHandler extends ResponseHandlerUtil<CancelAllResponseHandler>
+      implements CancelAllResponseHandler {
+    CancelAllHandler() {
+      super(cancelAllCallbacks, errorHandler, "CancelAll");
     }
 
     @Override
@@ -102,58 +114,62 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
     }
   }
 
-  private boolean postOrderPopulated = false;
-  private final PostOrderRequestScratch postOrder = new PostOrderRequestScratch();
+  private final class PostOrderClientAgent extends ClientAgent<PostOrderRequestScratch> {
+    PostOrderClientAgent() {
+      super(postOrderRequests, new PostOrderRequestScratch(), PostOrderRequestScratch::copy);
+    }
 
-  private boolean cancelAllPopulated = false;
-  private final CancelAllRequestScratch cancelAll = new CancelAllRequestScratch();
+    @Override
+    protected boolean processRequest(PostOrderRequestScratch scratch) {
+      PostOrderRequestEncode encode = singleThreadedClient.claimPostOrder();
+      ErrorCode code = encode.code();
+
+      if (code == ErrorCode.BACKPRESSURE) {
+        return false;
+      } else if (code != null) {
+        errorHandler.onCorruptPublication(code);
+        return true;
+      } else {
+        postOrderCallbacks.put(encode.correlationId(), scratch.getHandler());
+        encode.set(scratch);
+        encode.commit();
+        return true;
+      }
+    }
+  }
+
+  private final class CancelAllClientAgent extends ClientAgent<CancelAllRequestScratch> {
+    CancelAllClientAgent() {
+      super(cancelAllRequests, new CancelAllRequestScratch(), CancelAllRequestScratch::copy);
+    }
+
+    @Override
+    protected boolean processRequest(CancelAllRequestScratch scratch) {
+      CancelAllRequestEncode encode = singleThreadedClient.claimCancelAll();
+      ErrorCode code = encode.code();
+
+      if (code == ErrorCode.BACKPRESSURE) {
+        return false;
+      } else if (code != null) {
+        errorHandler.onCorruptPublication(code);
+        return true;
+      } else {
+        cancelAllCallbacks.put(encode.correlationId(), scratch.getHandler());
+        encode.set(scratch);
+        encode.commit();
+        return true;
+      }
+    }
+  }
 
   @Override
   public int doWork() {
     int work = 0;
-
-    if (!postOrderPopulated) {
-      postOrderPopulated = postOrderRequests.poll(PostOrderRequestScratch::copy, postOrder);
-    }
-
-    if (postOrderPopulated) {
-      PostOrderRequestEncode encode = singleThreadedClient.claimPostOrder();
-
-      if (encode.code() == ErrorCode.BACKPRESSURE) {
-        return work;
-      } else if (encode.code() != null) {
-        errorHandler.onCorruptPublication(encode.code());
-        postOrderPopulated = false;
-      } else {
-        postOrderCallbacks.put(encode.correlationId(), postOrder.getHandler());
-        encode.set(postOrder);
-        postOrderPopulated = false;
-        work++;
-      }
-    }
-
-    if (!cancelAllPopulated) {
-      cancelAllPopulated = cancelAllRequests.poll(CancelAllRequestScratch::copy, cancelAll);
-    }
-
-    if (cancelAllPopulated) {
-      CancelAllRequestEncode encode = singleThreadedClient.claimCancelAll();
-
-      if (encode.code() == ErrorCode.BACKPRESSURE) {
-        return work;
-      } else if (encode.code() != null) {
-        errorHandler.onCorruptPublication(encode.code());
-        cancelAllPopulated = false;
-      } else {
-        cancelAllCallbacks.put(encode.correlationId(), cancelAll.getHandler());
-        encode.set(cancelAll);
-        cancelAllPopulated = false;
-        work++;
-      }
-    }
-
+    // Use this instead of CompositeAgent to monomorphize all calls to doWork
+    // FIXME verify rationale
+    work += postOrderClientAgent.doWork();
+    work += cancelAllClientAgent.doWork();
     work += singleThreadedClient.poll(1);
-
     return work;
   }
 

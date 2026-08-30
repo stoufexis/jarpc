@@ -2,8 +2,6 @@ package stoufexis.jarpc.exchange.model;
 
 import stoufexis.jarpc.exchange.client.PostOrderResponseHandler;
 import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.util.Consume2;
-import stoufexis.jarpc.util.Consume3;
 
 public final class PostOrderRequestScratch
     implements PostOrderRequestDecode, PostOrderRequestEncode {
@@ -23,12 +21,7 @@ public final class PostOrderRequestScratch
       PostOrderRequestScratch scratch,
       PostOrderRequestDecode decode,
       PostOrderResponseHandler handler) {
-    scratch.setBaseAssetId(decode.getBaseAssetId());
-    scratch.setQuoteAssetId(decode.getQuoteAssetId());
-    scratch.setQuantityUnscaled(decode.getQuantityUnscaled());
-    scratch.setQuantityScale(decode.getQuantityScale());
-    scratch.setRateUnscaled(decode.getRateUnscaled());
-    scratch.setRateScale(decode.getRateScale());
+    scratch.set(decode);
     scratch.setHandler(handler);
   }
 

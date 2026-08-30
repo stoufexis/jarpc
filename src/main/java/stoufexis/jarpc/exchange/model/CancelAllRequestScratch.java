@@ -16,6 +16,7 @@ public final class CancelAllRequestScratch
       CancelAllRequestScratch scratch,
       CancelAllRequestDecode decode,
       CancelAllResponseHandler handler) {
+    scratch.set(decode);
     scratch.setHandler(handler);
   }
 

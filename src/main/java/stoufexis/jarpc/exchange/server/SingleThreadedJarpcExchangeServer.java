@@ -2,25 +2,19 @@ package stoufexis.jarpc.exchange.server;
 
 import io.aeron.*;
 import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.ControlledFragmentHandler;
-import io.aeron.logbuffer.Header;
-import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import stoufexis.jarpc.client.Publisher;
+import stoufexis.jarpc.util.Publisher;
 import stoufexis.jarpc.exchange.common.*;
 import stoufexis.jarpc.model.ClaimHandle;
 import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.model.MessageHeaderCodec;
-import stoufexis.jarpc.server.Images;
-import stoufexis.jarpc.server.ServerErrorHandler;
-import stoufexis.jarpc.server.ServerPublications;
+import stoufexis.jarpc.server.*;
 import stoufexis.jarpc.util.DecodeUtil;
 import stoufexis.jarpc.util.EncodeUtil;
 
 import static stoufexis.jarpc.util.Util.createServerSubscription;
 import static stoufexis.jarpc.util.Util.illegal;
 
-public class SingleThreadedJarpcExchangeServer
+public class SingleThreadedJarpcExchangeServer extends SingleThreadedJarpcServer
     implements SingleThreadedExchangeServer, AutoCloseable {
   private static final int POST_ORDER_REQUEST_SIZE = 32;
   private static final int CANCEL_ALL_REQUEST_SIZE = 0;
@@ -29,15 +23,8 @@ public class SingleThreadedJarpcExchangeServer
   private static final int POST_ORDER_MESSAGE_TYPE = 1;
   private static final int CANCEL_ALL_MESSAGE_TYPE = 2;
 
-  private final Subscription subscription;
-  private final ServerPublications publications;
-  private final Images images;
   private final PostOrderRequestHandler postOrderRequestHandler;
   private final CancelAllRequestHandler cancelAllRequestHandler;
-  private final ServerErrorHandler errorHandler;
-
-  private final ControlledFragmentAssembler assembled =
-      new ControlledFragmentAssembler(this::onFragment);
 
   private final PostOrderResponseEncodeImpl postOrderResponseEncode =
       new PostOrderResponseEncodeImpl();
@@ -55,15 +42,12 @@ public class SingleThreadedJarpcExchangeServer
       Subscription subscription,
       ServerPublications publications,
       Images images,
+      ServerErrorHandler errorHandler,
       PostOrderRequestHandler postOrderRequestHandler,
-      CancelAllRequestHandler cancelAllRequestHandler,
-      ServerErrorHandler errorHandler) {
-    this.subscription = subscription;
-    this.publications = publications;
-    this.images = images;
+      CancelAllRequestHandler cancelAllRequestHandler) {
+    super(subscription, publications, images, errorHandler);
     this.postOrderRequestHandler = postOrderRequestHandler;
     this.cancelAllRequestHandler = cancelAllRequestHandler;
-    this.errorHandler = errorHandler;
   }
 
   public static SingleThreadedJarpcExchangeServer create(
@@ -80,15 +64,15 @@ public class SingleThreadedJarpcExchangeServer
         serverSubscription,
         new ServerPublications(cfg.responseControl(), cfg.aeron(), cfg.responseStreamId()),
         images,
+        serverErrorHandler,
         postOrderRequestHandler,
-        cancelAllRequestHandler,
-        serverErrorHandler);
+        cancelAllRequestHandler);
   }
 
   @Override
   public PostOrderResponseEncode claimPostOrder(
       long clientId, long correlationId, ClaimHandle claimHandle) {
-    Publication publication = publications.get(clientId);
+    Publication publication = getPublication(clientId);
 
     if (publication == null) {
       claimHandle.setFailed(ErrorCode.CLIENT_NOT_EXISTS);
@@ -112,7 +96,7 @@ public class SingleThreadedJarpcExchangeServer
   @Override
   public CancelAllResponseEncode claimCancelAll(
       long clientId, long correlationId, ClaimHandle claimHandle) {
-    Publication publication = publications.get(clientId);
+    Publication publication = getPublication(clientId);
 
     if (publication == null) {
       claimHandle.setFailed(ErrorCode.CLIENT_NOT_EXISTS);
@@ -131,31 +115,6 @@ public class SingleThreadedJarpcExchangeServer
     claimHandle.setSuccess(correlationId);
     cancelAllResponseEncode.set(claim.buffer(), newOffset);
     return cancelAllResponseEncode;
-  }
-
-  @Override
-  public int poll(int limit) {
-    int work = 0;
-
-    Image image;
-    while (null != (image = images.pollAvailable())) {
-      work++;
-      publications.ensurePublicationExists(image.correlationId());
-    }
-
-    while (null != (image = images.pollUnavailable())) {
-      work++;
-      assembled.freeSessionBuffer(image.sessionId());
-      CloseHelper.quietClose(publications.remove(image.correlationId()));
-    }
-
-    return work + subscription.controlledPoll(assembled, limit);
-  }
-
-  @Override
-  public void close() {
-    CloseHelper.quietClose(subscription);
-    publications.closeAll();
   }
 
   protected boolean onMessage(
@@ -194,37 +153,6 @@ public class SingleThreadedJarpcExchangeServer
 
     cancelAllRequestDecode.set(buffer, offset);
     return cancelAllRequestHandler.onRequest(clientId, correlationId, cancelAllRequestDecode);
-  }
-
-  private ControlledFragmentHandler.Action onFragment(
-      DirectBuffer buffer, int offset, int length, Header aeronHeader) {
-    try {
-      long clientId = ((Image) aeronHeader.context()).correlationId();
-      publications.ensurePublicationExists(clientId);
-
-      MessageHeaderCodec.assertSize(length);
-      int messageType = MessageHeaderCodec.decodeMessageType(buffer, offset);
-      long correlationId = MessageHeaderCodec.decodeCorrelationId(buffer, offset);
-
-      offset += MessageHeaderCodec.HEADER_SIZE;
-      length -= MessageHeaderCodec.HEADER_SIZE;
-
-      boolean result;
-      try {
-        result = onMessage(clientId, messageType, correlationId, buffer, offset, length);
-      } catch (RuntimeException e) {
-        result = true;
-        errorHandler.onProcessingError(clientId, correlationId, messageType);
-      }
-
-      return result
-          ? ControlledFragmentHandler.Action.CONTINUE
-          : ControlledFragmentHandler.Action.ABORT;
-
-    } catch (RuntimeException e) {
-      errorHandler.onError(e);
-      throw e;
-    }
   }
 
   private static final class PostOrderResponseEncodeImpl extends EncodeUtil

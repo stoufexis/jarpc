@@ -10,6 +10,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import stoufexis.jarpc.model.MessageHeaderCodec;
 import stoufexis.jarpc.model.Poll;
+import stoufexis.jarpc.util.Publisher;
 
 public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll {
 

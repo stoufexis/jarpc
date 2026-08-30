@@ -6,7 +6,7 @@ import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import stoufexis.jarpc.client.ClientConfig;
-import stoufexis.jarpc.client.Publisher;
+import stoufexis.jarpc.util.Publisher;
 import stoufexis.jarpc.client.SingleThreadedJarpcClient;
 import stoufexis.jarpc.exchange.common.CancelAllRequestEncode;
 import stoufexis.jarpc.exchange.common.CancelAllResponseDecode;

@@ -1,4 +1,4 @@
-package stoufexis.jarpc.client;
+package stoufexis.jarpc.util;
 
 import io.aeron.Publication;
 import io.aeron.logbuffer.BufferClaim;

@@ -1,4 +1,4 @@
-package stoufexis.jarpc.exchange.server;
+package stoufexis.jarpc.server;
 
 import io.aeron.Aeron;
 

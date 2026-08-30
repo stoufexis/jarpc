@@ -42,17 +42,4 @@ public abstract class ResponseHandlerUtil<T extends ClientHandler> implements Cl
 
     return dispatched;
   }
-
-  @Override
-  public final boolean onServerDecodeError(long correlationId) {
-    T callback = getCallback(correlationId);
-
-    if (callback == null) return true;
-
-    boolean dispatched = callback.onServerDecodeError(correlationId);
-
-    if (dispatched) callbacks.remove(correlationId);
-
-    return dispatched;
-  }
 }

@@ -1,11 +1,11 @@
 package stoufexis.jarpc.exchange.common;
 
-import stoufexis.jarpc.exchange.client.CancelAllResponseHandler;
+import stoufexis.jarpc.exchange.client.ConcurrentExchangeClient;
 
 public final class CancelAllRequestScratch
     implements CancelAllRequestEncode, CancelAllRequestDecode {
 
-  private CancelAllResponseHandler handler;
+  private ConcurrentExchangeClient.CancelAllResponseHandler handler;
 
   public static void copy(CancelAllRequestScratch scratch1, CancelAllRequestScratch scratch2) {
     setter(scratch1, scratch2, scratch2.getHandler());
@@ -14,16 +14,16 @@ public final class CancelAllRequestScratch
   public static void setter(
       CancelAllRequestScratch scratch,
       CancelAllRequestDecode decode,
-      CancelAllResponseHandler handler) {
+      ConcurrentExchangeClient.CancelAllResponseHandler handler) {
     scratch.set(decode);
     scratch.setHandler(handler);
   }
 
-  public CancelAllResponseHandler getHandler() {
+  public ConcurrentExchangeClient.CancelAllResponseHandler getHandler() {
     return handler;
   }
 
-  public void setHandler(CancelAllResponseHandler handler) {
+  public void setHandler(ConcurrentExchangeClient.CancelAllResponseHandler handler) {
     this.handler = handler;
   }
 }

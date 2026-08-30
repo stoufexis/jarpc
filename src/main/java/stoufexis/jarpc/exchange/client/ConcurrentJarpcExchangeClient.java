@@ -74,7 +74,7 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
   }
 
   private final class PostOrderHandler extends ResponseHandlerUtil<PostOrderResponseHandler>
-      implements PostOrderResponseHandler {
+      implements SingleThreadedJarpcExchangeClient.PostOrderResponseHandler {
     PostOrderHandler() {
       super(postOrderCallbacks, errorHandler, "PostOrder");
     }
@@ -85,7 +85,7 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
 
       if (callback == null) return true;
 
-      boolean dispatched = callback.onResponse(correlationId, t);
+      boolean dispatched = callback.onResponse(t);
 
       if (dispatched) removeCallback(correlationId);
 
@@ -94,7 +94,7 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
   }
 
   private final class CancelAllHandler extends ResponseHandlerUtil<CancelAllResponseHandler>
-      implements CancelAllResponseHandler {
+      implements SingleThreadedJarpcExchangeClient.CancelAllResponseHandler {
     CancelAllHandler() {
       super(cancelAllCallbacks, errorHandler, "CancelAll");
     }
@@ -105,7 +105,7 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
 
       if (callback == null) return true;
 
-      boolean dispatched = callback.onResponse(correlationId, t);
+      boolean dispatched = callback.onResponse(t);
 
       if (dispatched) removeCallback(correlationId);
 

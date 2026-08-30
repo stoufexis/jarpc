@@ -1,6 +1,6 @@
 package stoufexis.jarpc.exchange.common;
 
-import stoufexis.jarpc.exchange.client.PostOrderResponseHandler;
+import stoufexis.jarpc.exchange.client.ConcurrentExchangeClient;
 
 public final class PostOrderRequestScratch
     implements PostOrderRequestDecode, PostOrderRequestEncode {
@@ -10,7 +10,7 @@ public final class PostOrderRequestScratch
   private int quantityScale;
   private long rateUnscaled;
   private int rateScale;
-  private PostOrderResponseHandler handler;
+  private ConcurrentExchangeClient.PostOrderResponseHandler handler;
 
   public static void copy(PostOrderRequestScratch scratch1, PostOrderRequestScratch scratch2) {
     setter(scratch1, scratch2, scratch2.getHandler());
@@ -19,12 +19,12 @@ public final class PostOrderRequestScratch
   public static void setter(
       PostOrderRequestScratch scratch,
       PostOrderRequestDecode decode,
-      PostOrderResponseHandler handler) {
+      ConcurrentExchangeClient.PostOrderResponseHandler handler) {
     scratch.set(decode);
     scratch.setHandler(handler);
   }
 
-  public PostOrderResponseHandler getHandler() {
+  public ConcurrentExchangeClient.PostOrderResponseHandler getHandler() {
     return handler;
   }
 
@@ -88,7 +88,7 @@ public final class PostOrderRequestScratch
     this.rateScale = rateScale;
   }
 
-  public void setHandler(PostOrderResponseHandler handler) {
+  public void setHandler(ConcurrentExchangeClient.PostOrderResponseHandler handler) {
     this.handler = handler;
   }
 }

@@ -10,13 +10,15 @@ import java.util.concurrent.CompletableFuture;
 import stoufexis.jarpc.client.ClientErrorHandler;
 import stoufexis.jarpc.error.ClientDecodeError;
 import stoufexis.jarpc.error.ServerDecodeError;
-import stoufexis.jarpc.exchange.client.SingleThreadedExchangeClient.*;
+import stoufexis.jarpc.exchange.model.CancelAllResponseDecode;
+import stoufexis.jarpc.exchange.model.PostOrderRequestEncode;
+import stoufexis.jarpc.exchange.model.PostOrderResponseDecode;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.error.PublicationError;
 
 // FIXME add timeouts and ad-hoc cancel
 
-public class FuturesJarpcExchangeClient implements FuturesExchangeClient, Agent {
+public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, Agent {
   private final SingleThreadedJarpcExchangeClient singleThreadedClient;
 
   private final ManyToOneConcurrentArrayQueue<RequestPair<PostOrderRequest, PostOrderResponse>>
@@ -27,7 +29,7 @@ public class FuturesJarpcExchangeClient implements FuturesExchangeClient, Agent 
 
   private final ClientErrorHandler errorHandler;
 
-  FuturesJarpcExchangeClient(
+  ConcurrentJarpcExchangeClient(
       Publication publication,
       Subscription subscription,
       ClientErrorHandler errorHandler,

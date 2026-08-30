@@ -1,7 +1,6 @@
 package stoufexis.jarpc.exchange.client;
 
-import stoufexis.jarpc.client.ClientHandler;
-import stoufexis.jarpc.model.Encode;
+import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.Poll;
 
 /**
@@ -11,40 +10,7 @@ import stoufexis.jarpc.model.Poll;
  * claim again.
  */
 public interface SingleThreadedExchangeClient extends Poll {
-
   PostOrderRequestEncode claimPostOrder();
 
   CancelAllRequestEncode claimCancelAll();
-
-  interface PostOrderResponseHandler extends ClientHandler {
-    boolean onResponse(long correlationId, PostOrderResponseDecode t);
-  }
-
-  interface CancelAllResponseHandler extends ClientHandler {
-    boolean onResponse(long correlationId, CancelAllResponseDecode t);
-  }
-
-  interface PostOrderRequestEncode extends Encode {
-    void setBaseAssetId(int baseAssetId);
-
-    void setQuoteAssetId(int quoteAssetId);
-
-    void setQuantityUnscaled(long quantityUnscaled);
-
-    void setQuantityScale(int quantityScale);
-
-    void setRateUnscaled(long rateUnscaled);
-
-    void setRateScale(int rateScale);
-  }
-
-  interface CancelAllRequestEncode extends Encode {}
-
-  interface PostOrderResponseDecode {
-    int getStatusCode();
-  }
-
-  interface CancelAllResponseDecode {
-    int getStatusCode();
-  }
 }

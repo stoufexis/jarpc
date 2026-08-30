@@ -6,11 +6,14 @@ import io.aeron.Subscription;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import stoufexis.jarpc.client.SingleThreadedJarpcClient;
+import stoufexis.jarpc.exchange.model.CancelAllRequestEncode;
+import stoufexis.jarpc.exchange.model.CancelAllResponseDecode;
+import stoufexis.jarpc.exchange.model.PostOrderRequestEncode;
+import stoufexis.jarpc.exchange.model.PostOrderResponseDecode;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.util.*;
 
 import static stoufexis.jarpc.util.Util.*;
-import static stoufexis.jarpc.util.Util.createClientPublication;
 
 public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpcClient
     implements SingleThreadedExchangeClient {

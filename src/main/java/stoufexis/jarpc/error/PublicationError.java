@@ -1,4 +1,4 @@
-package stoufexis.jarpc.util;
+package stoufexis.jarpc.error;
 
 import stoufexis.jarpc.model.ErrorCode;
 

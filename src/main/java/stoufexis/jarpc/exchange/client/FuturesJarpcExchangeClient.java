@@ -2,17 +2,19 @@ package stoufexis.jarpc.exchange.client;
 
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import org.agrona.ErrorHandler;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import java.util.concurrent.CompletableFuture;
 
 import stoufexis.jarpc.client.ClientErrorHandler;
+import stoufexis.jarpc.error.ClientDecodeError;
+import stoufexis.jarpc.error.ServerDecodeError;
 import stoufexis.jarpc.exchange.client.SingleThreadedExchangeClient.*;
-import stoufexis.jarpc.exchange.server.ExchangeServer;
 import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.util.PublicationError;
+import stoufexis.jarpc.error.PublicationError;
+
+// FIXME add timeouts and ad-hoc cancel
 
 public class FuturesJarpcExchangeClient implements FuturesExchangeClient, Agent {
   private final SingleThreadedJarpcExchangeClient singleThreadedClient;
@@ -60,17 +62,23 @@ public class FuturesJarpcExchangeClient implements FuturesExchangeClient, Agent 
   private final Long2ObjectHashMap<CompletableFuture<CancelAllResponse>> cancelAllCallbacks =
       new Long2ObjectHashMap<>();
 
-  private RequestPair<PostOrderRequest, PostOrderResponse> postOrder = null;
-  private RequestPair<CancelAllRequest, CancelAllResponse> cancelAll = null;
-
   private final PostOrderResponseHandler postOrderResponseHandler =
       new PostOrderResponseHandler() {
-        @Override
-        public boolean onResponse(long correlationId, PostOrderResponseDecode t) {
+        private CompletableFuture<PostOrderResponse> getCallback(long correlationId) {
           CompletableFuture<PostOrderResponse> callback = postOrderCallbacks.get(correlationId);
+
           if (callback == null) {
             errorHandler.onCallbackNotFound(correlationId, "PostOrder");
-          } else {
+          }
+
+          return callback;
+        }
+
+        @Override
+        public boolean onResponse(long correlationId, PostOrderResponseDecode t) {
+          CompletableFuture<PostOrderResponse> callback = getCallback(correlationId);
+
+          if (callback != null) {
             callback.complete(new PostOrderResponse(t.getStatusCode()));
           }
 
@@ -79,32 +87,75 @@ public class FuturesJarpcExchangeClient implements FuturesExchangeClient, Agent 
 
         @Override
         public boolean onClientDecodeError(long correlationId) {
-          return false;
+          CompletableFuture<PostOrderResponse> callback = getCallback(correlationId);
+
+          if (callback != null) {
+            callback.completeExceptionally(new ClientDecodeError());
+          }
+
+          return true;
         }
 
         @Override
         public boolean onServerDecodeError(long correlationId) {
-          return false;
+          CompletableFuture<PostOrderResponse> callback = getCallback(correlationId);
+
+          if (callback != null) {
+            callback.completeExceptionally(new ServerDecodeError());
+          }
+
+          return true;
         }
       };
 
   private final CancelAllResponseHandler cancelAllResponseHandler =
       new CancelAllResponseHandler() {
+        private CompletableFuture<CancelAllResponse> getCallback(long correlationId) {
+          CompletableFuture<CancelAllResponse> callback = cancelAllCallbacks.get(correlationId);
+
+          if (callback == null) {
+            errorHandler.onCallbackNotFound(correlationId, "CancelAll");
+          }
+
+          return callback;
+        }
+
         @Override
         public boolean onResponse(long correlationId, CancelAllResponseDecode t) {
-          return false;
+          CompletableFuture<CancelAllResponse> callback = getCallback(correlationId);
+
+          if (callback != null) {
+            callback.complete(new CancelAllResponse(t.getStatusCode()));
+          }
+
+          return true;
         }
 
         @Override
         public boolean onClientDecodeError(long correlationId) {
-          return false;
+          CompletableFuture<CancelAllResponse> callback = getCallback(correlationId);
+
+          if (callback != null) {
+            callback.completeExceptionally(new ClientDecodeError());
+          }
+
+          return true;
         }
 
         @Override
         public boolean onServerDecodeError(long correlationId) {
-          return false;
+          CompletableFuture<CancelAllResponse> callback = getCallback(correlationId);
+
+          if (callback != null) {
+            callback.completeExceptionally(new ServerDecodeError());
+          }
+
+          return true;
         }
       };
+
+  private RequestPair<PostOrderRequest, PostOrderResponse> postOrder = null;
+  private RequestPair<CancelAllRequest, CancelAllResponse> cancelAll = null;
 
   @Override
   public int doWork() {

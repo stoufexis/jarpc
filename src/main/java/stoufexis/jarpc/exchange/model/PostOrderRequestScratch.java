@@ -92,20 +92,4 @@ public final class PostOrderRequestScratch
   public void setHandler(PostOrderResponseHandler handler) {
     this.handler = handler;
   }
-
-  @Override
-  public ErrorCode code() {
-    return null;
-  }
-
-  @Override
-  public long correlationId() {
-    return 0;
-  }
-
-  @Override
-  public void commit() {}
-
-  @Override
-  public void abort() {}
 }

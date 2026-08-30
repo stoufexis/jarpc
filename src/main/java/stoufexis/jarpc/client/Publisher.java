@@ -9,7 +9,6 @@ import stoufexis.jarpc.model.MessageHeaderCodec;
 import static stoufexis.jarpc.util.Util.interpretErrorCode;
 
 public final class Publisher {
-  private final BufferClaim claim = new BufferClaim();
   private final Publication publication;
   private long correlationId = 0;
 
@@ -21,16 +20,12 @@ public final class Publisher {
     return correlationId++;
   }
 
-  public ErrorCode tryClaim(int length) {
+  public ErrorCode tryClaim(int length, BufferClaim claim) {
     long result = publication.tryClaim(length + MessageHeaderCodec.HEADER_SIZE, claim);
     return result <= 0 ? interpretErrorCode(result) : null;
   }
 
-  public BufferClaim getClaim() {
-    return claim;
-  }
-
-  public int encodeHeader(long correlationId, int messageType) {
+  public int encodeHeader(long correlationId, int messageType, BufferClaim claim) {
     MutableDirectBuffer buffer = claim.buffer();
     int offset = claim.offset();
     MessageHeaderCodec.encode(buffer, offset, correlationId, messageType);

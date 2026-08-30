@@ -1,7 +1,6 @@
 package stoufexis.jarpc.exchange.model;
 
 import stoufexis.jarpc.exchange.client.CancelAllResponseHandler;
-import stoufexis.jarpc.model.ErrorCode;
 
 public final class CancelAllRequestScratch
     implements CancelAllRequestEncode, CancelAllRequestDecode {
@@ -19,22 +18,6 @@ public final class CancelAllRequestScratch
     scratch.set(decode);
     scratch.setHandler(handler);
   }
-
-  @Override
-  public ErrorCode code() {
-    return null;
-  }
-
-  @Override
-  public long correlationId() {
-    return 0;
-  }
-
-  @Override
-  public void commit() {}
-
-  @Override
-  public void abort() {}
 
   public CancelAllResponseHandler getHandler() {
     return handler;

@@ -116,49 +116,49 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
 
   private final class PostOrderClientAgent extends ClientAgent<PostOrderRequestScratch> {
     PostOrderClientAgent() {
-      super(postOrderRequests, new PostOrderRequestScratch(), PostOrderRequestScratch::copy);
+      super(
+          postOrderRequests,
+          new PostOrderRequestScratch(),
+          PostOrderRequestScratch::copy,
+          errorHandler);
     }
 
     @Override
     protected boolean processRequest(PostOrderRequestScratch scratch) {
-      PostOrderRequestEncode encode = singleThreadedClient.claimPostOrder();
-      ErrorCode code = encode.code();
+      PostOrderRequestEncode encode = singleThreadedClient.claimPostOrder(claimHandle);
 
-      if (code == ErrorCode.BACKPRESSURE) {
-        return false;
-      } else if (code != null) {
-        errorHandler.onCorruptPublication(code);
-        return true;
-      } else {
-        postOrderCallbacks.put(encode.correlationId(), scratch.getHandler());
-        encode.set(scratch);
-        encode.commit();
-        return true;
+      if (encode == null) {
+        return handleErrorCode(claimHandle.getCode());
       }
+
+      postOrderCallbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());
+      encode.set(scratch);
+      claimHandle.commit();
+      return true;
     }
   }
 
   private final class CancelAllClientAgent extends ClientAgent<CancelAllRequestScratch> {
     CancelAllClientAgent() {
-      super(cancelAllRequests, new CancelAllRequestScratch(), CancelAllRequestScratch::copy);
+      super(
+          cancelAllRequests,
+          new CancelAllRequestScratch(),
+          CancelAllRequestScratch::copy,
+          errorHandler);
     }
 
     @Override
     protected boolean processRequest(CancelAllRequestScratch scratch) {
-      CancelAllRequestEncode encode = singleThreadedClient.claimCancelAll();
-      ErrorCode code = encode.code();
+      CancelAllRequestEncode encode = singleThreadedClient.claimCancelAll(claimHandle);
 
-      if (code == ErrorCode.BACKPRESSURE) {
-        return false;
-      } else if (code != null) {
-        errorHandler.onCorruptPublication(code);
-        return true;
-      } else {
-        cancelAllCallbacks.put(encode.correlationId(), scratch.getHandler());
-        encode.set(scratch);
-        encode.commit();
-        return true;
+      if (encode == null) {
+        return handleErrorCode(claimHandle.getCode());
       }
+
+      cancelAllCallbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());
+      encode.set(scratch);
+      claimHandle.commit();
+      return true;
     }
   }
 

@@ -2,6 +2,7 @@ package stoufexis.jarpc.exchange.client;
 
 import io.aeron.Publication;
 import io.aeron.Subscription;
+import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import stoufexis.jarpc.client.ClientConfig;
@@ -10,6 +11,7 @@ import stoufexis.jarpc.exchange.model.CancelAllRequestEncode;
 import stoufexis.jarpc.exchange.model.CancelAllResponseDecode;
 import stoufexis.jarpc.exchange.model.PostOrderRequestEncode;
 import stoufexis.jarpc.exchange.model.PostOrderResponseDecode;
+import stoufexis.jarpc.model.ClaimHandle;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.util.*;
 
@@ -66,32 +68,36 @@ public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpc
   }
 
   @Override
-  public PostOrderRequestEncode claimPostOrder() {
-    ErrorCode result = publisher.tryClaim(POST_ORDER_REQUEST_SIZE);
+  public PostOrderRequestEncode claimPostOrder(ClaimHandle claimHandle) {
+    BufferClaim claim = claimHandle.getClaim();
+    ErrorCode code = publisher.tryClaim(POST_ORDER_REQUEST_SIZE, claim);
 
-    if (result != null) {
-      postOrderRequestEncode.setFailed(result);
-    } else {
-      long id = publisher.nextCorrelationId();
-      int newOffset = publisher.encodeHeader(id, POST_ORDER_MESSAGE_TYPE);
-      postOrderRequestEncode.setSuccess(id, newOffset, publisher.getClaim());
+    if (code != null) {
+      claimHandle.setFailed(code);
+      return null;
     }
 
+    long id = publisher.nextCorrelationId();
+    int newOffset = publisher.encodeHeader(id, POST_ORDER_MESSAGE_TYPE, claim);
+    claimHandle.setSuccess(id);
+    postOrderRequestEncode.set(claim.buffer(), newOffset);
     return postOrderRequestEncode;
   }
 
   @Override
-  public CancelAllRequestEncode claimCancelAll() {
-    ErrorCode result = publisher.tryClaim(CANCEL_ALL_REQUEST_SIZE);
+  public CancelAllRequestEncode claimCancelAll(ClaimHandle claimHandle) {
+    BufferClaim claim = claimHandle.getClaim();
+    ErrorCode code = publisher.tryClaim(CANCEL_ALL_REQUEST_SIZE, claim);
 
-    if (result != null) {
-      cancelAllRequestEncode.setFailed(result);
-    } else {
-      long id = publisher.nextCorrelationId();
-      int newOffset = publisher.encodeHeader(id, CANCEL_ALL_MESSAGE_TYPE);
-      cancelAllRequestEncode.setSuccess(id, newOffset, publisher.getClaim());
+    if (code != null) {
+      claimHandle.setFailed(code);
+      return null;
     }
 
+    long id = publisher.nextCorrelationId();
+    int newOffset = publisher.encodeHeader(id, CANCEL_ALL_MESSAGE_TYPE, claim);
+    claimHandle.setSuccess(id);
+    cancelAllRequestEncode.set(claim.buffer(), newOffset);
     return cancelAllRequestEncode;
   }
 
@@ -142,37 +148,31 @@ public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpc
       implements PostOrderRequestEncode {
     @Override
     public void setBaseAssetId(int baseAssetId) {
-      checkFailed();
       buffer.putInt(offset, baseAssetId);
     }
 
     @Override
     public void setQuoteAssetId(int quoteAssetId) {
-      checkFailed();
       buffer.putInt(offset + 4, quoteAssetId);
     }
 
     @Override
     public void setQuantityUnscaled(long quantityUnscaled) {
-      checkFailed();
       buffer.putLong(offset + 8, quantityUnscaled);
     }
 
     @Override
     public void setQuantityScale(int quantityScale) {
-      checkFailed();
       buffer.putInt(offset + 16, quantityScale);
     }
 
     @Override
     public void setRateUnscaled(long rateUnscaled) {
-      checkFailed();
       buffer.putLong(offset + 20, rateUnscaled);
     }
 
     @Override
     public void setRateScale(int rateScale) {
-      checkFailed();
       buffer.putInt(offset + 28, rateScale);
     }
   }

@@ -1,6 +1,7 @@
 package stoufexis.jarpc.exchange.client;
 
 import stoufexis.jarpc.exchange.model.*;
+import stoufexis.jarpc.model.ClaimHandle;
 import stoufexis.jarpc.model.Poll;
 
 /**
@@ -10,7 +11,7 @@ import stoufexis.jarpc.model.Poll;
  * claim again.
  */
 public interface SingleThreadedExchangeClient extends Poll {
-  PostOrderRequestEncode claimPostOrder();
+  PostOrderRequestEncode claimPostOrder(ClaimHandle claimHandle);
 
-  CancelAllRequestEncode claimCancelAll();
+  CancelAllRequestEncode claimCancelAll(ClaimHandle claimHandle);
 }

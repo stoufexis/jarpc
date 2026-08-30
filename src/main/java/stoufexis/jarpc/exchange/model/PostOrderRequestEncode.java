@@ -1,8 +1,6 @@
 package stoufexis.jarpc.exchange.model;
 
-import stoufexis.jarpc.model.Encode;
-
-public interface PostOrderRequestEncode extends Encode {
+public interface PostOrderRequestEncode {
   void setBaseAssetId(int baseAssetId);
 
   void setQuoteAssetId(int quoteAssetId);

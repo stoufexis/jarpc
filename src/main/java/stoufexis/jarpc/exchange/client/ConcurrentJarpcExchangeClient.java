@@ -5,7 +5,7 @@ import io.aeron.Subscription;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 
-import stoufexis.jarpc.client.ClientAgent;
+import stoufexis.jarpc.util.MPSCBufferPollAgent;
 import stoufexis.jarpc.client.ClientConfig;
 import stoufexis.jarpc.client.ClientErrorHandler;
 import stoufexis.jarpc.exchange.common.*;
@@ -19,7 +19,7 @@ import static stoufexis.jarpc.util.Util.createExclusiveClientPublication;
 
 public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, Agent {
 
-  private final SingleThreadedJarpcExchangeClient singleThreadedClient;
+  private final SingleThreadedExchangeClient singleThreadedClient;
 
   private final MPSCRingBuffer<PostOrderRequestScratch> postOrderRequests;
   private final MPSCRingBuffer<CancelAllRequestScratch> cancelAllRequests;
@@ -29,8 +29,8 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
   private final Long2ObjectHashMap<PostOrderResponseHandler> postOrderCallbacks;
   private final Long2ObjectHashMap<CancelAllResponseHandler> cancelAllCallbacks;
 
-  private final PostOrderClientAgent postOrderClientAgent;
-  private final CancelAllClientAgent cancelAllClientAgent;
+  private final PostOrderAgent postOrderAgent;
+  private final CancelAllAgent cancelAllAgent;
 
   ConcurrentJarpcExchangeClient(
       Publication publication,
@@ -49,8 +49,8 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
     this.postOrderRequests = new MPSCRingBuffer<>(queueCapacity, PostOrderRequestScratch::new);
     this.cancelAllRequests = new MPSCRingBuffer<>(queueCapacity, CancelAllRequestScratch::new);
     this.errorHandler = errorHandler;
-    this.postOrderClientAgent = new PostOrderClientAgent();
-    this.cancelAllClientAgent = new CancelAllClientAgent();
+    this.postOrderAgent = new PostOrderAgent();
+    this.cancelAllAgent = new CancelAllAgent();
   }
 
   public static ConcurrentJarpcExchangeClient create(
@@ -71,6 +71,22 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
   @Override
   public boolean cancelAll(CancelAllRequestDecode request, CancelAllResponseHandler response) {
     return cancelAllRequests.offer(CancelAllRequestScratch::setter, request, response);
+  }
+
+  @Override
+  public int doWork() {
+    int work = 0;
+    // Use this instead of CompositeAgent to monomorphize all calls to doWork
+    // FIXME verify rationale
+    work += postOrderAgent.doWork();
+    work += cancelAllAgent.doWork();
+    work += singleThreadedClient.poll(1);
+    return work;
+  }
+
+  @Override
+  public String roleName() {
+    return "ConcurrentJarpcExchangeClient";
   }
 
   private final class PostOrderHandler extends ResponseHandlerUtil<PostOrderResponseHandler>
@@ -113,13 +129,13 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
     }
   }
 
-  private final class PostOrderClientAgent extends ClientAgent<PostOrderRequestScratch> {
-    PostOrderClientAgent() {
+  private final class PostOrderAgent extends MPSCBufferPollAgent<PostOrderRequestScratch> {
+    PostOrderAgent() {
       super(
           postOrderRequests,
           new PostOrderRequestScratch(),
           PostOrderRequestScratch::copy,
-          errorHandler);
+          errorHandler::onCorruptPublication);
     }
 
     @Override
@@ -134,13 +150,13 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
     }
   }
 
-  private final class CancelAllClientAgent extends ClientAgent<CancelAllRequestScratch> {
-    CancelAllClientAgent() {
+  private final class CancelAllAgent extends MPSCBufferPollAgent<CancelAllRequestScratch> {
+    CancelAllAgent() {
       super(
           cancelAllRequests,
           new CancelAllRequestScratch(),
           CancelAllRequestScratch::copy,
-          errorHandler);
+          errorHandler::onCorruptPublication);
     }
 
     @Override
@@ -153,21 +169,5 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
       encode.set(scratch);
       return true;
     }
-  }
-
-  @Override
-  public int doWork() {
-    int work = 0;
-    // Use this instead of CompositeAgent to monomorphize all calls to doWork
-    // FIXME verify rationale
-    work += postOrderClientAgent.doWork();
-    work += cancelAllClientAgent.doWork();
-    work += singleThreadedClient.poll(1);
-    return work;
-  }
-
-  @Override
-  public String roleName() {
-    return "ConcurrentJarpcExchangeClient";
   }
 }

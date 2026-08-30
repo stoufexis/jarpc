@@ -1,30 +1,30 @@
-package stoufexis.jarpc.client;
+package stoufexis.jarpc.util;
 
 import org.agrona.concurrent.Agent;
 import stoufexis.jarpc.model.ClaimHandle;
 import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.util.Consume2;
-import stoufexis.jarpc.util.MPSCRingBuffer;
 
-public abstract class ClientAgent<T> implements Agent {
+import java.util.function.Consumer;
+
+public abstract class MPSCBufferPollAgent<T> implements Agent {
   private final MPSCRingBuffer<T> ringBuffer;
   private final T scratch;
   private final Consume2<T, T> copy;
-  private final ClientErrorHandler errorHandler;
+  private final Consumer<ErrorCode> onCorruptPublication;
 
   private boolean populated = false;
 
   protected final ClaimHandle claimHandle = new ClaimHandle();
 
-  protected ClientAgent(
+  protected MPSCBufferPollAgent(
       MPSCRingBuffer<T> ringBuffer,
       T scratch,
       Consume2<T, T> copy,
-      ClientErrorHandler errorHandler) {
+      Consumer<ErrorCode> onCorruptPublication) {
     this.ringBuffer = ringBuffer;
     this.scratch = scratch;
     this.copy = copy;
-    this.errorHandler = errorHandler;
+    this.onCorruptPublication = onCorruptPublication;
   }
 
   protected final boolean handleError() {
@@ -33,7 +33,7 @@ public abstract class ClientAgent<T> implements Agent {
     if (code == ErrorCode.BACKPRESSURE) {
       return false;
     } else {
-      errorHandler.onCorruptPublication(code);
+      onCorruptPublication.accept(code);
       return true;
     }
   }

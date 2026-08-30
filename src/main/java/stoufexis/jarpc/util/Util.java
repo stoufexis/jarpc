@@ -51,9 +51,9 @@ public final class Util {
         images::enqueueUnavailableImage);
   }
 
-  public static Publication createServerPublication(
+  public static Publication createExclusiveServerPublication(
       Aeron aeron, long clientId, String responseControl, int responseStreamId) {
-    return aeron.addPublication(
+    return aeron.addExclusivePublication(
         new ChannelUriStringBuilder()
             .media("udp")
             .controlMode("response")

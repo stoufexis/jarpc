@@ -5,14 +5,10 @@ import io.aeron.Publication;
 import org.agrona.CloseHelper;
 import org.jctools.maps.NonBlockingHashMapLong;
 
-import static stoufexis.jarpc.util.Util.createServerPublication;
+import static stoufexis.jarpc.util.Util.createExclusiveServerPublication;
 
 public final class ServerPublications {
 
-  // FIXME this is perhaps not the best data structure for this use-case.
-  //  removes leave behind tombstones, which are not re-used since keys do not repeat,
-  //  which forces a somewhat expensive periodic compaction.
-  //  Consider replacing this with a purpose-built data structure instead.
   private final NonBlockingHashMapLong<Publication> clientToPublicationMap =
       new NonBlockingHashMapLong<>();
 
@@ -30,7 +26,8 @@ public final class ServerPublications {
     // We don't need computeIfAbsent, put/remove only happen in the agent thread.
     Publication publication = clientToPublicationMap.get(clientId);
     if (null == publication) {
-      publication = createServerPublication(aeron, clientId, responseControl, responseStreamId);
+      publication =
+          createExclusiveServerPublication(aeron, clientId, responseControl, responseStreamId);
       clientToPublicationMap.put(clientId, publication);
     }
 

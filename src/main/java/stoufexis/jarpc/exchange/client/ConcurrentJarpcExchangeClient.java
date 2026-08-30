@@ -9,6 +9,7 @@ import stoufexis.jarpc.client.ClientErrorHandler;
 import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.util.MPSCRingBuffer;
+import stoufexis.jarpc.util.ResponseHandlerUtil;
 
 // FIXME add timeouts and ad-hoc cancel
 
@@ -21,17 +22,22 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
 
   private final ClientErrorHandler errorHandler;
 
+  private final Long2ObjectHashMap<PostOrderResponseHandler> postOrderCallbacks;
+  private final Long2ObjectHashMap<CancelAllResponseHandler> cancelAllCallbacks;
+
   ConcurrentJarpcExchangeClient(
       Publication publication,
       Subscription subscription,
       ClientErrorHandler errorHandler,
       int queueCapacity) {
+    this.postOrderCallbacks = new Long2ObjectHashMap<>();
+    this.cancelAllCallbacks = new Long2ObjectHashMap<>();
     this.singleThreadedClient =
         new SingleThreadedJarpcExchangeClient(
             publication,
             subscription,
-            postOrderResponseHandler,
-            cancelAllResponseHandler,
+            new PostOrderResponseHandlerImpl(postOrderCallbacks, errorHandler, "PostOrder"),
+            new CancelAllResponseHandlerImpl(cancelAllCallbacks, errorHandler, "CancelAll"),
             errorHandler);
     this.postOrderRequests = new MPSCRingBuffer<>(queueCapacity, PostOrderRequestScratch::new);
     this.cancelAllRequests = new MPSCRingBuffer<>(queueCapacity, CancelAllRequestScratch::new);
@@ -48,139 +54,53 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
     return cancelAllRequests.offer(CancelAllRequestScratch::setter, request, response);
   }
 
-  private final Long2ObjectHashMap<PostOrderResponseHandler> postOrderCallbacks =
-      new Long2ObjectHashMap<>();
+  private static final class PostOrderResponseHandlerImpl
+      extends ResponseHandlerUtil<PostOrderResponseHandler> implements PostOrderResponseHandler {
 
-  private final Long2ObjectHashMap<CancelAllResponseHandler> cancelAllCallbacks =
-      new Long2ObjectHashMap<>();
+    PostOrderResponseHandlerImpl(
+        Long2ObjectHashMap<PostOrderResponseHandler> callbacks,
+        ClientErrorHandler errorHandler,
+        String label) {
+      super(callbacks, errorHandler, label);
+    }
 
-  private final PostOrderResponseHandler postOrderResponseHandler =
-      new PostOrderResponseHandler() {
-        private PostOrderResponseHandler getCallback(long correlationId) {
-          PostOrderResponseHandler callback = postOrderCallbacks.get(correlationId);
+    @Override
+    public boolean onResponse(long correlationId, PostOrderResponseDecode t) {
+      PostOrderResponseHandler callback = getCallback(correlationId);
 
-          if (callback == null) {
-            errorHandler.onCallbackNotFound(correlationId, "PostOrder");
-          }
+      if (callback == null) return true;
 
-          return callback;
-        }
+      boolean dispatched = callback.onResponse(correlationId, t);
 
-        @Override
-        public boolean onResponse(long correlationId, PostOrderResponseDecode t) {
-          PostOrderResponseHandler callback = getCallback(correlationId);
+      if (dispatched) removeCallback(correlationId);
 
-          boolean dispatched = false;
+      return dispatched;
+    }
+  }
 
-          if (callback != null) {
-            dispatched = callback.onResponse(correlationId, t);
-          }
+  private static final class CancelAllResponseHandlerImpl
+      extends ResponseHandlerUtil<CancelAllResponseHandler> implements CancelAllResponseHandler {
 
-          if (dispatched) {
-            postOrderCallbacks.remove(correlationId);
-          }
+    CancelAllResponseHandlerImpl(
+        Long2ObjectHashMap<CancelAllResponseHandler> callbacks,
+        ClientErrorHandler errorHandler,
+        String label) {
+      super(callbacks, errorHandler, label);
+    }
 
-          return true;
-        }
+    @Override
+    public boolean onResponse(long correlationId, CancelAllResponseDecode t) {
+      CancelAllResponseHandler callback = getCallback(correlationId);
 
-        @Override
-        public boolean onClientDecodeError(long correlationId) {
-          PostOrderResponseHandler callback = getCallback(correlationId);
+      if (callback == null) return true;
 
-          boolean dispatched = false;
+      boolean dispatched = callback.onResponse(correlationId, t);
 
-          if (callback != null) {
-            dispatched = callback.onClientDecodeError(correlationId);
-          }
+      if (dispatched) removeCallback(correlationId);
 
-          if (dispatched) {
-            postOrderCallbacks.remove(correlationId);
-          }
-
-          return true;
-        }
-
-        @Override
-        public boolean onServerDecodeError(long correlationId) {
-          PostOrderResponseHandler callback = getCallback(correlationId);
-
-          boolean dispatched = false;
-
-          if (callback != null) {
-            dispatched = callback.onServerDecodeError(correlationId);
-          }
-
-          if (dispatched) {
-            postOrderCallbacks.remove(correlationId);
-          }
-
-          return true;
-        }
-      };
-
-  private final CancelAllResponseHandler cancelAllResponseHandler =
-      new CancelAllResponseHandler() {
-        private CancelAllResponseHandler getCallback(long correlationId) {
-          CancelAllResponseHandler callback = cancelAllCallbacks.get(correlationId);
-
-          if (callback == null) {
-            errorHandler.onCallbackNotFound(correlationId, "PostOrder");
-          }
-
-          return callback;
-        }
-
-        @Override
-        public boolean onResponse(long correlationId, CancelAllResponseDecode t) {
-          CancelAllResponseHandler callback = getCallback(correlationId);
-
-          boolean dispatched = false;
-
-          if (callback != null) {
-            dispatched = callback.onResponse(correlationId, t);
-          }
-
-          if (dispatched) {
-            cancelAllCallbacks.remove(correlationId);
-          }
-
-          return true;
-        }
-
-        @Override
-        public boolean onClientDecodeError(long correlationId) {
-          CancelAllResponseHandler callback = getCallback(correlationId);
-
-          boolean dispatched = false;
-
-          if (callback != null) {
-            dispatched = callback.onClientDecodeError(correlationId);
-          }
-
-          if (dispatched) {
-            cancelAllCallbacks.remove(correlationId);
-          }
-
-          return true;
-        }
-
-        @Override
-        public boolean onServerDecodeError(long correlationId) {
-          CancelAllResponseHandler callback = getCallback(correlationId);
-
-          boolean dispatched = false;
-
-          if (callback != null) {
-            dispatched = callback.onServerDecodeError(correlationId);
-          }
-
-          if (dispatched) {
-            cancelAllCallbacks.remove(correlationId);
-          }
-
-          return true;
-        }
-      };
+      return dispatched;
+    }
+  }
 
   private boolean postOrderPopulated = false;
   private final PostOrderRequestScratch postOrder = new PostOrderRequestScratch();
@@ -239,6 +159,6 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
 
   @Override
   public String roleName() {
-    return "FuturesJarpcExchangeClient";
+    return "ConcurrentJarpcExchangeClient";
   }
 }

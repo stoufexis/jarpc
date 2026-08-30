@@ -6,11 +6,12 @@ import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import stoufexis.jarpc.client.ClientConfig;
+import stoufexis.jarpc.client.Publisher;
 import stoufexis.jarpc.client.SingleThreadedJarpcClient;
-import stoufexis.jarpc.exchange.model.CancelAllRequestEncode;
-import stoufexis.jarpc.exchange.model.CancelAllResponseDecode;
-import stoufexis.jarpc.exchange.model.PostOrderRequestEncode;
-import stoufexis.jarpc.exchange.model.PostOrderResponseDecode;
+import stoufexis.jarpc.exchange.common.CancelAllRequestEncode;
+import stoufexis.jarpc.exchange.common.CancelAllResponseDecode;
+import stoufexis.jarpc.exchange.common.PostOrderRequestEncode;
+import stoufexis.jarpc.exchange.common.PostOrderResponseDecode;
 import stoufexis.jarpc.model.ClaimHandle;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.util.*;
@@ -78,7 +79,7 @@ public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpc
     }
 
     long id = publisher.nextCorrelationId();
-    int newOffset = publisher.encodeHeader(id, POST_ORDER_MESSAGE_TYPE, claim);
+    int newOffset = Publisher.encodeHeader(id, POST_ORDER_MESSAGE_TYPE, claim);
     claimHandle.setSuccess(id);
     postOrderRequestEncode.set(claim.buffer(), newOffset);
     return postOrderRequestEncode;
@@ -95,19 +96,10 @@ public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpc
     }
 
     long id = publisher.nextCorrelationId();
-    int newOffset = publisher.encodeHeader(id, CANCEL_ALL_MESSAGE_TYPE, claim);
+    int newOffset = Publisher.encodeHeader(id, CANCEL_ALL_MESSAGE_TYPE, claim);
     claimHandle.setSuccess(id);
     cancelAllRequestEncode.set(claim.buffer(), newOffset);
     return cancelAllRequestEncode;
-  }
-
-  @Override
-  protected boolean onProcessingFailure(int baseMessageType, long correlationId) {
-    return switch (baseMessageType) {
-      case POST_ORDER_MESSAGE_TYPE -> postOrderResponseHandler.onServerDecodeError(correlationId);
-      case CANCEL_ALL_MESSAGE_TYPE -> cancelAllResponseHandler.onServerDecodeError(correlationId);
-      default -> throw illegal("Unknown message type " + baseMessageType);
-    };
   }
 
   @Override
@@ -123,7 +115,7 @@ public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpc
   private boolean onPostOrderResponse(
       long correlationId, DirectBuffer buffer, int offset, int length) {
 
-    if (length != POST_ORDER_RESPONSE_SIZE) {
+    if (length == POST_ORDER_RESPONSE_SIZE) {
       postOrderResponseDecode.set(buffer, offset);
       return postOrderResponseHandler.onResponse(correlationId, postOrderResponseDecode);
 
@@ -135,7 +127,7 @@ public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpc
   private boolean onCancelAllResponse(
       long correlationId, DirectBuffer buffer, int offset, int length) {
 
-    if (length != CANCEL_ALL_RESPONSE_SIZE) {
+    if (length == CANCEL_ALL_RESPONSE_SIZE) {
       cancelAllResponseDecode.set(buffer, offset);
       return cancelAllResponseHandler.onResponse(correlationId, cancelAllResponseDecode);
 

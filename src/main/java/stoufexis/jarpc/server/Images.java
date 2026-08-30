@@ -12,11 +12,11 @@ public final class Images {
   private final OneToOneConcurrentArrayQueue<Image> unavailableImages =
       new OneToOneConcurrentArrayQueue<>(QUEUE_CAPACITY);
 
-  Image pollAvailable() {
+  public Image pollAvailable() {
     return availableImages.poll();
   }
 
-  Image pollUnavailable() {
+  public Image pollUnavailable() {
     return unavailableImages.poll();
   }
 

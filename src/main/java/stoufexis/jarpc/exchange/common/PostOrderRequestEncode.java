@@ -1,4 +1,4 @@
-package stoufexis.jarpc.exchange.model;
+package stoufexis.jarpc.exchange.common;
 
 public interface PostOrderRequestEncode {
   void setBaseAssetId(int baseAssetId);

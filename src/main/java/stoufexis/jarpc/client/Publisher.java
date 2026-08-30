@@ -21,14 +21,18 @@ public final class Publisher {
   }
 
   public ErrorCode tryClaim(int length, BufferClaim claim) {
-    long result = publication.tryClaim(length + MessageHeaderCodec.HEADER_SIZE, claim);
-    return result <= 0 ? interpretErrorCode(result) : null;
+    return tryClaim(length, claim, publication);
   }
 
-  public int encodeHeader(long correlationId, int messageType, BufferClaim claim) {
+  public static int encodeHeader(long correlationId, int messageType, BufferClaim claim) {
     MutableDirectBuffer buffer = claim.buffer();
     int offset = claim.offset();
     MessageHeaderCodec.encode(buffer, offset, correlationId, messageType);
     return offset + MessageHeaderCodec.HEADER_SIZE;
+  }
+
+  public static ErrorCode tryClaim(int length, BufferClaim claim, Publication publication) {
+    long result = publication.tryClaim(length + MessageHeaderCodec.HEADER_SIZE, claim);
+    return result <= 0 ? interpretErrorCode(result) : null;
   }
 }

@@ -18,7 +18,6 @@ public abstract class JarpcServer implements Agent, AutoCloseable {
   private final Images images;
   private final Subscription serverSubscription;
   private final ServerPublications publications;
-  private final ProcessingFailureUtil processingFailureUtil;
 
   protected JarpcServer(
       Aeron aeron,

@@ -1,7 +1,7 @@
 package stoufexis.jarpc.exchange.client;
 
-import stoufexis.jarpc.exchange.model.CancelAllRequestDecode;
-import stoufexis.jarpc.exchange.model.PostOrderRequestDecode;
+import stoufexis.jarpc.exchange.common.CancelAllRequestDecode;
+import stoufexis.jarpc.exchange.common.PostOrderRequestDecode;
 
 /**
  * Futures-based client. This produces relatively high GC pressure and high latency compared to the

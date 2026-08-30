@@ -1,7 +1,6 @@
-package stoufexis.jarpc.exchange.model;
+package stoufexis.jarpc.exchange.common;
 
 import stoufexis.jarpc.exchange.client.PostOrderResponseHandler;
-import stoufexis.jarpc.model.ErrorCode;
 
 public final class PostOrderRequestScratch
     implements PostOrderRequestDecode, PostOrderRequestEncode {

@@ -10,9 +10,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import stoufexis.jarpc.model.MessageHeaderCodec;
 import stoufexis.jarpc.model.Poll;
-import stoufexis.jarpc.model.ProcessingFailureCodec;
-
-import static stoufexis.jarpc.util.Util.illegal;
 
 public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll {
 
@@ -32,8 +29,6 @@ public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll {
     this.publisher = new Publisher(publication);
   }
 
-  protected abstract boolean onProcessingFailure(int baseMessageType, long correlationId);
-
   protected abstract boolean onMessage(
       int messageType, long correlationId, DirectBuffer buffer, int offset, int length);
 
@@ -47,19 +42,7 @@ public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll {
       offset += MessageHeaderCodec.HEADER_SIZE;
       length -= MessageHeaderCodec.HEADER_SIZE;
 
-      boolean accepted;
-
-      if (messageType > 0) {
-        accepted = onMessage(messageType, correlationId, buffer, offset, length);
-      } else if (messageType == ProcessingFailureCodec.MESSAGE_TYPE_ID) {
-        ProcessingFailureCodec.assertSize(length);
-        int baseMessageType = ProcessingFailureCodec.decodeBaseMessageType(buffer, offset);
-        accepted = onProcessingFailure(baseMessageType, correlationId);
-      } else {
-        throw illegal("Unknown message type " + messageType);
-      }
-
-      return accepted
+      return onMessage(messageType, correlationId, buffer, offset, length)
           ? ControlledFragmentHandler.Action.CONTINUE
           : ControlledFragmentHandler.Action.ABORT;
 

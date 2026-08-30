@@ -8,8 +8,7 @@ import org.agrona.concurrent.Agent;
 import stoufexis.jarpc.client.ClientAgent;
 import stoufexis.jarpc.client.ClientConfig;
 import stoufexis.jarpc.client.ClientErrorHandler;
-import stoufexis.jarpc.exchange.model.*;
-import stoufexis.jarpc.model.ErrorCode;
+import stoufexis.jarpc.exchange.common.*;
 import stoufexis.jarpc.util.MPSCRingBuffer;
 import stoufexis.jarpc.util.ResponseHandlerUtil;
 

@@ -20,13 +20,13 @@ public final class ServerPublications {
   private final Aeron aeron;
   private final int responseStreamId;
 
-  ServerPublications(String responseControl, Aeron aeron, int responseStreamId) {
+  public ServerPublications(String responseControl, Aeron aeron, int responseStreamId) {
     this.responseControl = responseControl;
     this.aeron = aeron;
     this.responseStreamId = responseStreamId;
   }
 
-  Publication ensurePublicationExists(long clientId) {
+  public Publication ensurePublicationExists(long clientId) {
     // We don't need computeIfAbsent, put/remove only happen in the agent thread.
     Publication publication = clientToPublicationMap.get(clientId);
     if (null == publication) {
@@ -37,15 +37,15 @@ public final class ServerPublications {
     return publication;
   }
 
-  Publication remove(long clientId) {
+  public Publication remove(long clientId) {
     return clientToPublicationMap.remove(clientId);
   }
 
-  void closeAll() {
+  public void closeAll() {
     clientToPublicationMap.values().forEach(CloseHelper::quietClose);
   }
 
-  Publication get(long clientId) {
+  public Publication get(long clientId) {
     return clientToPublicationMap.get(clientId);
   }
 }

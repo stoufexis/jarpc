@@ -4,28 +4,26 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import java.util.concurrent.CompletableFuture;
 
 import stoufexis.jarpc.client.ClientErrorHandler;
 import stoufexis.jarpc.error.ClientDecodeError;
 import stoufexis.jarpc.error.ServerDecodeError;
-import stoufexis.jarpc.exchange.model.CancelAllResponseDecode;
-import stoufexis.jarpc.exchange.model.PostOrderRequestEncode;
-import stoufexis.jarpc.exchange.model.PostOrderResponseDecode;
+import stoufexis.jarpc.exchange.model.*;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.error.PublicationError;
+import stoufexis.jarpc.util.MPSCRingBuffer;
+
+import static stoufexis.jarpc.util.Util.illegal;
 
 // FIXME add timeouts and ad-hoc cancel
 
 public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, Agent {
+
   private final SingleThreadedJarpcExchangeClient singleThreadedClient;
 
-  private final ManyToOneConcurrentArrayQueue<RequestPair<PostOrderRequest, PostOrderResponse>>
-      postOrderRequests;
-
-  private final ManyToOneConcurrentArrayQueue<RequestPair<CancelAllRequest, CancelAllResponse>>
-      cancelAllRequests;
+  private final MPSCRingBuffer<PostOrderRequestScratch> postOrderRequests;
+  private final MPSCRingBuffer<CancelAllRequestScratch> cancelAllRequests;
 
   private final ClientErrorHandler errorHandler;
 
@@ -41,33 +39,31 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
             postOrderResponseHandler,
             cancelAllResponseHandler,
             errorHandler);
-    this.postOrderRequests = new ManyToOneConcurrentArrayQueue<>(queueCapacity);
-    this.cancelAllRequests = new ManyToOneConcurrentArrayQueue<>(queueCapacity);
+    this.postOrderRequests = new MPSCRingBuffer<>(queueCapacity, PostOrderRequestScratch::new);
+    this.cancelAllRequests = new MPSCRingBuffer<>(queueCapacity, CancelAllRequestScratch::new);
     this.errorHandler = errorHandler;
   }
 
   @Override
-  public boolean postOrder(
-      PostOrderRequest request, CompletableFuture<PostOrderResponse> response) {
-    return postOrderRequests.offer(new RequestPair<>(request, response));
+  public boolean postOrder(PostOrderRequestDecode request, PostOrderResponseHandler response) {
+    return postOrderRequests.offer(PostOrderRequestScratch::setter, request, response);
   }
 
   @Override
-  public boolean cancelAll(
-      CancelAllRequest request, CompletableFuture<CancelAllResponse> response) {
-    return cancelAllRequests.offer(new RequestPair<>(request, response));
+  public boolean cancelAll(CancelAllRequestDecode request, CancelAllResponseHandler response) {
+    return cancelAllRequests.offer(CancelAllRequestScratch::setter, request, response);
   }
 
-  private final Long2ObjectHashMap<CompletableFuture<PostOrderResponse>> postOrderCallbacks =
+  private final Long2ObjectHashMap<PostOrderResponseHandler> postOrderCallbacks =
       new Long2ObjectHashMap<>();
 
-  private final Long2ObjectHashMap<CompletableFuture<CancelAllResponse>> cancelAllCallbacks =
+  private final Long2ObjectHashMap<CancelAllResponseHandler> cancelAllCallbacks =
       new Long2ObjectHashMap<>();
 
   private final PostOrderResponseHandler postOrderResponseHandler =
       new PostOrderResponseHandler() {
-        private CompletableFuture<PostOrderResponse> getCallback(long correlationId) {
-          CompletableFuture<PostOrderResponse> callback = postOrderCallbacks.get(correlationId);
+        private PostOrderResponseHandler getCallback(long correlationId) {
+          PostOrderResponseHandler callback = postOrderCallbacks.get(correlationId);
 
           if (callback == null) {
             errorHandler.onCallbackNotFound(correlationId, "PostOrder");
@@ -78,10 +74,16 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
 
         @Override
         public boolean onResponse(long correlationId, PostOrderResponseDecode t) {
-          CompletableFuture<PostOrderResponse> callback = getCallback(correlationId);
+          PostOrderResponseHandler callback = getCallback(correlationId);
+
+          boolean dispatched = false;
 
           if (callback != null) {
-            callback.complete(new PostOrderResponse(t.getStatusCode()));
+            dispatched = callback.onResponse(correlationId, t);
+          }
+
+          if (dispatched) {
+            postOrderCallbacks.remove(correlationId);
           }
 
           return true;
@@ -89,10 +91,16 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
 
         @Override
         public boolean onClientDecodeError(long correlationId) {
-          CompletableFuture<PostOrderResponse> callback = getCallback(correlationId);
+          PostOrderResponseHandler callback = getCallback(correlationId);
+
+          boolean dispatched = false;
 
           if (callback != null) {
-            callback.completeExceptionally(new ClientDecodeError());
+            dispatched = callback.onClientDecodeError(correlationId);
+          }
+
+          if (dispatched) {
+            postOrderCallbacks.remove(correlationId);
           }
 
           return true;
@@ -100,10 +108,16 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
 
         @Override
         public boolean onServerDecodeError(long correlationId) {
-          CompletableFuture<PostOrderResponse> callback = getCallback(correlationId);
+          PostOrderResponseHandler callback = getCallback(correlationId);
+
+          boolean dispatched = false;
 
           if (callback != null) {
-            callback.completeExceptionally(new ServerDecodeError());
+            dispatched = callback.onServerDecodeError(correlationId);
+          }
+
+          if (dispatched) {
+            postOrderCallbacks.remove(correlationId);
           }
 
           return true;
@@ -112,11 +126,11 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
 
   private final CancelAllResponseHandler cancelAllResponseHandler =
       new CancelAllResponseHandler() {
-        private CompletableFuture<CancelAllResponse> getCallback(long correlationId) {
-          CompletableFuture<CancelAllResponse> callback = cancelAllCallbacks.get(correlationId);
+        private CancelAllResponseHandler getCallback(long correlationId) {
+          CancelAllResponseHandler callback = cancelAllCallbacks.get(correlationId);
 
           if (callback == null) {
-            errorHandler.onCallbackNotFound(correlationId, "CancelAll");
+            errorHandler.onCallbackNotFound(correlationId, "PostOrder");
           }
 
           return callback;
@@ -124,10 +138,16 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
 
         @Override
         public boolean onResponse(long correlationId, CancelAllResponseDecode t) {
-          CompletableFuture<CancelAllResponse> callback = getCallback(correlationId);
+          CancelAllResponseHandler callback = getCallback(correlationId);
+
+          boolean dispatched = false;
 
           if (callback != null) {
-            callback.complete(new CancelAllResponse(t.getStatusCode()));
+            dispatched = callback.onResponse(correlationId, t);
+          }
+
+          if (dispatched) {
+            cancelAllCallbacks.remove(correlationId);
           }
 
           return true;
@@ -135,10 +155,16 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
 
         @Override
         public boolean onClientDecodeError(long correlationId) {
-          CompletableFuture<CancelAllResponse> callback = getCallback(correlationId);
+          CancelAllResponseHandler callback = getCallback(correlationId);
+
+          boolean dispatched = false;
 
           if (callback != null) {
-            callback.completeExceptionally(new ClientDecodeError());
+            dispatched = callback.onClientDecodeError(correlationId);
+          }
+
+          if (dispatched) {
+            cancelAllCallbacks.remove(correlationId);
           }
 
           return true;
@@ -146,68 +172,69 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
 
         @Override
         public boolean onServerDecodeError(long correlationId) {
-          CompletableFuture<CancelAllResponse> callback = getCallback(correlationId);
+          CancelAllResponseHandler callback = getCallback(correlationId);
+
+          boolean dispatched = false;
 
           if (callback != null) {
-            callback.completeExceptionally(new ServerDecodeError());
+            dispatched = callback.onServerDecodeError(correlationId);
+          }
+
+          if (dispatched) {
+            cancelAllCallbacks.remove(correlationId);
           }
 
           return true;
         }
       };
 
-  private RequestPair<PostOrderRequest, PostOrderResponse> postOrder = null;
-  private RequestPair<CancelAllRequest, CancelAllResponse> cancelAll = null;
+  private boolean postOrderPopulated = false;
+  private final PostOrderRequestScratch postOrder = new PostOrderRequestScratch();
+
+  private boolean cancelAllPopulated = false;
+  private final CancelAllRequestScratch cancelAll = new CancelAllRequestScratch();
 
   @Override
   public int doWork() {
     int work = 0;
 
-    if (postOrder == null) {
-      postOrder = postOrderRequests.poll();
+    if (!postOrderPopulated) {
+      postOrderPopulated = postOrderRequests.poll(PostOrderRequestScratch::copy, postOrder);
     }
 
-    if (postOrder != null) {
+    if (postOrderPopulated) {
       PostOrderRequestEncode encode = singleThreadedClient.claimPostOrder();
 
       if (encode.code() == ErrorCode.BACKPRESSURE) {
         return work;
       } else if (encode.code() != null) {
-        postOrder.response.completeExceptionally(new PublicationError(encode.code()));
-        postOrder = null;
-        work++;
+        errorHandler.onCorruptPublication(encode.code());
+        postOrderPopulated = false;
       } else {
-        postOrderCallbacks.put(encode.correlationId(), postOrder.response);
-        encode.setBaseAssetId(postOrder.request.baseAssetId());
-        encode.setQuoteAssetId(postOrder.request.quoteAssetId());
-        encode.setQuantityUnscaled(postOrder.request.quantityUnscaled());
-        encode.setQuantityScale(postOrder.request.quantityScale());
-        encode.setRateUnscaled(postOrder.request.rateUnscaled());
-        encode.setRateScale(postOrder.request.rateScale());
-        encode.commit();
+        postOrderCallbacks.put(encode.correlationId(), postOrder.getHandler());
+        encode.set(postOrder);
+        postOrderPopulated = false;
         work++;
-        postOrder = null;
       }
     }
 
-    if (cancelAll == null) {
-      cancelAll = cancelAllRequests.poll();
+    if (!cancelAllPopulated) {
+      cancelAllPopulated = cancelAllRequests.poll(CancelAllRequestScratch::copy, cancelAll);
     }
 
-    if (cancelAll != null) {
+    if (cancelAllPopulated) {
       CancelAllRequestEncode encode = singleThreadedClient.claimCancelAll();
 
       if (encode.code() == ErrorCode.BACKPRESSURE) {
         return work;
       } else if (encode.code() != null) {
-        cancelAll.response.completeExceptionally(new PublicationError(encode.code()));
-        work++;
-        cancelAll = null;
+        errorHandler.onCorruptPublication(encode.code());
+        cancelAllPopulated = false;
       } else {
-        cancelAllCallbacks.put(encode.correlationId(), cancelAll.response);
-        encode.commit();
+        cancelAllCallbacks.put(encode.correlationId(), cancelAll.getHandler());
+        encode.set(cancelAll);
+        cancelAllPopulated = false;
         work++;
-        cancelAll = null;
       }
     }
 
@@ -220,6 +247,4 @@ public class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, 
   public String roleName() {
     return "FuturesJarpcExchangeClient";
   }
-
-  private record RequestPair<Req, Res>(Req request, CompletableFuture<Res> response) {}
 }

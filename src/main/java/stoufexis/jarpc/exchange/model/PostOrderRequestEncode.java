@@ -14,4 +14,13 @@ public interface PostOrderRequestEncode extends Encode {
   void setRateUnscaled(long rateUnscaled);
 
   void setRateScale(int rateScale);
+
+  default void set(PostOrderRequestDecode decode) {
+    setBaseAssetId(decode.getBaseAssetId());
+    setQuoteAssetId(decode.getQuoteAssetId());
+    setQuantityUnscaled(decode.getQuantityUnscaled());
+    setQuantityScale(decode.getQuantityScale());
+    setRateUnscaled(decode.getRateUnscaled());
+    setRateScale(decode.getRateScale());
+  }
 }

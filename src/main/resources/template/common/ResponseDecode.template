@@ -1,3 +1,4 @@
+```foreachType
 package %package%.common;
 
 public interface %Type%ResponseDecode {
@@ -5,3 +6,4 @@ public interface %Type%ResponseDecode {
     %fieldType% get%Field%();
 ```foreachResponseField
 }
+```foreachType

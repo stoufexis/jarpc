@@ -3,33 +3,67 @@ package stoufexis.jarpc.gen;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class Generator {
-  private Variable pkg;
-  private Variable service;
-  private List<RpcType> rpcTypes;
 
-  public void parseSpec(String serviceName, String serviceSpec, List<String> packageComponents) {
-    this.pkg = var(String.join(".", packageComponents));
-    this.service = var(serviceName);
+  public static void generate(
+      String serviceName, String serviceSpec, List<String> packageComponents) {
+    String pkg = String.join(".", packageComponents);
+    Variable service = var(serviceName);
 
     LinkedList<RpcType> types = new LinkedList<>();
     JSONArray specJson = new JSONArray(serviceSpec);
 
+    int typeId = 1;
     for (var obj : specJson) {
       JSONObject rpc = (JSONObject) obj;
 
       Variable rpcName = var(rpc.getString("rpcName"));
       List<Field> requestFields = getFields(rpc, "request");
       List<Field> responseFields = getFields(rpc, "response");
-      types.add(new RpcType(rpcName, requestFields, responseFields));
+      types.add(
+          new RpcType(
+              rpcName,
+              requestFields,
+              responseFields,
+              messageSize(requestFields),
+              messageSize(responseFields),
+              typeId++));
     }
 
-    rpcTypes = List.copyOf(types);
+    List<RpcType> rpcTypes = List.copyOf(types);
+  }
+
+  private static void generateCommon(Spec args) throws IOException {
+    String base = "/template/common/";
+    String metadataTemplate = "Metadata.template";
+    List<String> codecTemplates =
+        List.of(
+            "RequestDecode.template",
+            "RequestEncode.template",
+            "RequestScratch.template",
+            "ResponseDecode.template",
+            "ResponseEncode.template",
+            "ResponseScratch.template");
+
+    LinkedList<String> foreachContext = new LinkedList<>();
+    for (String line : Files.readAllLines(Path.of(base + metadataTemplate))) {}
+  }
+
+  private static int messageSize(List<Field> fields) {
+    int size = 0;
+    for (var field : fields) {
+      size += typeLength(field.fieldType.value);
+    }
+
+    return size;
   }
 
   private static List<Field> getFields(JSONObject rpc, String key) {
@@ -55,19 +89,59 @@ public class Generator {
     };
   }
 
+  private record Spec(Variable serviceName, String pkg, String outputPath, List<RpcType> spec) {
+    String valueForPlaceholder(String placeholder) {
+      return switch (placeholder) {
+        case "package" -> pkg;
+        case "Service" -> serviceName.toPascalCase();
+        case "service" -> serviceName.toCamelCase();
+        case "SERVICE" -> serviceName.toSnakeCaseUpper();
+        default ->
+            throw new IllegalArgumentException("Unknown top-level placeholder " + placeholder);
+      };
+    }
+  }
+
   private static Variable var(String v) {
     return new Variable(v);
   }
 
-  private record RpcType(Variable rpcName, List<Field> requestFields, List<Field> responseFields) {}
+  private record RpcType(
+      Variable rpcName,
+      List<Field> requestFields,
+      List<Field> responseFields,
+      int requestSize,
+      int responseSize,
+      int typeId) {
+    String valueForPlaceholder(String placeholder) {
+      return switch (placeholder) {
+        case "type" -> rpcName.toCamelCase();
+        case "Type" -> rpcName.toPascalCase();
+        case "TYPE" -> rpcName.toSnakeCaseUpper();
+        default ->
+            throw new IllegalArgumentException("Unknown per-type placeholder " + placeholder);
+      };
+    }
+  }
 
-  private record Field(Variable fieldName, Variable fieldType, int fieldOffset) {}
+  private record Field(Variable fieldName, Variable fieldType, int fieldOffset) {
+    String valueForPlaceholder(String placeholder) {
+      return switch (placeholder) {
+        case "Field" -> fieldName.toPascalCase();
+        case "field" -> fieldName.toCamelCase();
+        case "FIELD" -> fieldName.toSnakeCaseUpper();
+        default ->
+            throw new IllegalArgumentException("Unknown per-type placeholder " + placeholder);
+      };
+    }
+
+  }
 
   private record Variable(String value) {
 
     Variable {
       if (!value.matches("^[a-z][a-zA-Z0-9]*$")) {
-        throw new IllegalArgumentException("expected" + value + " to be in camel case");
+        throw new IllegalArgumentException("expected " + value + " to be in camel case");
       }
     }
 

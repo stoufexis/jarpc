@@ -1,3 +1,4 @@
+```foreachType
 package %package%.common;
 
 public interface %Type%ResponseEncode {
@@ -11,3 +12,4 @@ public interface %Type%ResponseEncode {
 ```foreachResponseField
   }
 }
+```foreachType

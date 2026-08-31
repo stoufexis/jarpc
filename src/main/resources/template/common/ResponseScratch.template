@@ -1,3 +1,4 @@
+```foreachType
 package %package%.common;
 
 public final class %Type%ResponseScratch
@@ -32,3 +33,4 @@ public final class %Type%ResponseScratch
   }
 ```foreachResponseField
 }
+```foreachType

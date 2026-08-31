@@ -1,3 +1,4 @@
+```foreachType
 package %package%.common;
 
 import %package%.client.ConcurrentExchangeClient;
@@ -43,3 +44,4 @@ public final class %Type%RequestScratch
     this.handler = handler;
   }
 }
+```foreachType

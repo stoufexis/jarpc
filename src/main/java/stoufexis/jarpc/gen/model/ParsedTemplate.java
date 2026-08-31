@@ -3,12 +3,13 @@ package stoufexis.jarpc.gen.model;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public record ParsedTemplate(List<RootComponent> components) {
+public record ParsedTemplate(List<RootComponent> block) {
   public String fill(Spec spec) {
     StringBuilder output = new StringBuilder();
 
-    for (RootComponent c : components) {
+    for (RootComponent c : block) {
       output.append(c.fill(spec));
       output.append("\n");
     }
@@ -55,6 +56,11 @@ public record ParsedTemplate(List<RootComponent> components) {
     }
 
     return new ParsedTemplate(List.copyOf(blocks));
+  }
+
+  @Override
+  public String toString() {
+    return block.stream().map(Object::toString).collect(Collectors.joining("\n"));
   }
 
   private static ForEachTypeBlock parseForEachTypeBlock(
@@ -173,6 +179,11 @@ public record ParsedTemplate(List<RootComponent> components) {
     public String fill(RpcType type) {
       return this.block;
     }
+
+    @Override
+    public String toString() {
+      return "/// foreachTypeBlock\n" + block + "/// foreachTypeBlock\n";
+    }
   }
 
   private record ForEachTypeBlock(List<ForEachTypeComponent> block) implements RootComponent {
@@ -205,6 +216,13 @@ public record ParsedTemplate(List<RootComponent> components) {
 
       return typ.replacements().applyTo(perType.toString());
     }
+
+    @Override
+    public String toString() {
+      return "/// foreachTypeBlock\n"
+          + block.stream().map(Object::toString).collect(Collectors.joining("\n"))
+          + "/// foreachTypeBlock\n";
+    }
   }
 
   private sealed interface ForEachTypeComponent {
@@ -216,12 +234,22 @@ public record ParsedTemplate(List<RootComponent> components) {
     public String fill(RpcType type) {
       return type.foreachRequestField(block);
     }
+
+    @Override
+    public String toString() {
+      return "/// foreachRequestFieldBlock\n" + block + "/// foreachRequestFieldBlock\n";
+    }
   }
 
   private record ForEachResponseFieldBlock(String block) implements ForEachTypeComponent {
     @Override
     public String fill(RpcType type) {
       return type.foreachResponseField(block);
+    }
+
+    @Override
+    public String toString() {
+      return "/// foreachResponseFieldBlock\n" + block + "/// foreachResponseFieldBlock\n";
     }
   }
 }

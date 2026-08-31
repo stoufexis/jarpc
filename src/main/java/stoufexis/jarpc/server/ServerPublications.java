@@ -3,14 +3,13 @@ package stoufexis.jarpc.server;
 import io.aeron.Aeron;
 import io.aeron.Publication;
 import org.agrona.CloseHelper;
-import org.jctools.maps.NonBlockingHashMapLong;
+import org.agrona.collections.Long2ObjectHashMap;
 
 import static stoufexis.jarpc.util.Util.createExclusiveServerPublication;
 
 public final class ServerPublications {
 
-  private final NonBlockingHashMapLong<Publication> clientToPublicationMap =
-      new NonBlockingHashMapLong<>();
+  private final Long2ObjectHashMap<Publication> clientToPublicationMap = new Long2ObjectHashMap<>();
 
   private final String responseControl;
   private final Aeron aeron;

@@ -1,5 +1,7 @@
 package stoufexis.jarpc.gen.model;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public record ParsedTemplate(List<RootComponent> components) {
@@ -14,8 +16,135 @@ public record ParsedTemplate(List<RootComponent> components) {
     return spec.replacements().applyTo(output.toString());
   }
 
-  public static void parse(List<String> templateLines) {
+  public static ParsedTemplate parse(List<String> templateLines) {
+    if (templateLines.isEmpty()) throw new IllegalArgumentException("Empty template");
 
+    ArrayList<String> list = new ArrayList<>(templateLines);
+    LinkedList<RootComponent> blocks = new LinkedList<>();
+
+    StringBuilder builder = new StringBuilder();
+
+    int startAt = 0;
+
+    for (; ; ) {
+
+      if (startAt >= list.size()) {
+        if (!builder.isEmpty()) {
+          blocks.add(new PlainBlock(builder.toString()));
+        }
+        break;
+      }
+
+      String line = list.get(startAt);
+
+      if (foreachType(line)) {
+        if (!builder.isEmpty()) {
+          blocks.add(new PlainBlock(builder.toString()));
+          builder = new StringBuilder();
+        }
+
+        int[] out = new int[1];
+        blocks.add(parseForEachTypeBlock(list, startAt, out));
+        startAt = out[0];
+      } else {
+        builder.append(line);
+        builder.append("\n");
+      }
+
+      startAt++;
+    }
+
+    return new ParsedTemplate(List.copyOf(blocks));
+  }
+
+  private static ForEachTypeBlock parseForEachTypeBlock(
+      ArrayList<String> list, int startAt, int[] newIndex) {
+
+    LinkedList<ForEachTypeComponent> blocks = new LinkedList<>();
+
+    StringBuilder builder = new StringBuilder();
+
+    startAt += 1;
+
+    for (; ; ) {
+      String line = list.get(startAt);
+
+      if (foreachType(line)) {
+        if (!builder.isEmpty()) {
+          blocks.add(new PlainBlock(builder.toString()));
+        }
+        break;
+
+      } else if (foreachReqField(line)) {
+        if (!builder.isEmpty()) {
+          blocks.add(new PlainBlock(builder.toString()));
+          builder = new StringBuilder();
+        }
+
+        int[] out = new int[1];
+        blocks.add(parseRequestFieldBlock(list, startAt, out));
+        startAt = out[0];
+
+      } else if (foreachResField(line)) {
+        if (!builder.isEmpty()) {
+          blocks.add(new PlainBlock(builder.toString()));
+          builder = new StringBuilder();
+        }
+
+        int[] out = new int[1];
+        blocks.add(parseResponseFieldBlock(list, startAt, out));
+        startAt = out[0];
+
+      } else {
+        builder.append(line);
+        builder.append("\n");
+      }
+
+      startAt++;
+    }
+
+    newIndex[0] = startAt + 1;
+    return new ForEachTypeBlock(List.copyOf(blocks));
+  }
+
+  private static ForEachRequestFieldBlock parseRequestFieldBlock(
+      ArrayList<String> list, int startAt, int[] newIndex) {
+    StringBuilder builder = new StringBuilder();
+
+    startAt += 1;
+
+    for (; ; ) {
+      String line = list.get(startAt);
+
+      if (foreachReqField(line)) break;
+
+      builder.append(line);
+      builder.append("\n");
+      startAt++;
+    }
+
+    newIndex[0] = startAt + 1;
+    return new ForEachRequestFieldBlock(builder.toString());
+  }
+
+  private static ForEachResponseFieldBlock parseResponseFieldBlock(
+      ArrayList<String> list, int startAt, int[] newIndex) {
+    StringBuilder builder = new StringBuilder();
+
+    startAt += 1;
+
+    for (; ; ) {
+      String line = list.get(startAt);
+
+      if (foreachResField(line)) break;
+
+      builder.append(line);
+      builder.append("\n");
+      startAt++;
+    }
+
+    newIndex[0] = startAt + 1;
+    return new ForEachResponseFieldBlock(builder.toString());
   }
 
   private static boolean foreachType(String line) {
@@ -89,7 +218,7 @@ public record ParsedTemplate(List<RootComponent> components) {
     }
   }
 
-  private record ForEachResponse(String block) implements ForEachTypeComponent {
+  private record ForEachResponseFieldBlock(String block) implements ForEachTypeComponent {
     @Override
     public String fill(RpcType type) {
       return type.foreachResponseField(block);

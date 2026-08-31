@@ -1,4 +1,4 @@
-package stoufexis.jarpc.%service%.client;
+package %package%.client;
 
 import io.aeron.Publication;
 import io.aeron.Subscription;

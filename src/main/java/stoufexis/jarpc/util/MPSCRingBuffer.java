@@ -10,6 +10,18 @@ import java.util.function.Supplier;
 
 public final class MPSCRingBuffer<E> {
 
+  public interface Consume2<A, B> {
+    void accept(A a, B b);
+  }
+
+  public interface Consume3<A, B, C> {
+    void accept(A a, B b, C c);
+  }
+
+  public interface Consume4Long<A, B> {
+    void accept(A a, B b, long longC, long longD);
+  }
+
   private final E[] arr;
   private final AtomicLongArray readySeq;
   private final int capacity;

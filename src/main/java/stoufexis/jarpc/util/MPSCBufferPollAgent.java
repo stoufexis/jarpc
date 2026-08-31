@@ -3,6 +3,7 @@ package stoufexis.jarpc.util;
 import org.agrona.concurrent.Agent;
 import stoufexis.jarpc.model.ClaimHandle;
 import stoufexis.jarpc.model.ErrorCode;
+import stoufexis.jarpc.util.MPSCRingBuffer.Consume2;
 
 import java.util.function.Consumer;
 

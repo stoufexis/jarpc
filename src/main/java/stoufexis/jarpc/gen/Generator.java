@@ -63,18 +63,6 @@ public final class Generator {
     }
   }
 
-  private static boolean foreachType(String line) {
-    return line.contains("```foreachType");
-  }
-
-  private static boolean foreachReqField(String line) {
-    return line.contains("```foreachRequestField");
-  }
-
-  private static boolean foreachResField(String line) {
-    return line.contains("```foreachResponseField");
-  }
-
   private static int messageSize(List<Field> fields) {
     int size = 0;
     for (var field : fields) {
@@ -109,21 +97,21 @@ public final class Generator {
 
   private static final List<TemplatePath> templates =
       List.of(
-          new TemplatePath("client", "/template/client/ConcurrentClient.template"),
-          new TemplatePath("client", "/template/client/ConcurrentJaprcClient.template"),
-          new TemplatePath("client", "/template/client/SingleThreadedClient.template"),
-          new TemplatePath("client", "/template/client/SingleThreadedJarpcClient.template"),
-          new TemplatePath("common", "/template/common/Metadata.template"),
-          new TemplatePath("common", "/template/common/RequestDecode.template"),
-          new TemplatePath("common", "/template/common/RequestEncode.template"),
-          new TemplatePath("common", "/template/common/RequestScratch.template"),
-          new TemplatePath("common", "/template/common/ResponseDecode.template"),
-          new TemplatePath("common", "/template/common/ResponseEncode.template"),
-          new TemplatePath("common", "/template/common/ResponseScratch.template"),
-          new TemplatePath("server", "/template/server/ConcurrentJarpcServer.template"),
-          new TemplatePath("server", "/template/server/ConcurrentServer.template"),
-          new TemplatePath("server", "/template/server/SingleThreadedJarpcServer.template"),
-          new TemplatePath("server", "/template/server/SingleThreadedServer.template"));
+          new TemplatePath("client", "/template/client/ConcurrentClient.java"),
+          new TemplatePath("client", "/template/client/ConcurrentJaprcClient.java"),
+          new TemplatePath("client", "/template/client/SingleThreadedClient.java"),
+          new TemplatePath("client", "/template/client/SingleThreadedJarpcClient.java"),
+          new TemplatePath("common", "/template/common/Metadata.java"),
+          new TemplatePath("common", "/template/common/RequestDecode.java"),
+          new TemplatePath("common", "/template/common/RequestEncode.java"),
+          new TemplatePath("common", "/template/common/RequestScratch.java"),
+          new TemplatePath("common", "/template/common/ResponseDecode.java"),
+          new TemplatePath("common", "/template/common/ResponseEncode.java"),
+          new TemplatePath("common", "/template/common/ResponseScratch.java"),
+          new TemplatePath("server", "/template/server/ConcurrentJarpcServer.java"),
+          new TemplatePath("server", "/template/server/ConcurrentServer.java"),
+          new TemplatePath("server", "/template/server/SingleThreadedJarpcServer.java"),
+          new TemplatePath("server", "/template/server/SingleThreadedServer.java"));
 
   private record TemplatePath(String subdir, Path path) {
     TemplatePath(String subdir, String path) {

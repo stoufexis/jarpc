@@ -10,9 +10,9 @@ public record Spec(Variable serviceName, String pkg, String outputPath, List<Rpc
 
   public Replacements replacements() {
     return Replacements.of(
-        new Replacement("%package%", pkg),
-        new Replacement("%Service%", serviceName.toPascalCase()),
-        new Replacement("%service%", serviceName.toCamelCase()),
-        new Replacement("%SERVICE%", serviceName.toSnakeCaseUpper()));
+        new Replacement("_package_", pkg),
+        new Replacement("_Service_", serviceName.toPascalCase()),
+        new Replacement("_service_", serviceName.toCamelCase()),
+        new Replacement("_SERVICE_", serviceName.toSnakeCaseUpper()));
   }
 }

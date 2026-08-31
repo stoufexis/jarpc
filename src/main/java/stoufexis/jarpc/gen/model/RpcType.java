@@ -34,8 +34,8 @@ public record RpcType(
 
   public Replacements replacements() {
     return Replacements.of(
-        new Replacement("%type%", rpcName.toCamelCase()),
-        new Replacement("%Type%", rpcName.toPascalCase()),
-        new Replacement("%TYPE%", rpcName.toSnakeCaseUpper()));
+        new Replacement("_type_", rpcName.toCamelCase()),
+        new Replacement("_Type_", rpcName.toPascalCase()),
+        new Replacement("_TYPE_", rpcName.toSnakeCaseUpper()));
   }
 }

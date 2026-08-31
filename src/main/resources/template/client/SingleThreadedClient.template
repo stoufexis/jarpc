@@ -9,9 +9,7 @@ public interface SingleThreaded%Service%Client extends Poll {
 
 ```foreachType
   %type%RequestEncode claim%Type%(ClaimHandle claimHandle);
-```foreachType
 
-```foreachType
   interface %Type%ResponseHandler extends ClientHandler {
     boolean onResponse(long correlationId, %Type%ResponseDecode t);
   }

@@ -2,16 +2,13 @@ package stoufexis.jarpc.gen;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import stoufexis.jarpc.gen.model.*;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class Generator {
+public final class Generator {
 
   public static void generate(
       String serviceName, String serviceSpec, List<String> packageComponents) {
@@ -41,26 +38,47 @@ public class Generator {
     List<RpcType> rpcTypes = List.copyOf(types);
   }
 
-  private static void generateCommon(Spec args) throws IOException {
-    String base = "/template/common/";
-    String metadataTemplate = "Metadata.template";
-    List<String> codecTemplates =
-        List.of(
-            "RequestDecode.template",
-            "RequestEncode.template",
-            "RequestScratch.template",
-            "ResponseDecode.template",
-            "ResponseEncode.template",
-            "ResponseScratch.template");
+  /** returns a list of file contents */
+  private static List<String> generate(Spec args, TemplateRoot root) {
+    if (root.components().isEmpty()) throw new IllegalArgumentException("empty template");
 
-    LinkedList<String> foreachContext = new LinkedList<>();
-    for (String line : Files.readAllLines(Path.of(base + metadataTemplate))) {}
+    RootComponent first = root.components.getFirst();
+
+    switch (first) {
+      case RootComponent.ForEachTypeBlock c when root.components.size() == 1 -> {
+        LinkedList<String> output = new LinkedList<>();
+
+        for (RpcType typ : args.spec()) {
+          output.add(c.fill(typ));
+        }
+
+        return List.copyOf(output);
+      }
+
+      case RootComponent.PlainBlock _ -> {
+        return List.of(root.fill(args));
+      }
+
+      default -> throw new IllegalArgumentException("Unexpected template shape");
+    }
+  }
+
+  private static boolean foreachType(String line) {
+    return line.contains("```foreachType");
+  }
+
+  private static boolean foreachReqField(String line) {
+    return line.contains("```foreachRequestField");
+  }
+
+  private static boolean foreachResField(String line) {
+    return line.contains("```foreachResponseField");
   }
 
   private static int messageSize(List<Field> fields) {
     int size = 0;
     for (var field : fields) {
-      size += typeLength(field.fieldType.value);
+      size += typeLength(field.fieldType().value());
     }
 
     return size;
@@ -89,16 +107,27 @@ public class Generator {
     };
   }
 
-  private record Spec(Variable serviceName, String pkg, String outputPath, List<RpcType> spec) {
-    String valueForPlaceholder(String placeholder) {
-      return switch (placeholder) {
-        case "package" -> pkg;
-        case "Service" -> serviceName.toPascalCase();
-        case "service" -> serviceName.toCamelCase();
-        case "SERVICE" -> serviceName.toSnakeCaseUpper();
-        default ->
-            throw new IllegalArgumentException("Unknown top-level placeholder " + placeholder);
-      };
+  private static final List<TemplatePath> templates =
+      List.of(
+          new TemplatePath("client", "/template/client/ConcurrentClient.template"),
+          new TemplatePath("client", "/template/client/ConcurrentJaprcClient.template"),
+          new TemplatePath("client", "/template/client/SingleThreadedClient.template"),
+          new TemplatePath("client", "/template/client/SingleThreadedJarpcClient.template"),
+          new TemplatePath("common", "/template/common/Metadata.template"),
+          new TemplatePath("common", "/template/common/RequestDecode.template"),
+          new TemplatePath("common", "/template/common/RequestEncode.template"),
+          new TemplatePath("common", "/template/common/RequestScratch.template"),
+          new TemplatePath("common", "/template/common/ResponseDecode.template"),
+          new TemplatePath("common", "/template/common/ResponseEncode.template"),
+          new TemplatePath("common", "/template/common/ResponseScratch.template"),
+          new TemplatePath("server", "/template/server/ConcurrentJarpcServer.template"),
+          new TemplatePath("server", "/template/server/ConcurrentServer.template"),
+          new TemplatePath("server", "/template/server/SingleThreadedJarpcServer.template"),
+          new TemplatePath("server", "/template/server/SingleThreadedServer.template"));
+
+  private record TemplatePath(String subdir, Path path) {
+    TemplatePath(String subdir, String path) {
+      this(subdir, Path.of(path));
     }
   }
 
@@ -106,73 +135,84 @@ public class Generator {
     return new Variable(v);
   }
 
-  private record RpcType(
-      Variable rpcName,
-      List<Field> requestFields,
-      List<Field> responseFields,
-      int requestSize,
-      int responseSize,
-      int typeId) {
-    String valueForPlaceholder(String placeholder) {
-      return switch (placeholder) {
-        case "type" -> rpcName.toCamelCase();
-        case "Type" -> rpcName.toPascalCase();
-        case "TYPE" -> rpcName.toSnakeCaseUpper();
-        default ->
-            throw new IllegalArgumentException("Unknown per-type placeholder " + placeholder);
-      };
+  private record TemplateRoot(List<RootComponent> components) {
+    String fill(Spec spec) {
+      StringBuilder output = new StringBuilder();
+
+      for (RootComponent c : components) {
+        output.append(c.fill(spec));
+        output.append("\n");
+      }
+
+      return spec.replacements().applyTo(output.toString());
     }
   }
 
-  private record Field(Variable fieldName, Variable fieldType, int fieldOffset) {
-    String valueForPlaceholder(String placeholder) {
-      return switch (placeholder) {
-        case "Field" -> fieldName.toPascalCase();
-        case "field" -> fieldName.toCamelCase();
-        case "FIELD" -> fieldName.toSnakeCaseUpper();
-        default ->
-            throw new IllegalArgumentException("Unknown per-type placeholder " + placeholder);
-      };
+  private sealed interface RootComponent {
+    String fill(Spec spec);
+
+    record PlainBlock(String block) implements RootComponent {
+      @Override
+      public String fill(Spec spec) {
+        return this.block;
+      }
     }
 
+    record ForEachTypeBlock(List<ForEachTypeComponent> block) implements RootComponent {
+      @Override
+      public String fill(Spec spec) {
+        StringBuilder output = new StringBuilder();
+
+        for (RpcType typ : spec.spec()) {
+          StringBuilder perType = new StringBuilder();
+
+          for (ForEachTypeComponent c : block) {
+            perType.append(c.fill(typ));
+            perType.append("\n");
+          }
+
+          output.append(typ.replacements().applyTo(perType.toString()));
+          perType.append("\n");
+        }
+
+        return output.toString();
+      }
+
+      public String fill(RpcType typ) {
+        StringBuilder perType = new StringBuilder();
+
+        for (ForEachTypeComponent c : block) {
+          perType.append(c.fill(typ));
+          perType.append("\n");
+        }
+
+        return typ.replacements().applyTo(perType.toString());
+      }
+    }
   }
 
-  private record Variable(String value) {
+  private sealed interface ForEachTypeComponent {
+    String fill(RpcType type);
 
-    Variable {
-      if (!value.matches("^[a-z][a-zA-Z0-9]*$")) {
-        throw new IllegalArgumentException("expected " + value + " to be in camel case");
+    record PlainBlock(String block) implements ForEachTypeComponent {
+      @Override
+      public String fill(RpcType type) {
+        return this.block;
       }
     }
 
-    private static String[] splitWords(String input) {
-      return input.split("(?<!^)(?=[A-Z])");
-    }
-
-    private static String capitalize(String s) {
-      return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
-    }
-
-    String toCamelCase() {
-      String[] words = splitWords(value);
-      StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < words.length; i++) {
-        String w = words[i].toLowerCase();
-        sb.append(i == 0 ? w : capitalize(w));
+    record ForEachRequestFieldBlock(String block) implements ForEachTypeComponent {
+      @Override
+      public String fill(RpcType type) {
+        return type.foreachRequestField(block);
       }
-      return sb.toString();
     }
 
-    String toPascalCase() {
-      return Arrays.stream(splitWords(value))
-          .map(w -> capitalize(w.toLowerCase()))
-          .collect(Collectors.joining());
-    }
-
-    String toSnakeCaseUpper() {
-      return Arrays.stream(splitWords(value))
-          .map(String::toUpperCase)
-          .collect(Collectors.joining("_"));
+    record ForEachResponse(String block) implements ForEachTypeComponent {
+      @Override
+      public String fill(RpcType type) {
+        return type.foreachResponseField(block);
+      }
     }
   }
 }

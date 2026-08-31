@@ -1,4 +1,3 @@
 package stoufexis.jarpc.gen.model;
 
-public record Replacement() {
-}
+public record Replacement(String placeholder, String value) {}

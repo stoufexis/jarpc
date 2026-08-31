@@ -36,6 +36,9 @@ public record RpcType(
     return Replacements.of(
         new Replacement("_type_", rpcName.toCamelCase()),
         new Replacement("_Type_", rpcName.toPascalCase()),
-        new Replacement("_TYPE_", rpcName.toSnakeCaseUpper()));
+        new Replacement("_TYPE_", rpcName.toSnakeCaseUpper()),
+        new Replacement("_typeRequestSize_", String.valueOf(requestSize)),
+        new Replacement("_typeResponseSize_", String.valueOf(responseSize)),
+        new Replacement("_typeId_", String.valueOf(typeId)));
   }
 }

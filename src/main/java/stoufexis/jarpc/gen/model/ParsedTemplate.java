@@ -196,11 +196,9 @@ public record ParsedTemplate(List<RootComponent> block) {
 
         for (ForEachTypeComponent c : block) {
           perType.append(c.fill(typ));
-          perType.append("\n");
         }
 
         output.append(typ.replacements().applyTo(perType.toString()));
-        perType.append("\n");
       }
 
       return output.toString();

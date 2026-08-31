@@ -1,8 +1,8 @@
-package stoufexis.jarpc.util;
+package stoufexis.jarpc.lib.util;
 
 import io.aeron.*;
-import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.server.Images;
+import stoufexis.jarpc.lib.model.ErrorCode;
+import stoufexis.jarpc.lib.server.Images;
 
 public final class Util {
   private Util() {}

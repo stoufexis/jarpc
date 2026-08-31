@@ -4,8 +4,8 @@ import stoufexis.jarpc.exchange.common.CancelAllRequestDecode;
 import stoufexis.jarpc.exchange.common.CancelAllResponseEncode;
 import stoufexis.jarpc.exchange.common.PostOrderRequestDecode;
 import stoufexis.jarpc.exchange.common.PostOrderResponseEncode;
-import stoufexis.jarpc.model.ClaimHandle;
-import stoufexis.jarpc.model.Poll;
+import stoufexis.jarpc.lib.model.ClaimHandle;
+import stoufexis.jarpc.lib.model.Poll;
 
 public interface SingleThreadedExchangeServer extends Poll {
   PostOrderResponseEncode claimPostOrder(

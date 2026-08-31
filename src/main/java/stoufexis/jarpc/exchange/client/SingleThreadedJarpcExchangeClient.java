@@ -5,18 +5,17 @@ import io.aeron.Subscription;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
-import stoufexis.jarpc.model.ConnectivityConfig;
-import stoufexis.jarpc.util.Publisher;
-import stoufexis.jarpc.client.SingleThreadedJarpcClient;
+import stoufexis.jarpc.lib.model.ConnectivityConfig;
+import stoufexis.jarpc.lib.util.DecodeUtil;
+import stoufexis.jarpc.lib.util.EncodeUtil;
+import stoufexis.jarpc.lib.util.Publisher;
+import stoufexis.jarpc.lib.client.SingleThreadedJarpcClient;
 import stoufexis.jarpc.exchange.common.CancelAllRequestEncode;
 import stoufexis.jarpc.exchange.common.CancelAllResponseDecode;
 import stoufexis.jarpc.exchange.common.PostOrderRequestEncode;
 import stoufexis.jarpc.exchange.common.PostOrderResponseDecode;
-import stoufexis.jarpc.model.ClaimHandle;
-import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.util.*;
-
-import static stoufexis.jarpc.util.Util.*;
+import stoufexis.jarpc.lib.model.ClaimHandle;
+import stoufexis.jarpc.lib.model.ErrorCode;
 
 public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpcClient
     implements SingleThreadedExchangeClient {

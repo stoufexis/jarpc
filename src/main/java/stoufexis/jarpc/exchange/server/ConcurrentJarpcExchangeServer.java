@@ -3,14 +3,14 @@ package stoufexis.jarpc.exchange.server;
 import io.aeron.Subscription;
 import org.agrona.concurrent.Agent;
 import stoufexis.jarpc.exchange.common.*;
-import stoufexis.jarpc.server.Images;
-import stoufexis.jarpc.model.ConnectivityConfig;
-import stoufexis.jarpc.server.ServerErrorHandler;
-import stoufexis.jarpc.server.ServerPublications;
-import stoufexis.jarpc.util.MPSCBufferPollAgent;
-import stoufexis.jarpc.util.MPSCRingBuffer;
+import stoufexis.jarpc.lib.server.Images;
+import stoufexis.jarpc.lib.model.ConnectivityConfig;
+import stoufexis.jarpc.lib.server.ServerErrorHandler;
+import stoufexis.jarpc.lib.server.ServerPublications;
+import stoufexis.jarpc.lib.util.MPSCBufferPollAgent;
+import stoufexis.jarpc.lib.util.MPSCRingBuffer;
 
-import static stoufexis.jarpc.util.Util.createServerSubscription;
+import static stoufexis.jarpc.lib.util.Util.createServerSubscription;
 
 public final class ConcurrentJarpcExchangeServer implements Agent, AutoCloseable {
 

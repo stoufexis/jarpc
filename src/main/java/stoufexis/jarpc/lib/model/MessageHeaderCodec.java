@@ -1,9 +1,9 @@
-package stoufexis.jarpc.model;
+package stoufexis.jarpc.lib.model;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-import static stoufexis.jarpc.util.Util.illegal;
+import static stoufexis.jarpc.lib.util.Util.illegal;
 
 public final class MessageHeaderCodec {
   public static final int HEADER_SIZE = 12;

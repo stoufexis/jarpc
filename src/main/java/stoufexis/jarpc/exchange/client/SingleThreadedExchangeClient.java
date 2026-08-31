@@ -1,9 +1,9 @@
 package stoufexis.jarpc.exchange.client;
 
-import stoufexis.jarpc.client.ClientHandler;
+import stoufexis.jarpc.lib.client.ClientHandler;
 import stoufexis.jarpc.exchange.common.*;
-import stoufexis.jarpc.model.ClaimHandle;
-import stoufexis.jarpc.model.Poll;
+import stoufexis.jarpc.lib.model.ClaimHandle;
+import stoufexis.jarpc.lib.model.Poll;
 
 public interface SingleThreadedExchangeClient extends Poll {
   PostOrderRequestEncode claimPostOrder(ClaimHandle claimHandle);

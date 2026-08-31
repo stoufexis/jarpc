@@ -1,4 +1,4 @@
-package stoufexis.jarpc.client;
+package stoufexis.jarpc.lib.client;
 
 import stoufexis.jarpc.exchange.client.SingleThreadedJarpcExchangeClient;
 

@@ -3,17 +3,20 @@ package stoufexis.jarpc.exchange.server;
 import io.aeron.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
-import stoufexis.jarpc.model.ConnectivityConfig;
-import stoufexis.jarpc.util.Publisher;
+import stoufexis.jarpc.lib.model.ConnectivityConfig;
+import stoufexis.jarpc.lib.server.Images;
+import stoufexis.jarpc.lib.server.ServerErrorHandler;
+import stoufexis.jarpc.lib.server.ServerPublications;
+import stoufexis.jarpc.lib.server.SingleThreadedJarpcServer;
+import stoufexis.jarpc.lib.util.Publisher;
 import stoufexis.jarpc.exchange.common.*;
-import stoufexis.jarpc.model.ClaimHandle;
-import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.server.*;
-import stoufexis.jarpc.util.DecodeUtil;
-import stoufexis.jarpc.util.EncodeUtil;
+import stoufexis.jarpc.lib.model.ClaimHandle;
+import stoufexis.jarpc.lib.model.ErrorCode;
+import stoufexis.jarpc.lib.util.DecodeUtil;
+import stoufexis.jarpc.lib.util.EncodeUtil;
 
-import static stoufexis.jarpc.util.Util.createServerSubscription;
-import static stoufexis.jarpc.util.Util.illegal;
+import static stoufexis.jarpc.lib.util.Util.createServerSubscription;
+import static stoufexis.jarpc.lib.util.Util.illegal;
 
 public class SingleThreadedJarpcExchangeServer extends SingleThreadedJarpcServer
     implements SingleThreadedExchangeServer, AutoCloseable {

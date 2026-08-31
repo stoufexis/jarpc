@@ -1,4 +1,4 @@
-package stoufexis.jarpc.server;
+package stoufexis.jarpc.lib.server;
 
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Image;
@@ -8,8 +8,8 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import stoufexis.jarpc.model.MessageHeaderCodec;
-import stoufexis.jarpc.model.Poll;
+import stoufexis.jarpc.lib.model.MessageHeaderCodec;
+import stoufexis.jarpc.lib.model.Poll;
 
 public abstract class SingleThreadedJarpcServer implements AutoCloseable, Poll {
   private final ServerPublications publications;

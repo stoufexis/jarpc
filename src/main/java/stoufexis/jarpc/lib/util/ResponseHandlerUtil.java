@@ -1,8 +1,8 @@
-package stoufexis.jarpc.util;
+package stoufexis.jarpc.lib.util;
 
 import org.agrona.collections.Long2ObjectHashMap;
-import stoufexis.jarpc.client.ClientErrorHandler;
-import stoufexis.jarpc.client.ClientHandler;
+import stoufexis.jarpc.lib.client.ClientErrorHandler;
+import stoufexis.jarpc.lib.client.ClientHandler;
 
 public abstract class ResponseHandlerUtil<T extends ClientHandler> implements ClientHandler {
   private final Long2ObjectHashMap<T> callbacks;

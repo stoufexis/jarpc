@@ -1,4 +1,4 @@
-package stoufexis.jarpc.server;
+package stoufexis.jarpc.lib.server;
 
 import io.aeron.Image;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;

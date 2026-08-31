@@ -1,4 +1,4 @@
-package stoufexis.jarpc.util;
+package stoufexis.jarpc.lib.util;
 
 import java.util.concurrent.atomic.AtomicLong;
 

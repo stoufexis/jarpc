@@ -1,11 +1,11 @@
-package stoufexis.jarpc.server;
+package stoufexis.jarpc.lib.server;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
 import org.agrona.CloseHelper;
 import org.agrona.collections.Long2ObjectHashMap;
 
-import static stoufexis.jarpc.util.Util.createExclusiveServerPublication;
+import static stoufexis.jarpc.lib.util.Util.createExclusiveServerPublication;
 
 public final class ServerPublications {
 

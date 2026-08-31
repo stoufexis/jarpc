@@ -1,8 +1,8 @@
-package stoufexis.jarpc.util;
+package stoufexis.jarpc.lib.util;
 
-import stoufexis.jarpc.model.ClaimHandle;
-import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.util.MPSCRingBuffer.Consume2;
+import stoufexis.jarpc.lib.model.ClaimHandle;
+import stoufexis.jarpc.lib.model.ErrorCode;
+import stoufexis.jarpc.lib.util.MPSCRingBuffer.Consume2;
 
 import java.util.function.Consumer;
 

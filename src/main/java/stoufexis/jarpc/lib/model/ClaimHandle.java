@@ -1,8 +1,8 @@
-package stoufexis.jarpc.model;
+package stoufexis.jarpc.lib.model;
 
 import io.aeron.logbuffer.BufferClaim;
 
-import static stoufexis.jarpc.util.Util.illegal;
+import static stoufexis.jarpc.lib.util.Util.illegal;
 
 public final class ClaimHandle {
   private final BufferClaim claim = new BufferClaim();

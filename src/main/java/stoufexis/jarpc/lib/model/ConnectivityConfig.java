@@ -1,4 +1,4 @@
-package stoufexis.jarpc.model;
+package stoufexis.jarpc.lib.model;
 
 import io.aeron.Aeron;
 

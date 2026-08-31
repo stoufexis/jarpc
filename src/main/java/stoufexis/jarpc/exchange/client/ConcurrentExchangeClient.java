@@ -1,6 +1,6 @@
 package stoufexis.jarpc.exchange.client;
 
-import stoufexis.jarpc.client.ClientHandler;
+import stoufexis.jarpc.lib.client.ClientHandler;
 import stoufexis.jarpc.exchange.common.CancelAllRequestDecode;
 import stoufexis.jarpc.exchange.common.CancelAllResponseDecode;
 import stoufexis.jarpc.exchange.common.PostOrderRequestDecode;

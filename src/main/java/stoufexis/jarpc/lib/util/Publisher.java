@@ -1,12 +1,12 @@
-package stoufexis.jarpc.util;
+package stoufexis.jarpc.lib.util;
 
 import io.aeron.Publication;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.MutableDirectBuffer;
-import stoufexis.jarpc.model.ErrorCode;
-import stoufexis.jarpc.model.MessageHeaderCodec;
+import stoufexis.jarpc.lib.model.ErrorCode;
+import stoufexis.jarpc.lib.model.MessageHeaderCodec;
 
-import static stoufexis.jarpc.util.Util.interpretErrorCode;
+import static stoufexis.jarpc.lib.util.Util.interpretErrorCode;
 
 public final class Publisher {
   private final Publication publication;

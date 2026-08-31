@@ -5,16 +5,16 @@ import io.aeron.Subscription;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 
-import stoufexis.jarpc.client.ConnectivityProbe;
-import stoufexis.jarpc.model.ConnectivityConfig;
-import stoufexis.jarpc.util.MPSCBufferPollAgent;
-import stoufexis.jarpc.client.ClientErrorHandler;
+import stoufexis.jarpc.lib.client.ConnectivityProbe;
+import stoufexis.jarpc.lib.model.ConnectivityConfig;
+import stoufexis.jarpc.lib.util.MPSCBufferPollAgent;
+import stoufexis.jarpc.lib.client.ClientErrorHandler;
 import stoufexis.jarpc.exchange.common.*;
-import stoufexis.jarpc.util.MPSCRingBuffer;
-import stoufexis.jarpc.util.ResponseHandlerUtil;
+import stoufexis.jarpc.lib.util.MPSCRingBuffer;
+import stoufexis.jarpc.lib.util.ResponseHandlerUtil;
 
-import static stoufexis.jarpc.util.Util.createClientSubscription;
-import static stoufexis.jarpc.util.Util.createExclusiveClientPublication;
+import static stoufexis.jarpc.lib.util.Util.createClientSubscription;
+import static stoufexis.jarpc.lib.util.Util.createExclusiveClientPublication;
 
 // FIXME add timeouts and ad-hoc cancel
 

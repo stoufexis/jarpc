@@ -1,7 +1,7 @@
-package stoufexis.jarpc.server;
+package stoufexis.jarpc.lib.server;
 
 import org.agrona.ErrorHandler;
-import stoufexis.jarpc.model.ErrorCode;
+import stoufexis.jarpc.lib.model.ErrorCode;
 
 public interface ServerErrorHandler extends ErrorHandler {
   void onInternalError(long clientId, long correlationId, int errorCode);

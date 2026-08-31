@@ -38,3 +38,5 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+src/main/java/stoufexis/jarpc/main

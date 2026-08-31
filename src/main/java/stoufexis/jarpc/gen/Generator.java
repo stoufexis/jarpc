@@ -98,7 +98,7 @@ public final class Generator {
   private static final List<TemplatePath> templates =
       List.of(
           new TemplatePath("client", "/template/client/ConcurrentClient.java"),
-          new TemplatePath("client", "/template/client/ConcurrentJaprcClient.java"),
+          new TemplatePath("client", "/template/client/ConcurrentJarpcClient.java"),
           new TemplatePath("client", "/template/client/SingleThreadedClient.java"),
           new TemplatePath("client", "/template/client/SingleThreadedJarpcClient.java"),
           new TemplatePath("common", "/template/common/Metadata.java"),

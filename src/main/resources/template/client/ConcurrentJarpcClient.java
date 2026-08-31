@@ -80,11 +80,9 @@ public final class ConcurrentJarpc_Service_Client
     connectivityProbe.probeConnected();
 
     // Use this instead of CompositeAgent to monomorphize all calls to doWork
-
     /// foreachType
     work += _type_Agent.doWork();
     /// foreachType
-
     work += singleThreadedClient.poll(1);
     return work;
   }

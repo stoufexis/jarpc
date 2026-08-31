@@ -109,7 +109,7 @@ public record ParsedTemplate(List<RootComponent> block) {
       startAt++;
     }
 
-    newIndex[0] = startAt + 1;
+    newIndex[0] = startAt;
     return new ForEachTypeBlock(List.copyOf(blocks));
   }
 
@@ -129,7 +129,7 @@ public record ParsedTemplate(List<RootComponent> block) {
       startAt++;
     }
 
-    newIndex[0] = startAt + 1;
+    newIndex[0] = startAt;
     return new ForEachRequestFieldBlock(builder.toString());
   }
 
@@ -149,7 +149,7 @@ public record ParsedTemplate(List<RootComponent> block) {
       startAt++;
     }
 
-    newIndex[0] = startAt + 1;
+    newIndex[0] = startAt;
     return new ForEachResponseFieldBlock(builder.toString());
   }
 
@@ -182,7 +182,7 @@ public record ParsedTemplate(List<RootComponent> block) {
 
     @Override
     public String toString() {
-      return "/// foreachTypeBlock\n" + block + "/// foreachTypeBlock\n";
+      return block;
     }
   }
 

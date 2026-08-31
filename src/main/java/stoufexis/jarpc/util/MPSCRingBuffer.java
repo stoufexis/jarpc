@@ -86,7 +86,7 @@ public final class MPSCRingBuffer<E> {
     }
   }
 
-  public <B> boolean poll(Consume2<E, B> processor, B b) {
+  public <B> boolean poll(Consume2<B, E> copy, B b) {
     long seq = consumerSeq;
     int idx = index(seq);
 
@@ -98,7 +98,7 @@ public final class MPSCRingBuffer<E> {
       return false;
     }
 
-    processor.accept(arr[idx], b);
+    copy.accept(b, arr[idx]);
     consumerSeq = seq + 1; // publishes progress to producers
     return true;
   }

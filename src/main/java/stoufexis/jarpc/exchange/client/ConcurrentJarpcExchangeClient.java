@@ -5,8 +5,9 @@ import io.aeron.Subscription;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 
+import stoufexis.jarpc.client.ConnectivityProbe;
+import stoufexis.jarpc.model.ConnectivityConfig;
 import stoufexis.jarpc.util.MPSCBufferPollAgent;
-import stoufexis.jarpc.client.ClientConfig;
 import stoufexis.jarpc.client.ClientErrorHandler;
 import stoufexis.jarpc.exchange.common.*;
 import stoufexis.jarpc.util.MPSCRingBuffer;
@@ -17,9 +18,10 @@ import static stoufexis.jarpc.util.Util.createExclusiveClientPublication;
 
 // FIXME add timeouts and ad-hoc cancel
 
-public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeClient, Agent {
+public final class ConcurrentJarpcExchangeClient
+    implements ConcurrentExchangeClient, Agent, AutoCloseable {
 
-  private final SingleThreadedExchangeClient singleThreadedClient;
+  private final SingleThreadedJarpcExchangeClient singleThreadedClient;
 
   private final MPSCRingBuffer<PostOrderRequestScratch> postOrderRequests;
   private final MPSCRingBuffer<CancelAllRequestScratch> cancelAllRequests;
@@ -31,6 +33,8 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
 
   private final PostOrderAgent postOrderAgent;
   private final CancelAllAgent cancelAllAgent;
+
+  private final ConnectivityProbe connectivityProbe;
 
   ConcurrentJarpcExchangeClient(
       Publication publication,
@@ -51,10 +55,11 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
     this.errorHandler = errorHandler;
     this.postOrderAgent = new PostOrderAgent();
     this.cancelAllAgent = new CancelAllAgent();
+    this.connectivityProbe = new ConnectivityProbe(singleThreadedClient);
   }
 
   public static ConcurrentJarpcExchangeClient create(
-      ClientConfig cfg, ClientErrorHandler handler, int queueCapacity) {
+      ConnectivityConfig cfg, ClientErrorHandler handler, int queueCapacity) {
     Subscription sub =
         createClientSubscription(cfg.aeron(), cfg.responseControl(), cfg.responseStreamId());
     Publication pub =
@@ -76,6 +81,9 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
   @Override
   public int doWork() {
     int work = 0;
+
+    connectivityProbe.probeConnected();
+
     // Use this instead of CompositeAgent to monomorphize all calls to doWork
     // FIXME verify rationale
     work += postOrderAgent.doWork();
@@ -87,6 +95,15 @@ public final class ConcurrentJarpcExchangeClient implements ConcurrentExchangeCl
   @Override
   public String roleName() {
     return "ConcurrentJarpcExchangeClient";
+  }
+
+  @Override
+  public void close() {
+    singleThreadedClient.close();
+  }
+
+  public boolean isConnected() {
+    return connectivityProbe.isConnected();
   }
 
   private final class PostOrderHandler extends ResponseHandlerUtil<PostOrderResponseHandler>

@@ -3,6 +3,7 @@ package stoufexis.jarpc.exchange.server;
 import io.aeron.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
+import stoufexis.jarpc.model.ConnectivityConfig;
 import stoufexis.jarpc.util.Publisher;
 import stoufexis.jarpc.exchange.common.*;
 import stoufexis.jarpc.model.ClaimHandle;
@@ -51,7 +52,7 @@ public class SingleThreadedJarpcExchangeServer extends SingleThreadedJarpcServer
   }
 
   public static SingleThreadedJarpcExchangeServer create(
-      ServerConfig cfg,
+      ConnectivityConfig cfg,
       PostOrderRequestHandler postOrderRequestHandler,
       CancelAllRequestHandler cancelAllRequestHandler,
       ServerErrorHandler serverErrorHandler) {

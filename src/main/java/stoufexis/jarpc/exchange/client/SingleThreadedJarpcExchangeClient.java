@@ -5,7 +5,7 @@ import io.aeron.Subscription;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
-import stoufexis.jarpc.client.ClientConfig;
+import stoufexis.jarpc.model.ConnectivityConfig;
 import stoufexis.jarpc.util.Publisher;
 import stoufexis.jarpc.client.SingleThreadedJarpcClient;
 import stoufexis.jarpc.exchange.common.CancelAllRequestEncode;
@@ -55,7 +55,7 @@ public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpc
   }
 
   public static SingleThreadedJarpcExchangeClient create(
-      ClientConfig cfg,
+      ConnectivityConfig cfg,
       PostOrderResponseHandler postOrderHandler,
       CancelAllResponseHandler cancelAllHandler,
       ErrorHandler errorHandler) {

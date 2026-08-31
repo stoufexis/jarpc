@@ -6,10 +6,6 @@ import stoufexis.jarpc.exchange.common.CancelAllResponseDecode;
 import stoufexis.jarpc.exchange.common.PostOrderRequestDecode;
 import stoufexis.jarpc.exchange.common.PostOrderResponseDecode;
 
-/**
- * Futures-based client. This produces relatively high GC pressure and high latency compared to the
- * single-threaded variant, but it is simple to use across many programming styles.
- */
 public interface ConcurrentExchangeClient {
   boolean postOrder(PostOrderRequestDecode request, PostOrderResponseHandler response);
 

@@ -4,7 +4,7 @@ import io.aeron.Subscription;
 import org.agrona.concurrent.Agent;
 import stoufexis.jarpc.exchange.common.*;
 import stoufexis.jarpc.server.Images;
-import stoufexis.jarpc.server.ServerConfig;
+import stoufexis.jarpc.model.ConnectivityConfig;
 import stoufexis.jarpc.server.ServerErrorHandler;
 import stoufexis.jarpc.server.ServerPublications;
 import stoufexis.jarpc.util.MPSCBufferPollAgent;
@@ -12,9 +12,9 @@ import stoufexis.jarpc.util.MPSCRingBuffer;
 
 import static stoufexis.jarpc.util.Util.createServerSubscription;
 
-public final class ConcurrentJarpcExchangeServer implements Agent {
+public final class ConcurrentJarpcExchangeServer implements Agent, AutoCloseable {
 
-  private final SingleThreadedExchangeServer singleThreadedServer;
+  private final SingleThreadedJarpcExchangeServer singleThreadedServer;
 
   private final ConcurrentExchangeServer concurrentExchangeServer;
 
@@ -56,7 +56,7 @@ public final class ConcurrentJarpcExchangeServer implements Agent {
 
   public static ConcurrentJarpcExchangeServer create(
       ConcurrentExchangeServer concurrentExchangeServer,
-      ServerConfig cfg,
+      ConnectivityConfig cfg,
       ServerErrorHandler errorHandler,
       int queueCapacity) {
     Images images = new Images();
@@ -90,6 +90,11 @@ public final class ConcurrentJarpcExchangeServer implements Agent {
   @Override
   public String roleName() {
     return "ConcurrentJarpcExchangeServer";
+  }
+
+  @Override
+  public void close() {
+    singleThreadedServer.close();
   }
 
   private final class PostOrderRequestHandler

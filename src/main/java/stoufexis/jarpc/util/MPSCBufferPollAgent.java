@@ -1,13 +1,13 @@
 package stoufexis.jarpc.util;
 
-import org.agrona.concurrent.Agent;
 import stoufexis.jarpc.model.ClaimHandle;
 import stoufexis.jarpc.model.ErrorCode;
 import stoufexis.jarpc.util.MPSCRingBuffer.Consume2;
 
 import java.util.function.Consumer;
 
-public abstract class MPSCBufferPollAgent<T> implements Agent {
+// Does not need to implement Agent, its used manually
+public abstract class MPSCBufferPollAgent<T> {
   private final MPSCRingBuffer<T> ringBuffer;
   private final T scratch;
   private final Consume2<T, T> copy;
@@ -41,7 +41,6 @@ public abstract class MPSCBufferPollAgent<T> implements Agent {
 
   protected abstract boolean processRequest(T scratch);
 
-  @Override
   public final int doWork() {
     int work = 0;
 
@@ -56,10 +55,5 @@ public abstract class MPSCBufferPollAgent<T> implements Agent {
     }
 
     return work;
-  }
-
-  @Override
-  public final String roleName() {
-    return "ClientAgent";
   }
 }

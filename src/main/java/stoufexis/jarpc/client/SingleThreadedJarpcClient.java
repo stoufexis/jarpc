@@ -53,6 +53,10 @@ public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll {
     }
   }
 
+  public final boolean isConnected() {
+    return publication.isConnected() && subscription.isConnected();
+  }
+
   @Override
   public final int poll(int limit) {
     return subscription.controlledPoll(fragmentHandler, limit);

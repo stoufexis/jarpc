@@ -6,7 +6,7 @@ import org.agrona.MutableDirectBuffer;
 import static stoufexis.jarpc.util.Util.illegal;
 
 public final class MessageHeaderCodec {
-  public static final int HEADER_SIZE = 9;
+  public static final int HEADER_SIZE = 12;
 
   private MessageHeaderCodec() {}
 
@@ -14,7 +14,7 @@ public final class MessageHeaderCodec {
       MutableDirectBuffer buffer, int offset, long correlationId, int messageType) {
 
     buffer.putLong(offset, correlationId);
-    buffer.putInt(offset + 4, messageType);
+    buffer.putInt(offset + 8, messageType);
   }
 
   public static void assertSize(int length) {

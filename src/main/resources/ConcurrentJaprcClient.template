@@ -1,0 +1,145 @@
+package stoufexis.jarpc.%service%.client;
+
+import io.aeron.Publication;
+import io.aeron.Subscription;
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.Agent;
+
+import stoufexis.jarpc.lib.client.*;
+import stoufexis.jarpc.lib.model.*;
+import stoufexis.jarpc.lib.util.*;
+
+import %package%.common.*;
+
+import static stoufexis.jarpc.lib.util.Util.createClientSubscription;
+import static stoufexis.jarpc.lib.util.Util.createExclusiveClientPublication;
+
+// FIXME add timeouts and ad-hoc cancel
+
+public final class ConcurrentJarpc%Service%Client
+    implements Concurrent%Service%Client, Agent, AutoCloseable {
+
+  private final SingleThreadedJarpc%Service%Client singleThreadedClient;
+
+```foreachType
+  private final MPSCRingBuffer<%Type%RequestScratch> %type%Requests;
+  private final Long2ObjectHashMap<%Type%ResponseHandler> %type%Callbacks;
+  private final %Type%Agent %type%Agent;
+```
+
+  private final ClientErrorHandler errorHandler;
+
+  private final ConnectivityProbe connectivityProbe;
+
+  ConcurrentJarpc%Service%Client(
+      Publication publication,
+      Subscription subscription,
+      ClientErrorHandler errorHandler,
+      int queueCapacity) {
+```foreachType
+    this.%type%Callbacks = new Long2ObjectHashMap<>();
+    this.%type%Requests = new MPSCRingBuffer<>(queueCapacity, %Type%RequestScratch::new);
+    this.%type%Agent = new %Type%Agent();
+```
+    this.singleThreadedClient =
+        new SingleThreadedJarpc%Service%Client(
+            publication,
+            subscription,
+```foreachType
+            new %Type%Handler(),
+```
+            errorHandler);
+    this.errorHandler = errorHandler;
+    this.connectivityProbe = new ConnectivityProbe(singleThreadedClient);
+  }
+
+  public static ConcurrentJarpc%Service%Client create(
+      ConnectivityConfig cfg, ClientErrorHandler handler, int queueCapacity) {
+    Subscription sub =
+        createClientSubscription(cfg.aeron(), cfg.responseControl(), cfg.responseStreamId());
+    Publication pub =
+        createExclusiveClientPublication(
+            cfg.aeron(), cfg.requestEndpoint(), cfg.requestStreamId(), sub);
+    return new ConcurrentJarpc%Service%Client(pub, sub, handler, queueCapacity);
+  }
+
+
+```foreachType
+  @Override
+  public boolean %type%(%Type%RequestDecode request, %Type%ResponseHandler response) {
+    return %type%Requests.offer(%Type%RequestScratch::setter, request, response);
+  }
+```
+
+  @Override
+  public int doWork() {
+    int work = 0;
+
+    connectivityProbe.probeConnected();
+
+    // Use this instead of CompositeAgent to monomorphize all calls to doWork
+```foreachType
+    work += %type%Agent.doWork();
+```
+
+    work += singleThreadedClient.poll(1);
+    return work;
+  }
+
+  @Override
+  public String roleName() {
+    return "ConcurrentJarpc%Service%Client";
+  }
+
+  @Override
+  public void close() {
+    singleThreadedClient.close();
+  }
+
+  public boolean isConnected() {
+    return connectivityProbe.isConnected();
+  }
+
+```foreachType
+  private final class %Type%Handler extends ResponseHandlerUtil<%Type%ResponseHandler>
+      implements SingleThreadedJarpc%Service%Client.%Type%ResponseHandler {
+    %Type%Handler() {
+      super(%type%Callbacks, errorHandler, "%Type%");
+    }
+
+    @Override
+    public boolean onResponse(long correlationId, %Type%ResponseDecode t) {
+      %Type%ResponseHandler callback = getCallback(correlationId);
+
+      if (callback == null) return true;
+
+      boolean dispatched = callback.onResponse(t);
+
+      if (dispatched) removeCallback(correlationId);
+
+      return dispatched;
+    }
+  }
+
+  private final class %Type%Agent extends MPSCBufferPollAgent<%Type%RequestScratch> {
+    %Type%Agent() {
+      super(
+          %type%Requests,
+          new %Type%RequestScratch(),
+          %Type%RequestScratch::copy,
+          errorHandler::onCorruptPublication);
+    }
+
+    @Override
+    protected boolean processRequest(%Type%RequestScratch scratch) {
+      %Type%RequestEncode encode = singleThreadedClient.claim%Type%(claimHandle);
+
+      if (encode == null) return handleError();
+
+      %type%Callbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());
+      encode.set(scratch);
+      return true;
+    }
+  }
+```
+}

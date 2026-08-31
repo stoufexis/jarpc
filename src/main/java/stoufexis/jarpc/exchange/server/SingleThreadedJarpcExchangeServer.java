@@ -15,17 +15,12 @@ import stoufexis.jarpc.lib.model.ErrorCode;
 import stoufexis.jarpc.lib.util.DecodeUtil;
 import stoufexis.jarpc.lib.util.EncodeUtil;
 
+import static stoufexis.jarpc.exchange.common.Metadata.*;
 import static stoufexis.jarpc.lib.util.Util.createServerSubscription;
 import static stoufexis.jarpc.lib.util.Util.illegal;
 
 public class SingleThreadedJarpcExchangeServer extends SingleThreadedJarpcServer
     implements SingleThreadedExchangeServer, AutoCloseable {
-  private static final int POST_ORDER_REQUEST_SIZE = 32;
-  private static final int CANCEL_ALL_REQUEST_SIZE = 0;
-  private static final int POST_ORDER_RESPONSE_SIZE = 4;
-  private static final int CANCEL_ALL_RESPONSE_SIZE = 4;
-  private static final int POST_ORDER_MESSAGE_TYPE = 1;
-  private static final int CANCEL_ALL_MESSAGE_TYPE = 2;
 
   private final PostOrderRequestHandler postOrderRequestHandler;
   private final CancelAllRequestHandler cancelAllRequestHandler;

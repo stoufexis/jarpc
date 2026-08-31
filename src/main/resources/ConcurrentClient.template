@@ -1,0 +1,18 @@
+package %package%.client;
+
+import stoufexis.jarpc.lib.client.*;
+
+import %package%.common.*;
+
+public interface Concurrent%Service%Client {
+
+```foreachType
+  boolean %type%(%Type%RequestDecode request, %Type%ResponseHandler response);
+```
+
+```foreachType
+  interface %Type%ResponseHandler extends ClientHandler {
+    boolean onResponse(%Type%ResponseDecode t);
+  }
+```
+}

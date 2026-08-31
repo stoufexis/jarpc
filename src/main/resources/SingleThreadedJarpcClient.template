@@ -1,44 +1,51 @@
-package stoufexis.jarpc.exchange.client;
+package %package%.client;
 
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.BufferClaim;
+
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
-import stoufexis.jarpc.lib.model.ConnectivityConfig;
-import stoufexis.jarpc.lib.util.DecodeUtil;
-import stoufexis.jarpc.lib.util.EncodeUtil;
-import stoufexis.jarpc.lib.util.Publisher;
-import stoufexis.jarpc.lib.client.SingleThreadedJarpcClient;
-import stoufexis.jarpc.exchange.common.CancelAllRequestEncode;
-import stoufexis.jarpc.exchange.common.CancelAllResponseDecode;
-import stoufexis.jarpc.exchange.common.PostOrderRequestEncode;
-import stoufexis.jarpc.exchange.common.PostOrderResponseDecode;
-import stoufexis.jarpc.lib.model.ClaimHandle;
-import stoufexis.jarpc.lib.model.ErrorCode;
 
-import static stoufexis.jarpc.exchange.common.Metadata.*;
+import stoufexis.jarpc.lib.util.*;
+import stoufexis.jarpc.lib.model.*;
+import stoufexis.jarpc.lib.client.*;
+
+import %package%.common.*;
+
 import static stoufexis.jarpc.lib.util.Util.*;
 
-public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpcClient
-    implements SingleThreadedExchangeClient {
+public final class SingleThreadedJarpc%Service%Client extends SingleThreadedJarpcClient
+    implements SingleThreaded%Service%Client {
 
-  private final PostOrderRequestEncodeImpl postOrderRequestEncode =
-      new PostOrderRequestEncodeImpl();
+```foreachType
+  private static final int %TYPE%_REQUEST_SIZE = %typeRequestSize%;
+  private static final int %TYPE%_RESPONSE_SIZE = %typeResponseSize%;
+  private static final int %TYPE%_MESSAGE_TYPE = 1;
+
+  private final %Type%RequestEncodeImpl %type%RequestEncode =
+      new %Type%RequestEncodeImpl();
+
+  private final %Type%ResponseDecodeImpl %type%ResponseDecode =
+      new %Type%ResponseDecodeImpl();
+
+  private final %Type%ResponseHandler %type%ResponseHandler;
+```
+
+
+  private static final int CANCEL_ALL_REQUEST_SIZE = 0;
+  private static final int CANCEL_ALL_RESPONSE_SIZE = 4;
+  private static final int CANCEL_ALL_MESSAGE_TYPE = 2;
 
   private final CancelAllRequestEncodeImpl cancelAllRequestEncode =
       new CancelAllRequestEncodeImpl();
 
-  private final PostOrderResponseDecodeImpl postOrderResponseDecode =
-      new PostOrderResponseDecodeImpl();
-
   private final CancelAllResponseDecodeImpl cancelAllResponseDecode =
       new CancelAllResponseDecodeImpl();
 
-  private final PostOrderResponseHandler postOrderResponseHandler;
   private final CancelAllResponseHandler cancelAllResponseHandler;
 
-  SingleThreadedJarpcExchangeClient(
+  SingleThreadedJarpc%Service%Client(
       Publication publication,
       Subscription subscription,
       PostOrderResponseHandler postOrderHandler,
@@ -49,7 +56,7 @@ public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpc
     this.cancelAllResponseHandler = cancelAllHandler;
   }
 
-  public static SingleThreadedJarpcExchangeClient create(
+  public static SingleThreadedJarpc%Service%Client create(
       ConnectivityConfig cfg,
       PostOrderResponseHandler postOrderHandler,
       CancelAllResponseHandler cancelAllHandler,
@@ -59,7 +66,7 @@ public final class SingleThreadedJarpcExchangeClient extends SingleThreadedJarpc
     Publication pub =
         createExclusiveClientPublication(
             cfg.aeron(), cfg.requestEndpoint(), cfg.requestStreamId(), sub);
-    return new SingleThreadedJarpcExchangeClient(
+    return new SingleThreadedJarpc%Service%Client(
         pub, sub, postOrderHandler, cancelAllHandler, errorHandler);
   }
 

@@ -1,0 +1,16 @@
+package %package%.server;
+
+import %package%.common.*;
+
+public interface Concurrent%Service%Server {
+
+```foreachType
+  void register%Type%(%Type%ResponseHandler %type%Response);
+
+  boolean %type%(long clientId, long correlationId, %Type%RequestDecode request);
+
+  interface %Type%ResponseHandler {
+    boolean onResponse(long clientId, long correlationId, %Type%ResponseDecode t);
+  }
+```foreachType
+}

@@ -7,8 +7,9 @@ import stoufexis.jarpc.exchange.common.PostOrderResponseDecode;
 
 public interface ConcurrentExchangeServer {
 
-  void registerHandlers(
-      PostOrderResponseHandler postOrderResponse, CancelAllResponseHandler cancelAllResponse);
+  void registerPostOrder(PostOrderResponseHandler postOrderResponse);
+
+  void registerCancelAll(CancelAllResponseHandler cancelAllResponse);
 
   boolean postOrder(long clientId, long correlationId, PostOrderRequestDecode request);
 

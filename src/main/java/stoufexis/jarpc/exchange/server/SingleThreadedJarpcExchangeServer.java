@@ -41,9 +41,9 @@ public class SingleThreadedJarpcExchangeServer extends SingleThreadedJarpcServer
       Subscription subscription,
       ServerPublications publications,
       Images images,
-      ServerErrorHandler errorHandler,
       PostOrderRequestHandler postOrderRequestHandler,
-      CancelAllRequestHandler cancelAllRequestHandler) {
+      CancelAllRequestHandler cancelAllRequestHandler,
+      ServerErrorHandler errorHandler) {
     super(subscription, publications, images, errorHandler);
     this.postOrderRequestHandler = postOrderRequestHandler;
     this.cancelAllRequestHandler = cancelAllRequestHandler;
@@ -63,9 +63,9 @@ public class SingleThreadedJarpcExchangeServer extends SingleThreadedJarpcServer
         serverSubscription,
         new ServerPublications(cfg.responseControl(), cfg.aeron(), cfg.responseStreamId()),
         images,
-        serverErrorHandler,
         postOrderRequestHandler,
-        cancelAllRequestHandler);
+        cancelAllRequestHandler,
+        serverErrorHandler);
   }
 
   @Override

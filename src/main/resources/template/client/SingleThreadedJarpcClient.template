@@ -108,10 +108,9 @@ public final class SingleThreadedJarpc%Service%Client extends SingleThreadedJarp
 
   private static final class %Type%RequestEncodeImpl extends EncodeUtil
       implements %Type%RequestEncode {
-
 ```foreachRequestField
     @Override
-    public void set%Field%(%FieldType% %field%) {
+    public void set%Field%(%fieldType% %field%) {
       buffer.put%FieldType%(offset + %fieldOffset%, %field%);
     }
 ```foreachRequestField
@@ -121,7 +120,7 @@ public final class SingleThreadedJarpc%Service%Client extends SingleThreadedJarp
       implements %Type%ResponseDecode {
 ```foreachResponseField
     @Override
-    public int get%Field%() {
+    public %fieldType% get%Field%() {
       return buffer.get%FieldType%(offset + %fieldOffset%);
     }
 ```foreachResponseField

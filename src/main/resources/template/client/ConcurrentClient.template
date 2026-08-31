@@ -8,9 +8,7 @@ public interface Concurrent%Service%Client {
 
 ```foreachType
   boolean %type%(%Type%RequestDecode request, %Type%ResponseHandler response);
-```foreachType
 
-```foreachType
   interface %Type%ResponseHandler extends ClientHandler {
     boolean onResponse(%Type%ResponseDecode t);
   }

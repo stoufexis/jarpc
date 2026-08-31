@@ -21,7 +21,7 @@ public final class ConcurrentJarpcExchangeServer implements Agent, AutoCloseable
   private final ServerErrorHandler errorHandler;
 
   private final ConcurrentExchangeServer.PostOrderResponseHandler postOrderResponseHandler;
-  private final ConcurrentExchangeServer.CancelAllResponseHandler cancelAllRequestHandler;
+  private final ConcurrentExchangeServer.CancelAllResponseHandler cancelAllResponseHandler;
 
   private final MPSCRingBuffer<PostOrderResponseScratch> postOrderResponses;
   private final MPSCRingBuffer<CancelAllResponseScratch> cancelAllResponses;
@@ -43,11 +43,11 @@ public final class ConcurrentJarpcExchangeServer implements Agent, AutoCloseable
             subscription,
             publications,
             images,
-            errorHandler,
             new PostOrderRequestHandler(),
-            new CancelAllRequestHandler());
+            new CancelAllRequestHandler(),
+            errorHandler);
     this.postOrderResponseHandler = new PostOrderResponseHandler();
-    this.cancelAllRequestHandler = new CancelAllResponseHandler();
+    this.cancelAllResponseHandler = new CancelAllResponseHandler();
     this.postOrderResponses = new MPSCRingBuffer<>(queueCapacity, PostOrderResponseScratch::new);
     this.cancelAllResponses = new MPSCRingBuffer<>(queueCapacity, CancelAllResponseScratch::new);
     this.postOrderAgent = new PostOrderAgent();
@@ -75,7 +75,8 @@ public final class ConcurrentJarpcExchangeServer implements Agent, AutoCloseable
 
   @Override
   public void onStart() {
-    concurrentExchangeServer.registerHandlers(postOrderResponseHandler, cancelAllRequestHandler);
+    concurrentExchangeServer.registerPostOrder(postOrderResponseHandler);
+    concurrentExchangeServer.registerCancelAll(cancelAllResponseHandler);
   }
 
   @Override

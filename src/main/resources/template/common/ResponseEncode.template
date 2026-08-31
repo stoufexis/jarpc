@@ -1,0 +1,13 @@
+package %package%.common;
+
+public interface %Type%ResponseEncode {
+```foreachResponseField
+    void set%Field%(%fieldType% %field%);
+```foreachResponseField
+
+  default void set(%Type%ResponseDecode decode) {
+```foreachResponseField
+    set%Field%(decode.get%Field%());
+```foreachResponseField
+  }
+}

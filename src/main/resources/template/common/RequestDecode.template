@@ -1,0 +1,7 @@
+package %package%.common;
+
+public interface %Type%RequestDecode {
+```foreachRequestField
+    %fieldType% get%Field%();
+```foreachRequestField
+}

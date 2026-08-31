@@ -25,7 +25,7 @@ public final class ConcurrentJarpc%Service%Client
   private final MPSCRingBuffer<%Type%RequestScratch> %type%Requests;
   private final Long2ObjectHashMap<%Type%ResponseHandler> %type%Callbacks;
   private final %Type%Agent %type%Agent;
-```
+```foreachType
 
   private final ClientErrorHandler errorHandler;
 
@@ -40,14 +40,14 @@ public final class ConcurrentJarpc%Service%Client
     this.%type%Callbacks = new Long2ObjectHashMap<>();
     this.%type%Requests = new MPSCRingBuffer<>(queueCapacity, %Type%RequestScratch::new);
     this.%type%Agent = new %Type%Agent();
-```
+```foreachType
     this.singleThreadedClient =
         new SingleThreadedJarpc%Service%Client(
             publication,
             subscription,
 ```foreachType
             new %Type%Handler(),
-```
+```foreachType
             errorHandler);
     this.errorHandler = errorHandler;
     this.connectivityProbe = new ConnectivityProbe(singleThreadedClient);
@@ -69,7 +69,7 @@ public final class ConcurrentJarpc%Service%Client
   public boolean %type%(%Type%RequestDecode request, %Type%ResponseHandler response) {
     return %type%Requests.offer(%Type%RequestScratch::setter, request, response);
   }
-```
+```foreachType
 
   @Override
   public int doWork() {
@@ -80,7 +80,7 @@ public final class ConcurrentJarpc%Service%Client
     // Use this instead of CompositeAgent to monomorphize all calls to doWork
 ```foreachType
     work += %type%Agent.doWork();
-```
+```foreachType
 
     work += singleThreadedClient.poll(1);
     return work;
@@ -141,5 +141,5 @@ public final class ConcurrentJarpc%Service%Client
       return true;
     }
   }
-```
+```foreachType
 }

@@ -27,26 +27,26 @@ public final class SingleThreadedJarpc%Service%Client extends SingleThreadedJarp
       new %Type%ResponseDecodeImpl();
 
   private final %Type%ResponseHandler %type%ResponseHandler;
-```
+```foreachType
 
   SingleThreadedJarpc%Service%Client(
       Publication publication,
       Subscription subscription,
 ```foreachType
       %Type%ResponseHandler %type%Handler,
-```
+```foreachType
       ErrorHandler errorHandler) {
     super(publication, subscription, errorHandler);
 ```foreachType
     this.%type%ResponseHandler = %type%Handler;
-```
+```foreachType
   }
 
   public static SingleThreadedJarpc%Service%Client create(
       ConnectivityConfig cfg,
 ```foreachType
       %Type%ResponseHandler %type%Handler,
-```
+```foreachType
       ErrorHandler errorHandler) {
     Subscription sub =
         createClientSubscription(cfg.aeron(), cfg.responseControl(), cfg.responseStreamId());
@@ -58,7 +58,7 @@ public final class SingleThreadedJarpc%Service%Client extends SingleThreadedJarp
         sub,
 ```foreachType
         %type%Handler,
-```
+```foreachType
         errorHandler
         );
   }
@@ -70,7 +70,7 @@ public final class SingleThreadedJarpc%Service%Client extends SingleThreadedJarp
     return switch (messageType) {
 ```foreachType
       case %TYPE%_MESSAGE_TYPE -> on%Type%Response(correlationId, buffer, offset, length);
-```
+```foreachType
       default -> throw illegal("Unknown message type " + messageType);
     };
   }
@@ -114,7 +114,7 @@ public final class SingleThreadedJarpc%Service%Client extends SingleThreadedJarp
     public void set%Field%(%FieldType% %field%) {
       buffer.put%FieldType%(offset + %fieldOffset%, %field%);
     }
-```
+```foreachRequestField
   }
 
   private static final class %Type%ResponseDecodeImpl extends DecodeUtil
@@ -124,7 +124,7 @@ public final class SingleThreadedJarpc%Service%Client extends SingleThreadedJarp
     public int get%Field%() {
       return buffer.get%FieldType%(offset + %fieldOffset%);
     }
-```
+```foreachResponseField
   }
-```
+```foreachType
 }

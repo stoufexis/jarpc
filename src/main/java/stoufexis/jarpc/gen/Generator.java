@@ -63,8 +63,14 @@ public class Generator {
 
   private record Field(Variable fieldName, Variable fieldType, int fieldOffset) {}
 
-  private record Variable(String typ) {
-    // Splits "camelCase" or "PascalCase" into ["camel", "Case"] / ["Pascal", "Case"]
+  private record Variable(String value) {
+
+    Variable {
+      if (!value.matches("^[a-z][a-zA-Z0-9]*$")) {
+        throw new IllegalArgumentException("expected" + value + " to be in camel case");
+      }
+    }
+
     private static String[] splitWords(String input) {
       return input.split("(?<!^)(?=[A-Z])");
     }
@@ -74,7 +80,7 @@ public class Generator {
     }
 
     String toCamelCase() {
-      String[] words = splitWords(typ);
+      String[] words = splitWords(value);
       StringBuilder sb = new StringBuilder();
       for (int i = 0; i < words.length; i++) {
         String w = words[i].toLowerCase();
@@ -84,13 +90,13 @@ public class Generator {
     }
 
     String toPascalCase() {
-      return Arrays.stream(splitWords(typ))
+      return Arrays.stream(splitWords(value))
           .map(w -> capitalize(w.toLowerCase()))
           .collect(Collectors.joining());
     }
 
     String toSnakeCaseUpper() {
-      return Arrays.stream(splitWords(typ))
+      return Arrays.stream(splitWords(value))
           .map(String::toUpperCase)
           .collect(Collectors.joining("_"));
     }

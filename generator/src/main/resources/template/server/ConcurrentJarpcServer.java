@@ -11,6 +11,10 @@ import static stoufexis.jarpc.lib.util.Util.createServerSubscription;
 
 import _package_.common.*;
 
+// FIXME one slow client consumer slows down everyone, because the ring buffers are shared across
+// clients. The slow client may need to be forcefully terminated, or there should be a dedicated
+// ring buffer per client.
+
 public final class _Service_ConcurrentJarpcServer implements Agent, AutoCloseable {
 
   private final _Service_SingleThreadedJarpcServer singleThreadedServer;

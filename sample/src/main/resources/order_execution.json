@@ -48,5 +48,40 @@
         "type": "int"
       }
     ]
+  },
+  {
+    "rpcName": "trackOrder",
+    "request": [
+      {
+        "name": "generatedId",
+        "type": "long"
+      }
+    ],
+    "response": [
+      {
+        "name": "assetId",
+        "type": "int"
+      },
+      {
+        "name": "filledQuantityUnscaled",
+        "type": "long"
+      },
+      {
+        "name": "quantityUnscaled",
+        "type": "long"
+      },
+      {
+        "name": "rateUnscaled",
+        "type": "long"
+      },
+      {
+        "name": "quantityScale",
+        "type": "int"
+      },
+      {
+        "name": "rateScale",
+        "type": "int"
+      }
+    ]
   }
 ]

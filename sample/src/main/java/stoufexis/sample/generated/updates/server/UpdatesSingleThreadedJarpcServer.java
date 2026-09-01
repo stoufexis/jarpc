@@ -34,10 +34,12 @@ public class UpdatesSingleThreadedJarpcServer extends SingleThreadedJarpcServer
 
       SubscribeOrderUpdatesRequestHandler subscribeOrderUpdatesRequestHandler,
 
+      ClientHook clientHook,
       ServerErrorHandler errorHandler) {
-    super(subscription, publications, images, errorHandler);
+    super(subscription, publications, images, clientHook, errorHandler);
 
     this.subscribeOrderUpdatesRequestHandler = subscribeOrderUpdatesRequestHandler;
+
 
   }
 
@@ -46,6 +48,7 @@ public class UpdatesSingleThreadedJarpcServer extends SingleThreadedJarpcServer
 
       SubscribeOrderUpdatesRequestHandler subscribeOrderUpdatesRequestHandler,
 
+      ClientHook clientHook,
       ServerErrorHandler serverErrorHandler) {
     Images images = new Images();
 
@@ -59,6 +62,7 @@ public class UpdatesSingleThreadedJarpcServer extends SingleThreadedJarpcServer
 
         subscribeOrderUpdatesRequestHandler,
 
+        clientHook,
         serverErrorHandler);
   }
 

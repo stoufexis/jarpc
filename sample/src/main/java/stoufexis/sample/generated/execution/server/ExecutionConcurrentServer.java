@@ -1,8 +1,9 @@
 package stoufexis.sample.generated.execution.server;
 
 import stoufexis.sample.generated.execution.common.*;
+import stoufexis.jarpc.lib.model.ClientHook;
 
-public interface ExecutionConcurrentServer {
+public interface ExecutionConcurrentServer extends ClientHook {
 
 
   void registerPostLimitOrder(PostLimitOrderResponseHandler postLimitOrderResponse);

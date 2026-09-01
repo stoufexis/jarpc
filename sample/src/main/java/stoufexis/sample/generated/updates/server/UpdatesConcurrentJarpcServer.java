@@ -42,6 +42,7 @@ public final class UpdatesConcurrentJarpcServer implements Agent, AutoCloseable 
 
             new SubscribeOrderUpdatesRequestHandler(),
 
+            concurrentUpdatesServer,
             errorHandler);
 
     this.subscribeOrderUpdatesResponseHandler = new SubscribeOrderUpdatesResponseHandler();

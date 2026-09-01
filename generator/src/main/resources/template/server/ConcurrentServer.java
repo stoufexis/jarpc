@@ -1,8 +1,9 @@
 package _package_.server;
 
 import _package_.common.*;
+import stoufexis.jarpc.lib.model.ClientHook;
 
-public interface _Service_ConcurrentServer {
+public interface _Service_ConcurrentServer extends ClientHook {
 
   /// foreachType
   void register_Type_(_Type_ResponseHandler _type_Response);

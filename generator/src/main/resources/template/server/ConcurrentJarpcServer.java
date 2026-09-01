@@ -42,6 +42,7 @@ public final class _Service_ConcurrentJarpcServer implements Agent, AutoCloseabl
             /// foreachType
             new _Type_RequestHandler(),
             /// foreachType
+            concurrent_Service_Server,
             errorHandler);
     /// foreachType
     this._type_ResponseHandler = new _Type_ResponseHandler();

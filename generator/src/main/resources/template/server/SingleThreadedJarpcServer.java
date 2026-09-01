@@ -34,11 +34,13 @@ public class _Service_SingleThreadedJarpcServer extends SingleThreadedJarpcServe
       /// foreachType
       _Type_RequestHandler _type_RequestHandler,
       /// foreachType
+      ClientHook clientHook,
       ServerErrorHandler errorHandler) {
-    super(subscription, publications, images, errorHandler);
+    super(subscription, publications, images, clientHook, errorHandler);
     /// foreachType
     this._type_RequestHandler = _type_RequestHandler;
     /// foreachType
+
   }
 
   public static _Service_SingleThreadedJarpcServer create(
@@ -46,6 +48,7 @@ public class _Service_SingleThreadedJarpcServer extends SingleThreadedJarpcServe
       /// foreachType
       _Type_RequestHandler _type_RequestHandler,
       /// foreachType
+      ClientHook clientHook,
       ServerErrorHandler serverErrorHandler) {
     Images images = new Images();
 
@@ -59,6 +62,7 @@ public class _Service_SingleThreadedJarpcServer extends SingleThreadedJarpcServe
         /// foreachType
         _type_RequestHandler,
         /// foreachType
+        clientHook,
         serverErrorHandler);
   }
 

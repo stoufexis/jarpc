@@ -41,11 +41,13 @@ public class ExecutionSingleThreadedJarpcServer extends SingleThreadedJarpcServe
       PostLimitOrderRequestHandler postLimitOrderRequestHandler,
       CancelOrderRequestHandler cancelOrderRequestHandler,
 
+      ClientHook clientHook,
       ServerErrorHandler errorHandler) {
-    super(subscription, publications, images, errorHandler);
+    super(subscription, publications, images, clientHook, errorHandler);
 
     this.postLimitOrderRequestHandler = postLimitOrderRequestHandler;
     this.cancelOrderRequestHandler = cancelOrderRequestHandler;
+
 
   }
 
@@ -55,6 +57,7 @@ public class ExecutionSingleThreadedJarpcServer extends SingleThreadedJarpcServe
       PostLimitOrderRequestHandler postLimitOrderRequestHandler,
       CancelOrderRequestHandler cancelOrderRequestHandler,
 
+      ClientHook clientHook,
       ServerErrorHandler serverErrorHandler) {
     Images images = new Images();
 
@@ -69,6 +72,7 @@ public class ExecutionSingleThreadedJarpcServer extends SingleThreadedJarpcServe
         postLimitOrderRequestHandler,
         cancelOrderRequestHandler,
 
+        clientHook,
         serverErrorHandler);
   }
 

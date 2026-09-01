@@ -46,6 +46,7 @@ public final class ExecutionConcurrentJarpcServer implements Agent, AutoCloseabl
             new PostLimitOrderRequestHandler(),
             new CancelOrderRequestHandler(),
 
+            concurrentExecutionServer,
             errorHandler);
 
     this.postLimitOrderResponseHandler = new PostLimitOrderResponseHandler();

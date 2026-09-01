@@ -19,6 +19,12 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(26)
+    }
+}
+
 tasks.test {
     useJUnitPlatform()
     jvmArgs.add("--enable-preview")

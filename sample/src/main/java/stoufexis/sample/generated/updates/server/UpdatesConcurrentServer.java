@@ -1,8 +1,9 @@
 package stoufexis.sample.generated.updates.server;
 
 import stoufexis.sample.generated.updates.common.*;
+import stoufexis.jarpc.lib.model.ClientHook;
 
-public interface UpdatesConcurrentServer {
+public interface UpdatesConcurrentServer extends ClientHook {
 
 
   void registerSubscribeOrderUpdates(SubscribeOrderUpdatesResponseHandler subscribeOrderUpdatesResponse);

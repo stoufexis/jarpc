@@ -1,7 +1,6 @@
 package stoufexis.jarpc.gen.model;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,27 +32,23 @@ public record ParsedTemplate(List<RootComponent> block) {
   }
 
   public static ParsedTemplate parse(String template) {
+    Cursor c = Cursor.create(template);
 
-    ArrayList<String> list = new ArrayList<>(Arrays.stream(template.split("\n")).toList());
-
-    if (list.isEmpty()) throw new IllegalArgumentException("Empty template");
+    if (c.isEmpty()) throw new IllegalArgumentException("Empty template");
 
     LinkedList<RootComponent> blocks = new LinkedList<>();
-
     StringBuilder builder = new StringBuilder();
-
-    int startAt = 0;
 
     for (; ; ) {
 
-      if (startAt >= list.size()) {
+      if (c.exhausted()) {
         if (!builder.isEmpty()) {
           blocks.add(new PlainBlock(builder.toString()));
         }
         break;
       }
 
-      String line = list.get(startAt);
+      String line = c.read();
 
       if (foreachType(line)) {
         if (!builder.isEmpty()) {
@@ -61,18 +56,81 @@ public record ParsedTemplate(List<RootComponent> block) {
           builder = new StringBuilder();
         }
 
-        int[] out = new int[1];
-        blocks.add(parseForEachTypeBlock(list, startAt, out));
-        startAt = out[0];
+        blocks.add(parseForEachTypeBlock(c));
       } else {
         builder.append(line);
         builder.append("\n");
       }
 
-      startAt++;
+      c.advance();
     }
 
     return new ParsedTemplate(List.copyOf(blocks));
+  }
+
+  private static ForEachTypeBlock parseForEachTypeBlock(Cursor c) {
+    LinkedList<ForEachTypeComponent> blocks = new LinkedList<>();
+    StringBuilder builder = new StringBuilder();
+
+    c.advance();
+
+    for (; ; ) {
+      String line = c.read();
+
+      if (foreachType(line)) {
+        if (!builder.isEmpty()) {
+          blocks.add(new PlainBlock(builder.toString()));
+        }
+        break;
+
+      } else if (foreachReqField(line) || foreachResField(line)) {
+        if (!builder.isEmpty()) {
+          blocks.add(new PlainBlock(builder.toString()));
+          builder = new StringBuilder();
+        }
+
+        blocks.add(parseRequestFieldBlock(c, foreachReqField(line)));
+      } else {
+        builder.append(line);
+        builder.append("\n");
+      }
+
+      c.advance();
+    }
+
+    return new ForEachTypeBlock(List.copyOf(blocks));
+  }
+
+  private static ForEachTypeComponent parseRequestFieldBlock(Cursor c, boolean req) {
+    StringBuilder builder = new StringBuilder();
+
+    c.advance();
+
+    for (; ; ) {
+      String line = c.read();
+
+      if (foreachReqField(line) || foreachResField(line)) break;
+
+      builder.append(line);
+      builder.append("\n");
+      c.advance();
+    }
+
+    return req
+        ? new ForEachRequestFieldBlock(builder.toString())
+        : new ForEachResponseFieldBlock(builder.toString());
+  }
+
+  private static boolean foreachType(String line) {
+    return line.replace(" ", "").contains("///foreachType");
+  }
+
+  private static boolean foreachReqField(String line) {
+    return line.replace(" ", "").contains("///foreachRequestField");
+  }
+
+  private static boolean foreachResField(String line) {
+    return line.replace(" ", "").contains("///foreachResponseField");
   }
 
   @Override
@@ -132,9 +190,9 @@ public record ParsedTemplate(List<RootComponent> block) {
 
     @Override
     public String toString() {
-      return "/// foreachTypeBlock\n"
+      return "/// foreachType\n"
           + block.stream().map(Object::toString).collect(Collectors.joining("\n"))
-          + "/// foreachTypeBlock\n";
+          + "/// foreachType\n";
     }
   }
 
@@ -150,7 +208,7 @@ public record ParsedTemplate(List<RootComponent> block) {
 
     @Override
     public String toString() {
-      return "/// foreachRequestFieldBlock\n" + block + "/// foreachRequestFieldBlock\n";
+      return "/// foreachRequestField\n" + block + "/// foreachRequestField\n";
     }
   }
 
@@ -162,109 +220,35 @@ public record ParsedTemplate(List<RootComponent> block) {
 
     @Override
     public String toString() {
-      return "/// foreachResponseFieldBlock\n" + block + "/// foreachResponseFieldBlock\n";
+      return "/// foreachResponseField\n" + block + "/// foreachResponseField\n";
     }
   }
 
-  private static ForEachTypeBlock parseForEachTypeBlock(
-      ArrayList<String> list, int startAt, int[] newIndex) {
+  private static class Cursor {
+    private ArrayList<String> list;
+    private int index;
 
-    LinkedList<ForEachTypeComponent> blocks = new LinkedList<>();
-
-    StringBuilder builder = new StringBuilder();
-
-    startAt += 1;
-
-    for (; ; ) {
-      String line = list.get(startAt);
-
-      if (foreachType(line)) {
-        if (!builder.isEmpty()) {
-          blocks.add(new PlainBlock(builder.toString()));
-        }
-        break;
-
-      } else if (foreachReqField(line)) {
-        if (!builder.isEmpty()) {
-          blocks.add(new PlainBlock(builder.toString()));
-          builder = new StringBuilder();
-        }
-
-        int[] out = new int[1];
-        blocks.add(parseRequestFieldBlock(list, startAt, out));
-        startAt = out[0];
-
-      } else if (foreachResField(line)) {
-        if (!builder.isEmpty()) {
-          blocks.add(new PlainBlock(builder.toString()));
-          builder = new StringBuilder();
-        }
-
-        int[] out = new int[1];
-        blocks.add(parseResponseFieldBlock(list, startAt, out));
-        startAt = out[0];
-
-      } else {
-        builder.append(line);
-        builder.append("\n");
-      }
-
-      startAt++;
+    boolean exhausted() {
+      return index >= list.size();
     }
 
-    newIndex[0] = startAt;
-    return new ForEachTypeBlock(List.copyOf(blocks));
-  }
-
-  private static ForEachRequestFieldBlock parseRequestFieldBlock(
-      ArrayList<String> list, int startAt, int[] newIndex) {
-    StringBuilder builder = new StringBuilder();
-
-    startAt += 1;
-
-    for (; ; ) {
-      String line = list.get(startAt);
-
-      if (foreachReqField(line)) break;
-
-      builder.append(line);
-      builder.append("\n");
-      startAt++;
+    boolean isEmpty() {
+      return list.isEmpty();
     }
 
-    newIndex[0] = startAt;
-    return new ForEachRequestFieldBlock(builder.toString());
-  }
-
-  private static ForEachResponseFieldBlock parseResponseFieldBlock(
-      ArrayList<String> list, int startAt, int[] newIndex) {
-    StringBuilder builder = new StringBuilder();
-
-    startAt += 1;
-
-    for (; ; ) {
-      String line = list.get(startAt);
-
-      if (foreachResField(line)) break;
-
-      builder.append(line);
-      builder.append("\n");
-      startAt++;
+    void advance() {
+      index++;
     }
 
-    newIndex[0] = startAt;
-    return new ForEachResponseFieldBlock(builder.toString());
-  }
+    String read() {
+      return list.get(index);
+    }
 
-  private static boolean foreachType(String line) {
-    return line.replace(" ", "").contains("///foreachType");
-  }
-
-  private static boolean foreachReqField(String line) {
-    return line.replace(" ", "").contains("///foreachRequestField");
-  }
-
-  private static boolean foreachResField(String line) {
-    return line.replace(" ", "").contains("///foreachResponseField");
+    static Cursor create(String template) {
+      var pi = new Cursor();
+      pi.index = 0;
+      pi.list = new ArrayList<>(List.of(template.split("\n")));
+      return pi;
+    }
   }
 }

@@ -7,10 +7,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 public record Spec(
-    Variable serviceName, String pkg, List<RpcType> types, boolean singleThreadOnly) {
+    Variable serviceName, String pkg, List<RpcType> types, SingleThreadOption singleThread) {
 
   public static Spec parse(
-      String serviceName, String serviceSpec, String pkg, boolean singleThreadOnly) {
+      String serviceName, String serviceSpec, String pkg, SingleThreadOption singleThread) {
     Variable service = var(serviceName);
 
     LinkedList<RpcType> types = new LinkedList<>();
@@ -33,7 +33,7 @@ public record Spec(
               typeId++));
     }
 
-    return new Spec(service, pkg, List.copyOf(types), singleThreadOnly);
+    return new Spec(service, pkg, List.copyOf(types), singleThread);
   }
 
   private static int messageSize(List<Field> fields) {

@@ -15,9 +15,25 @@ public final class Generator {
       outputs.addAll(generate(spec, template));
     }
 
-    if (!spec.singleThreadOnly()) {
-      for (TemplatePath template : concurrent) {
-        outputs.addAll(generate(spec, template));
+    switch (spec.singleThread()) {
+      case BOTH -> {}
+      case CLIENT -> {
+        for (TemplatePath template : concurrentServer) {
+          outputs.addAll(generate(spec, template));
+        }
+      }
+      case SERVER -> {
+        for (TemplatePath template : concurrentClient) {
+          outputs.addAll(generate(spec, template));
+        }
+      }
+      case NEITHER -> {
+        for (TemplatePath template : concurrentServer) {
+          outputs.addAll(generate(spec, template));
+        }
+        for (TemplatePath template : concurrentClient) {
+          outputs.addAll(generate(spec, template));
+        }
       }
     }
 
@@ -63,12 +79,15 @@ public final class Generator {
           new TemplatePath("server", "SingleThreadedJarpcServer"),
           new TemplatePath("server", "SingleThreadedServer"));
 
-  private static final List<TemplatePath> concurrent =
+  private static final List<TemplatePath> concurrentClient =
       List.of(
-          new TemplatePath("common", "ResponseScratch"),
           new TemplatePath("common", "RequestScratch"),
           new TemplatePath("client", "ConcurrentClient"),
-          new TemplatePath("client", "ConcurrentJarpcClient"),
+          new TemplatePath("client", "ConcurrentJarpcClient"));
+
+  private static final List<TemplatePath> concurrentServer =
+      List.of(
+          new TemplatePath("common", "ResponseScratch"),
           new TemplatePath("server", "ConcurrentJarpcServer"),
           new TemplatePath("server", "ConcurrentServer"));
 

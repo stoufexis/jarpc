@@ -1,5 +1,6 @@
 package stoufexis.jarpc.gen;
 
+import stoufexis.jarpc.gen.model.SingleThreadOption;
 import stoufexis.jarpc.gen.model.Spec;
 
 import java.io.IOException;
@@ -14,7 +15,7 @@ public class Cli {
     String serviceName = null;
     String packageName = null;
     String output = null;
-    boolean singleThreadOnly = false;
+    SingleThreadOption singleThread = SingleThreadOption.NEITHER;
 
     for (int i = 0; i < args.length; i++) {
       switch (args[i]) {
@@ -22,7 +23,14 @@ public class Cli {
         case "--name", "-n" -> serviceName = args[++i];
         case "--package", "-p" -> packageName = args[++i];
         case "--output", "-o" -> output = args[++i];
-        case "--single-thread-only", "-st" -> singleThreadOnly = true;
+        case "--single-thread-only", "-st" ->
+            singleThread =
+                switch (args[++i]) {
+                  case "client" -> SingleThreadOption.CLIENT;
+                  case "server" -> SingleThreadOption.SERVER;
+                  case "both" -> SingleThreadOption.BOTH;
+                  default -> throw new IllegalArgumentException("Invalid single thread option");
+                };
         case "--help", "-h" -> {
           System.out.println(
               "Usage: --spec <json file> --name <string> --package <string> --output <dir> [--single-thread-only]");
@@ -40,7 +48,7 @@ public class Cli {
     Objects.requireNonNull(packageName, "package path not provided");
     Objects.requireNonNull(output, "output path not provided");
 
-    Spec spec = Spec.parse(serviceName, Files.readString(specPath), packageName, singleThreadOnly);
+    Spec spec = Spec.parse(serviceName, Files.readString(specPath), packageName, singleThread);
 
     for (Generator.OutputFile file : Generator.generate(spec)) {
       Path path = Path.of(output + file.relativePath());

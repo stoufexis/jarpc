@@ -19,14 +19,11 @@ public final class _Service_ConcurrentJarpcServer implements Agent, AutoCloseabl
 
   private final ServerErrorHandler errorHandler;
 
-  private final _Service_ConcurrentServer.PostOrderResponseHandler postOrderResponseHandler;
-  private final _Service_ConcurrentServer.CancelAllResponseHandler cancelAllResponseHandler;
-
-  private final MPSCRingBuffer<PostOrderResponseScratch> postOrderResponses;
-  private final MPSCRingBuffer<CancelAllResponseScratch> cancelAllResponses;
-
-  private final PostOrderAgent postOrderAgent;
-  private final CancelAllAgent cancelAllAgent;
+  /// foreachType
+  private final _Service_ConcurrentServer._Type_ResponseHandler _type_ResponseHandler;
+  private final MPSCRingBuffer<_Type_ResponseScratch> _type_Responses;
+  private final _Type_Agent _type_Agent;
+  /// foreachType
 
   _Service_ConcurrentJarpcServer(
       _Service_ConcurrentServer concurrent_Service_Server,

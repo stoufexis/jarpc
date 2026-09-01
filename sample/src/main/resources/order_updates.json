@@ -1,0 +1,37 @@
+[
+  {
+    "rpcName": "subscribeOrderUpdates",
+    "request": [
+    ],
+    "response": [
+      {
+        "name": "assetId",
+        "type": "int"
+      },
+      {
+        "name": "requestedQuantityUnscaled",
+        "type": "long"
+      },
+      {
+        "name": "filledQuantityUnscaled",
+        "type": "long"
+      },
+      {
+        "name": "rateUnscaled",
+        "type": "long"
+      },
+      {
+        "name": "quantityScale",
+        "type": "int"
+      },
+      {
+        "name": "rateScale",
+        "type": "int"
+      },
+      {
+        "name": "statusCode",
+        "type": "int"
+      }
+    ]
+  }
+]

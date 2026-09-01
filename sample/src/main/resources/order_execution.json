@@ -1,0 +1,52 @@
+[
+  {
+    "rpcName": "postLimitOrder",
+    "request": [
+      {
+        "name": "assetId",
+        "type": "int"
+      },
+      {
+        "name": "quantityUnscaled",
+        "type": "long"
+      },
+      {
+        "name": "rateUnscaled",
+        "type": "long"
+      },
+      {
+        "name": "quantityScale",
+        "type": "int"
+      },
+      {
+        "name": "rateScale",
+        "type": "int"
+      }
+    ],
+    "response": [
+      {
+        "name": "generatedId",
+        "type": "long"
+      },
+      {
+        "name": "statusCode",
+        "type": "int"
+      }
+    ]
+  },
+  {
+    "rpcName": "cancelOrder",
+    "request": [
+      {
+        "name": "generatedId",
+        "type": "long"
+      }
+    ],
+    "response": [
+      {
+        "name": "statusCode",
+        "type": "int"
+      }
+    ]
+  }
+]

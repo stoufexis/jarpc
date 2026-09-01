@@ -6,9 +6,11 @@ import org.json.JSONObject;
 import java.util.LinkedList;
 import java.util.List;
 
-public record Spec(Variable serviceName, String pkg, List<RpcType> types) {
+public record Spec(
+    Variable serviceName, String pkg, List<RpcType> types, boolean singleThreadOnly) {
 
-  public static Spec parse(String serviceName, String serviceSpec, String pkg) {
+  public static Spec parse(
+      String serviceName, String serviceSpec, String pkg, boolean singleThreadOnly) {
     Variable service = var(serviceName);
 
     LinkedList<RpcType> types = new LinkedList<>();
@@ -31,7 +33,7 @@ public record Spec(Variable serviceName, String pkg, List<RpcType> types) {
               typeId++));
     }
 
-    return new Spec(service, pkg, List.copyOf(types));
+    return new Spec(service, pkg, List.copyOf(types), singleThreadOnly);
   }
 
   private static int messageSize(List<Field> fields) {

@@ -14,6 +14,7 @@ public class Cli {
     String serviceName = null;
     String packageName = null;
     String output = null;
+    boolean singleThreadOnly = false;
 
     for (int i = 0; i < args.length; i++) {
       switch (args[i]) {
@@ -21,9 +22,10 @@ public class Cli {
         case "--name", "-n" -> serviceName = args[++i];
         case "--package", "-p" -> packageName = args[++i];
         case "--output", "-o" -> output = args[++i];
+        case "--single-thread-only", "-st" -> singleThreadOnly = true;
         case "--help", "-h" -> {
           System.out.println(
-              "Usage: --spec <json file> --name <string> --package <string> --output <dir>");
+              "Usage: --spec <json file> --name <string> --package <string> --output <dir> [--single-thread-only]");
           return;
         }
         default -> {
@@ -38,7 +40,7 @@ public class Cli {
     Objects.requireNonNull(packageName, "package path not provided");
     Objects.requireNonNull(output, "output path not provided");
 
-    Spec spec = Spec.parse(serviceName, Files.readString(specPath), packageName);
+    Spec spec = Spec.parse(serviceName, Files.readString(specPath), packageName, singleThreadOnly);
 
     for (Generator.OutputFile file : Generator.generate(spec)) {
       Path path = Path.of(output + file.relativePath());

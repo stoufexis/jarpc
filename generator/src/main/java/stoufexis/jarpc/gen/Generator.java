@@ -11,8 +11,14 @@ public final class Generator {
   public static List<OutputFile> generate(Spec spec) throws IOException {
     LinkedList<OutputFile> outputs = new LinkedList<>();
 
-    for (TemplatePath template : templates) {
+    for (TemplatePath template : singleThread) {
       outputs.addAll(generate(spec, template));
+    }
+
+    if (!spec.singleThreadOnly()) {
+      for (TemplatePath template : concurrent) {
+        outputs.addAll(generate(spec, template));
+      }
     }
 
     return List.copyOf(outputs);
@@ -45,23 +51,26 @@ public final class Generator {
     return List.of(new OutputFile("/" + path.subdir, relativePath, root.fill(spec)));
   }
 
-  private static final List<TemplatePath> templates =
+  private static final List<TemplatePath> singleThread =
       List.of(
-          new TemplatePath("client", "ConcurrentClient"),
-          new TemplatePath("client", "ConcurrentJarpcClient"),
           new TemplatePath("client", "SingleThreadedClient"),
           new TemplatePath("client", "SingleThreadedJarpcClient"),
           new TemplatePath("common", "Metadata"),
           new TemplatePath("common", "RequestDecode"),
           new TemplatePath("common", "RequestEncode"),
-          new TemplatePath("common", "RequestScratch"),
           new TemplatePath("common", "ResponseDecode"),
           new TemplatePath("common", "ResponseEncode"),
-          new TemplatePath("common", "ResponseScratch"),
-          new TemplatePath("server", "ConcurrentJarpcServer"),
-          new TemplatePath("server", "ConcurrentServer"),
           new TemplatePath("server", "SingleThreadedJarpcServer"),
           new TemplatePath("server", "SingleThreadedServer"));
+
+  private static final List<TemplatePath> concurrent =
+      List.of(
+          new TemplatePath("common", "ResponseScratch"),
+          new TemplatePath("common", "RequestScratch"),
+          new TemplatePath("client", "ConcurrentClient"),
+          new TemplatePath("client", "ConcurrentJarpcClient"),
+          new TemplatePath("server", "ConcurrentJarpcServer"),
+          new TemplatePath("server", "ConcurrentServer"));
 
   private record TemplatePath(String subdir, String name) {
     String getPath() {

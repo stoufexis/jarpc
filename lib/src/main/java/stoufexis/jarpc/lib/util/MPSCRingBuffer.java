@@ -2,13 +2,13 @@ package stoufexis.jarpc.lib.util;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-// FIXME This implementation is fairly unoptimized. Theres false sharing, and not granular enough
-// atomic operations
-
 import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.function.Supplier;
 
 public final class MPSCRingBuffer<E> {
+
+  // FIXME This implementation is fairly unoptimized. Theres false sharing, and not granular enough
+  // atomic operations
 
   public interface Consume2<A, B> {
     void accept(A a, B b);

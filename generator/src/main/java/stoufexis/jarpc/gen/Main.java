@@ -18,11 +18,11 @@ public class Main {
     for (Generator.OutputFile file : Generator.generate(spec)) {
       Path path =
           Path.of(
-              "/home/stoufexis/dev/jarpc/src/main/java/stoufexis/jarpc/example/"
+              "/home/stoufexis/dev/jarpc/lib/src/main/java/stoufexis/jarpc/example/"
                   + file.relativePath());
       Files.deleteIfExists(path);
       Files.createDirectories(
-          Path.of("/home/stoufexis/dev/jarpc/src/main/java/stoufexis/jarpc/example/" + file.dir()));
+          Path.of("/home/stoufexis/dev/jarpc/lib/src/main/java/stoufexis/jarpc/example/" + file.dir()));
       Files.writeString(path, file.content(), StandardOpenOption.CREATE_NEW);
     }
   }

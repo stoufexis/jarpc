@@ -12,5 +12,6 @@ public interface SingleThreadedExchangeServer extends Poll {
   interface _Type_RequestHandler {
     boolean onRequest(long clientId, long correlationId, _Type_RequestDecode t);
   }
+
   /// foreachType
 }

@@ -6,7 +6,7 @@ import org.json.JSONObject;
 import java.util.LinkedList;
 import java.util.List;
 
-public record Spec(Variable serviceName, String pkg, List<RpcType> spec) {
+public record Spec(Variable serviceName, String pkg, List<RpcType> types) {
 
   public static Spec parse(String serviceName, String serviceSpec, String pkg) {
     Variable service = var(serviceName);
@@ -68,10 +68,6 @@ public record Spec(Variable serviceName, String pkg, List<RpcType> spec) {
 
   private static Variable var(String v) {
     return new Variable(v);
-  }
-
-  public String root(String... rootStr) {
-    return replacements().applyTo(String.join("\n", rootStr));
   }
 
   public Replacements replacements() {

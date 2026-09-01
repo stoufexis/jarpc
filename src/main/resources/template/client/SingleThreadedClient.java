@@ -13,5 +13,6 @@ public interface SingleThreaded_Service_Client extends Poll {
   interface _Type_ResponseHandler extends ClientHandler {
     boolean onResponse(long correlationId, _Type_ResponseDecode t);
   }
+
   /// foreachType
 }

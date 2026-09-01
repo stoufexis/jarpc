@@ -12,5 +12,6 @@ public interface Concurrent_Service_Server {
   interface _Type_ResponseHandler {
     boolean onResponse(long clientId, long correlationId, _Type_ResponseDecode t);
   }
+
   /// foreachType
 }

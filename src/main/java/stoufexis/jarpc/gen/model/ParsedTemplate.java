@@ -1,11 +1,26 @@
 package stoufexis.jarpc.gen.model;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public record ParsedTemplate(List<RootComponent> block) {
+  public ForEachTypeBlock globalTypeBlock() {
+    if (block.size() != 1) return null;
+
+    switch (block.getFirst()) {
+      case ForEachTypeBlock forEachTypeBlock -> {
+        return forEachTypeBlock;
+      }
+
+      case PlainBlock _ -> {
+        return null;
+      }
+    }
+  }
+
   public String fill(Spec spec) {
     StringBuilder output = new StringBuilder();
 
@@ -17,10 +32,12 @@ public record ParsedTemplate(List<RootComponent> block) {
     return spec.replacements().applyTo(output.toString());
   }
 
-  public static ParsedTemplate parse(List<String> templateLines) {
-    if (templateLines.isEmpty()) throw new IllegalArgumentException("Empty template");
+  public static ParsedTemplate parse(String template) {
 
-    ArrayList<String> list = new ArrayList<>(templateLines);
+    ArrayList<String> list = new ArrayList<>(Arrays.stream(template.split("\n")).toList());
+
+    if (list.isEmpty()) throw new IllegalArgumentException("Empty template");
+
     LinkedList<RootComponent> blocks = new LinkedList<>();
 
     StringBuilder builder = new StringBuilder();
@@ -61,6 +78,92 @@ public record ParsedTemplate(List<RootComponent> block) {
   @Override
   public String toString() {
     return block.stream().map(Object::toString).collect(Collectors.joining("\n"));
+  }
+
+  public sealed interface RootComponent {
+    String fill(Spec spec);
+  }
+
+  public record PlainBlock(String block) implements RootComponent, ForEachTypeComponent {
+    @Override
+    public String fill(Spec spec) {
+      return this.block;
+    }
+
+    @Override
+    public String fill(RpcType type) {
+      return this.block;
+    }
+
+    @Override
+    public String toString() {
+      return block;
+    }
+  }
+
+  public record ForEachTypeBlock(List<ForEachTypeComponent> block) implements RootComponent {
+    @Override
+    public String fill(Spec spec) {
+      StringBuilder output = new StringBuilder();
+
+      for (RpcType typ : spec.types()) {
+        StringBuilder perType = new StringBuilder();
+
+        for (ForEachTypeComponent c : block) {
+          perType.append(c.fill(typ));
+        }
+
+        output.append(typ.replacements().applyTo(perType.toString()));
+      }
+
+      return output.toString();
+    }
+
+    public String fill(RpcType typ) {
+      StringBuilder perType = new StringBuilder();
+
+      for (ForEachTypeComponent c : block) {
+        perType.append(c.fill(typ));
+        perType.append("\n");
+      }
+
+      return typ.replacements().applyTo(perType.toString());
+    }
+
+    @Override
+    public String toString() {
+      return "/// foreachTypeBlock\n"
+          + block.stream().map(Object::toString).collect(Collectors.joining("\n"))
+          + "/// foreachTypeBlock\n";
+    }
+  }
+
+  public sealed interface ForEachTypeComponent {
+    String fill(RpcType type);
+  }
+
+  public record ForEachRequestFieldBlock(String block) implements ForEachTypeComponent {
+    @Override
+    public String fill(RpcType type) {
+      return type.foreachRequestField(block);
+    }
+
+    @Override
+    public String toString() {
+      return "/// foreachRequestFieldBlock\n" + block + "/// foreachRequestFieldBlock\n";
+    }
+  }
+
+  public record ForEachResponseFieldBlock(String block) implements ForEachTypeComponent {
+    @Override
+    public String fill(RpcType type) {
+      return type.foreachResponseField(block);
+    }
+
+    @Override
+    public String toString() {
+      return "/// foreachResponseFieldBlock\n" + block + "/// foreachResponseFieldBlock\n";
+    }
   }
 
   private static ForEachTypeBlock parseForEachTypeBlock(
@@ -163,91 +266,5 @@ public record ParsedTemplate(List<RootComponent> block) {
 
   private static boolean foreachResField(String line) {
     return line.replace(" ", "").contains("///foreachResponseField");
-  }
-
-  private sealed interface RootComponent {
-    String fill(Spec spec);
-  }
-
-  private record PlainBlock(String block) implements RootComponent, ForEachTypeComponent {
-    @Override
-    public String fill(Spec spec) {
-      return this.block;
-    }
-
-    @Override
-    public String fill(RpcType type) {
-      return this.block;
-    }
-
-    @Override
-    public String toString() {
-      return block;
-    }
-  }
-
-  private record ForEachTypeBlock(List<ForEachTypeComponent> block) implements RootComponent {
-    @Override
-    public String fill(Spec spec) {
-      StringBuilder output = new StringBuilder();
-
-      for (RpcType typ : spec.spec()) {
-        StringBuilder perType = new StringBuilder();
-
-        for (ForEachTypeComponent c : block) {
-          perType.append(c.fill(typ));
-        }
-
-        output.append(typ.replacements().applyTo(perType.toString()));
-      }
-
-      return output.toString();
-    }
-
-    public String fill(RpcType typ) {
-      StringBuilder perType = new StringBuilder();
-
-      for (ForEachTypeComponent c : block) {
-        perType.append(c.fill(typ));
-        perType.append("\n");
-      }
-
-      return typ.replacements().applyTo(perType.toString());
-    }
-
-    @Override
-    public String toString() {
-      return "/// foreachTypeBlock\n"
-          + block.stream().map(Object::toString).collect(Collectors.joining("\n"))
-          + "/// foreachTypeBlock\n";
-    }
-  }
-
-  private sealed interface ForEachTypeComponent {
-    String fill(RpcType type);
-  }
-
-  private record ForEachRequestFieldBlock(String block) implements ForEachTypeComponent {
-    @Override
-    public String fill(RpcType type) {
-      return type.foreachRequestField(block);
-    }
-
-    @Override
-    public String toString() {
-      return "/// foreachRequestFieldBlock\n" + block + "/// foreachRequestFieldBlock\n";
-    }
-  }
-
-  private record ForEachResponseFieldBlock(String block) implements ForEachTypeComponent {
-    @Override
-    public String fill(RpcType type) {
-      return type.foreachResponseField(block);
-    }
-
-    @Override
-    public String toString() {
-      return "/// foreachResponseFieldBlock\n" + block + "/// foreachResponseFieldBlock\n";
-    }
   }
 }

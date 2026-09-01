@@ -4,12 +4,10 @@ package _package_.common;
 import _package_.client.ConcurrentExchangeClient;
 
 public final class _Type_RequestScratch implements _Type_RequestDecode, _Type_RequestEncode {
-
   /// foreachRequestField
   private _fieldType_ _field_;
 
   /// foreachRequestField
-
   private ConcurrentExchangeClient._Type_ResponseHandler handler;
 
   public static void copy(_Type_RequestScratch scratch1, _Type_RequestScratch scratch2) {

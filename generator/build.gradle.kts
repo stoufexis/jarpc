@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    application
 }
 
 group = "stoufexis"
@@ -30,4 +31,8 @@ tasks.test {
 
 tasks.compileJava {
     options.compilerArgs.add("--enable-preview")
+}
+
+application {
+    mainClass.set("stoufexis.jarpc.gen.Cli")
 }

@@ -33,7 +33,7 @@ public final class Generator {
             "/" + path.subdir + "/" + typ.rpcName().toPascalCase() + path.name + ".java";
 
         output.add(
-            new OutputFile(path.subdir, relativePath, globalTypeBlock.fillAsRoot(spec, typ)));
+            new OutputFile("/" + path.subdir, relativePath, globalTypeBlock.fillAsRoot(spec, typ)));
       }
 
       return List.copyOf(output);
@@ -42,7 +42,7 @@ public final class Generator {
     String relativePath =
         "/" + path.subdir + "/" + spec.serviceName().toPascalCase() + path.name + ".java";
 
-    return List.of(new OutputFile(path.subdir, relativePath, root.fill(spec)));
+    return List.of(new OutputFile("/" + path.subdir, relativePath, root.fill(spec)));
   }
 
   private static final List<TemplatePath> templates =

@@ -3,10 +3,8 @@ package stoufexis.jarpc.gen;
 import stoufexis.jarpc.gen.model.*;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 
 public final class Generator {
 
@@ -24,13 +22,7 @@ public final class Generator {
 
   /** returns a list of file contents */
   private static List<OutputFile> generate(Spec spec, TemplatePath path) throws IOException {
-    ParsedTemplate root =
-        ParsedTemplate.parse(
-            new String(
-                Objects.requireNonNull(Generator.class.getResourceAsStream(path.getPath()))
-                    .readAllBytes(),
-                StandardCharsets.UTF_8));
-
+    ParsedTemplate root = ParsedTemplate.parseResource(path.getPath());
     ParsedTemplate.ForEachTypeBlock globalTypeBlock = root.globalTypeBlock();
 
     if (globalTypeBlock != null) {
@@ -41,8 +33,7 @@ public final class Generator {
             "/" + path.subdir + "/" + typ.rpcName().toPascalCase() + path.name + ".java";
 
         output.add(
-            new OutputFile(
-                path.subdir, relativePath, spec.replacements().applyTo(globalTypeBlock.fill(typ))));
+            new OutputFile(path.subdir, relativePath, globalTypeBlock.fillAsRoot(spec, typ)));
       }
 
       return List.copyOf(output);

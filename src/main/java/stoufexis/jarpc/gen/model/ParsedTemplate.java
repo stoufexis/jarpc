@@ -1,8 +1,11 @@
 package stoufexis.jarpc.gen.model;
 
-import java.util.ArrayList;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public record ParsedTemplate(List<RootComponent> block) {
@@ -31,24 +34,21 @@ public record ParsedTemplate(List<RootComponent> block) {
     return spec.replacements().applyTo(output.toString());
   }
 
+  public static ParsedTemplate parseResource(String resourcePath) throws IOException {
+    return ParsedTemplate.parse(
+        new String(
+            Objects.requireNonNull(ParsedTemplate.class.getResourceAsStream(resourcePath))
+                .readAllBytes(),
+            StandardCharsets.UTF_8));
+  }
+
   public static ParsedTemplate parse(String template) {
-    Cursor c = Cursor.create(template);
-
-    if (c.isEmpty()) throw new IllegalArgumentException("Empty template");
-
+    Iterator<String> iter = template.lines().iterator();
     LinkedList<RootComponent> blocks = new LinkedList<>();
     StringBuilder builder = new StringBuilder();
 
-    for (; ; ) {
-
-      if (c.exhausted()) {
-        if (!builder.isEmpty()) {
-          blocks.add(new PlainBlock(builder.toString()));
-        }
-        break;
-      }
-
-      String line = c.read();
+    while (iter.hasNext()) {
+      String line = iter.next();
 
       if (foreachType(line)) {
         if (!builder.isEmpty()) {
@@ -56,26 +56,26 @@ public record ParsedTemplate(List<RootComponent> block) {
           builder = new StringBuilder();
         }
 
-        blocks.add(parseForEachTypeBlock(c));
+        blocks.add(parseForEachTypeBlock(iter));
       } else {
         builder.append(line);
         builder.append("\n");
       }
+    }
 
-      c.advance();
+    if (!builder.isEmpty()) {
+      blocks.add(new PlainBlock(builder.toString()));
     }
 
     return new ParsedTemplate(List.copyOf(blocks));
   }
 
-  private static ForEachTypeBlock parseForEachTypeBlock(Cursor c) {
+  private static ForEachTypeBlock parseForEachTypeBlock(Iterator<String> iter) {
     LinkedList<ForEachTypeComponent> blocks = new LinkedList<>();
     StringBuilder builder = new StringBuilder();
 
-    c.advance();
-
-    for (; ; ) {
-      String line = c.read();
+    while (iter.hasNext()) {
+      String line = iter.next();
 
       if (foreachType(line)) {
         if (!builder.isEmpty()) {
@@ -89,31 +89,26 @@ public record ParsedTemplate(List<RootComponent> block) {
           builder = new StringBuilder();
         }
 
-        blocks.add(parseRequestFieldBlock(c, foreachReqField(line)));
+        blocks.add(parseRequestFieldBlock(iter, foreachReqField(line)));
       } else {
         builder.append(line);
         builder.append("\n");
       }
-
-      c.advance();
     }
 
     return new ForEachTypeBlock(List.copyOf(blocks));
   }
 
-  private static ForEachTypeComponent parseRequestFieldBlock(Cursor c, boolean req) {
+  private static ForEachTypeComponent parseRequestFieldBlock(Iterator<String> iter, boolean req) {
     StringBuilder builder = new StringBuilder();
 
-    c.advance();
-
-    for (; ; ) {
-      String line = c.read();
+    while (iter.hasNext()) {
+      String line = iter.next();
 
       if (foreachReqField(line) || foreachResField(line)) break;
 
       builder.append(line);
       builder.append("\n");
-      c.advance();
     }
 
     return req
@@ -177,7 +172,7 @@ public record ParsedTemplate(List<RootComponent> block) {
       return output.toString();
     }
 
-    public String fill(RpcType typ) {
+    public String fillAsRoot(Spec spec, RpcType typ) {
       StringBuilder perType = new StringBuilder();
 
       for (ForEachTypeComponent c : block) {
@@ -185,7 +180,7 @@ public record ParsedTemplate(List<RootComponent> block) {
         perType.append("\n");
       }
 
-      return typ.replacements().applyTo(perType.toString());
+      return spec.replacements().applyTo(typ.replacements().applyTo(perType.toString()));
     }
 
     @Override
@@ -221,34 +216,6 @@ public record ParsedTemplate(List<RootComponent> block) {
     @Override
     public String toString() {
       return "/// foreachResponseField\n" + block + "/// foreachResponseField\n";
-    }
-  }
-
-  private static class Cursor {
-    private ArrayList<String> list;
-    private int index;
-
-    boolean exhausted() {
-      return index >= list.size();
-    }
-
-    boolean isEmpty() {
-      return list.isEmpty();
-    }
-
-    void advance() {
-      index++;
-    }
-
-    String read() {
-      return list.get(index);
-    }
-
-    static Cursor create(String template) {
-      var pi = new Cursor();
-      pi.index = 0;
-      pi.list = new ArrayList<>(List.of(template.split("\n")));
-      return pi;
     }
   }
 }

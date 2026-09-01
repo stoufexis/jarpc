@@ -124,11 +124,7 @@ public final class _Service_ConcurrentJarpcClient
 
   private final class _Type_Agent extends MPSCBufferPollAgent<_Type_RequestScratch> {
     _Type_Agent() {
-      super(
-          _type_Requests,
-          new _Type_RequestScratch(),
-          _Type_RequestScratch::copy,
-          errorHandler::onCorruptPublication);
+      super(_type_Requests, new _Type_RequestScratch(), _Type_RequestScratch::copy, errorHandler);
     }
 
     @Override

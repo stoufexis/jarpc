@@ -119,10 +119,7 @@ public final class _Service_ConcurrentJarpcServer implements Agent, AutoCloseabl
   private final class _Type_Agent extends MPSCBufferPollAgent<_Type_ResponseScratch> {
     _Type_Agent() {
       super(
-          _type_Responses,
-          new _Type_ResponseScratch(),
-          _Type_ResponseScratch::copy,
-          errorHandler::onCorruptPublication);
+          _type_Responses, new _Type_ResponseScratch(), _Type_ResponseScratch::copy, errorHandler);
     }
 
     @Override

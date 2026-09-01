@@ -11,7 +11,7 @@ public abstract class MPSCBufferPollAgent<T> {
   private final MPSCRingBuffer<T> ringBuffer;
   private final T scratch;
   private final Consume2<T, T> copy;
-  private final Consumer<ErrorCode> onCorruptPublication;
+  private final OnCorruptPublication onCorruptPublication;
 
   private boolean populated = false;
 
@@ -21,7 +21,7 @@ public abstract class MPSCBufferPollAgent<T> {
       MPSCRingBuffer<T> ringBuffer,
       T scratch,
       Consume2<T, T> copy,
-      Consumer<ErrorCode> onCorruptPublication) {
+      OnCorruptPublication onCorruptPublication) {
     this.ringBuffer = ringBuffer;
     this.scratch = scratch;
     this.copy = copy;
@@ -34,7 +34,7 @@ public abstract class MPSCBufferPollAgent<T> {
     if (code == ErrorCode.BACKPRESSURE) {
       return false;
     } else {
-      onCorruptPublication.accept(code);
+      onCorruptPublication.onCorruptPublication(code);
       return true;
     }
   }

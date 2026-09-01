@@ -2,7 +2,7 @@ package _package_.server;
 
 import _package_.common.*;
 
-public interface Concurrent_Service_Server {
+public interface _Service_ConcurrentServer {
 
   /// foreachType
   void register_Type_(_Type_ResponseHandler _type_Response);

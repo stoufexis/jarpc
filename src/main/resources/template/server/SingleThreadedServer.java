@@ -4,7 +4,7 @@ import stoufexis.jarpc.lib.model.*;
 
 import _package_.common.*;
 
-public interface SingleThreadedExchangeServer extends Poll {
+public interface _Service_SingleThreadedServer extends Poll {
 
   /// foreachType
   _Type_ResponseEncode claim_Type_(long clientId, long correlationId, ClaimHandle claimHandle);

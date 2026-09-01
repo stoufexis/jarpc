@@ -1,6 +1,7 @@
 package _package_.server;
 
-import io.aeron.*;
+import io.aeron.Publication;
+import io.aeron.Subscription;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 
@@ -12,10 +13,10 @@ import static stoufexis.jarpc.lib.util.Util.createServerSubscription;
 import static stoufexis.jarpc.lib.util.Util.illegal;
 
 import _package_.common.*;
-import static _package_.common.Metadata.*;
+import static _package_.common._Service_Metadata.*;
 
-public class SingleThreadedJarpc_Service_Server extends SingleThreadedJarpcServer
-    implements SingleThreaded_Service_Server, AutoCloseable {
+public class _Service_SingleThreadedJarpcServer extends SingleThreadedJarpcServer
+    implements _Service_SingleThreadedServer, AutoCloseable {
 
   /// foreachType
   private final _Type_RequestHandler _type_RequestHandler;
@@ -26,7 +27,7 @@ public class SingleThreadedJarpc_Service_Server extends SingleThreadedJarpcServe
 
   /// foreachType
 
-  SingleThreadedJarpc_Service_Server(
+  _Service_SingleThreadedJarpcServer(
       Subscription subscription,
       ServerPublications publications,
       Images images,
@@ -40,7 +41,7 @@ public class SingleThreadedJarpc_Service_Server extends SingleThreadedJarpcServe
     /// foreachType
   }
 
-  public static SingleThreadedJarpc_Service_Server create(
+  public static _Service_SingleThreadedJarpcServer create(
       ConnectivityConfig cfg,
       /// foreachType
       _Type_RequestHandler _type_RequestHandler,
@@ -51,7 +52,7 @@ public class SingleThreadedJarpc_Service_Server extends SingleThreadedJarpcServe
     Subscription serverSubscription =
         createServerSubscription(cfg.aeron(), images, cfg.requestEndpoint(), cfg.requestStreamId());
 
-    return new SingleThreadedJarpc_Service_Server(
+    return new _Service_SingleThreadedJarpcServer(
         serverSubscription,
         new ServerPublications(cfg.responseControl(), cfg.aeron(), cfg.responseStreamId()),
         images,

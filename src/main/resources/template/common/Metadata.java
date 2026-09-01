@@ -1,7 +1,7 @@
 package _package_.common;
 
-public final class Metadata {
-  private Metadata() {}
+public final class _Service_Metadata {
+  private _Service_Metadata() {}
 
   /// foreachType
   public static final int _TYPE__REQUEST_SIZE = _typeRequestSize_;

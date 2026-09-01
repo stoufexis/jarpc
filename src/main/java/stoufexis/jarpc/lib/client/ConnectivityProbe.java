@@ -1,14 +1,12 @@
 package stoufexis.jarpc.lib.client;
 
-import stoufexis.jarpc.exchange.client.SingleThreadedJarpcExchangeClient;
-
 public final class ConnectivityProbe {
 
-  private final SingleThreadedJarpcExchangeClient singleThreadedClient;
+  private final SingleThreadedJarpcClient singleThreadedClient;
   private volatile boolean isConnected = false;
   private boolean isConnectedLocal = false;
 
-  public ConnectivityProbe(SingleThreadedJarpcExchangeClient singleThreadedClient) {
+  public ConnectivityProbe(SingleThreadedJarpcClient singleThreadedClient) {
     this.singleThreadedClient = singleThreadedClient;
   }
 

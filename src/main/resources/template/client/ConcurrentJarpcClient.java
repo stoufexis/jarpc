@@ -16,10 +16,10 @@ import static stoufexis.jarpc.lib.util.Util.createExclusiveClientPublication;
 
 // FIXME add timeouts and ad-hoc cancel
 
-public final class ConcurrentJarpc_Service_Client
-    implements Concurrent_Service_Client, Agent, AutoCloseable {
+public final class _Service_ConcurrentJarpcClient
+    implements _Service_ConcurrentClient, Agent, AutoCloseable {
 
-  private final SingleThreadedJarpc_Service_Client singleThreadedClient;
+  private final _Service_SingleThreadedJarpcClient singleThreadedClient;
 
   /// foreachType
   private final MPSCRingBuffer<_Type_RequestScratch> _type_Requests;
@@ -33,7 +33,7 @@ public final class ConcurrentJarpc_Service_Client
 
   private final ConnectivityProbe connectivityProbe;
 
-  ConcurrentJarpc_Service_Client(
+  _Service_ConcurrentJarpcClient(
       Publication publication,
       Subscription subscription,
       ClientErrorHandler errorHandler,
@@ -44,7 +44,7 @@ public final class ConcurrentJarpc_Service_Client
     this._type_Agent = new _Type_Agent();
     /// foreachType
     this.singleThreadedClient =
-        new SingleThreadedJarpc_Service_Client(
+        new _Service_SingleThreadedJarpcClient(
             publication,
             subscription,
             /// foreachType
@@ -55,14 +55,14 @@ public final class ConcurrentJarpc_Service_Client
     this.connectivityProbe = new ConnectivityProbe(singleThreadedClient);
   }
 
-  public static ConcurrentJarpc_Service_Client create(
+  public static _Service_ConcurrentJarpcClient create(
       ConnectivityConfig cfg, ClientErrorHandler handler, int queueCapacity) {
     Subscription sub =
         createClientSubscription(cfg.aeron(), cfg.responseControl(), cfg.responseStreamId());
     Publication pub =
         createExclusiveClientPublication(
             cfg.aeron(), cfg.requestEndpoint(), cfg.requestStreamId(), sub);
-    return new ConcurrentJarpc_Service_Client(pub, sub, handler, queueCapacity);
+    return new _Service_ConcurrentJarpcClient(pub, sub, handler, queueCapacity);
   }
 
   /// foreachType
@@ -89,7 +89,7 @@ public final class ConcurrentJarpc_Service_Client
 
   @Override
   public String roleName() {
-    return "ConcurrentJarpc_Service_Client";
+    return "_Service_ConcurrentJarpcClient";
   }
 
   @Override
@@ -103,7 +103,7 @@ public final class ConcurrentJarpc_Service_Client
 
   /// foreachType
   private final class _Type_Handler extends ResponseHandlerUtil<_Type_ResponseHandler>
-      implements SingleThreadedJarpc_Service_Client._Type_ResponseHandler {
+      implements _Service_SingleThreadedJarpcClient._Type_ResponseHandler {
     _Type_Handler() {
       super(_type_Callbacks, errorHandler, "_Type_");
     }

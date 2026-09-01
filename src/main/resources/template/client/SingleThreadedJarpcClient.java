@@ -13,11 +13,11 @@ import stoufexis.jarpc.lib.model.*;
 
 import static stoufexis.jarpc.lib.util.Util.*;
 
-import static _package_.common.Metadata.*;
+import static _package_.common._Service_Metadata.*;
 import _package_.common.*;
 
-public final class SingleThreadedJarpc_Service_Client extends SingleThreadedJarpcClient
-    implements SingleThreaded_Service_Client {
+public final class _Service_SingleThreadedJarpcClient extends SingleThreadedJarpcClient
+    implements _Service_SingleThreadedClient {
 
   /// foreachType
   private final _Type_RequestEncodeImpl _type_RequestEncode = new _Type_RequestEncodeImpl();
@@ -28,7 +28,7 @@ public final class SingleThreadedJarpc_Service_Client extends SingleThreadedJarp
 
   /// foreachType
 
-  SingleThreadedJarpc_Service_Client(
+  _Service_SingleThreadedJarpcClient(
       Publication publication,
       Subscription subscription,
       /// foreachType
@@ -41,7 +41,7 @@ public final class SingleThreadedJarpc_Service_Client extends SingleThreadedJarp
     /// foreachType
   }
 
-  public static SingleThreadedJarpc_Service_Client create(
+  public static _Service_SingleThreadedJarpcClient create(
       ConnectivityConfig cfg,
       /// foreachType
       _Type_ResponseHandler _type_Handler,
@@ -52,7 +52,7 @@ public final class SingleThreadedJarpc_Service_Client extends SingleThreadedJarp
     Publication pub =
         createExclusiveClientPublication(
             cfg.aeron(), cfg.requestEndpoint(), cfg.requestStreamId(), sub);
-    return new SingleThreadedJarpc_Service_Client(
+    return new _Service_SingleThreadedJarpcClient(
         pub,
         sub,
         /// foreachType

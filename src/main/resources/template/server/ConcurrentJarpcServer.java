@@ -11,16 +11,16 @@ import static stoufexis.jarpc.lib.util.Util.createServerSubscription;
 
 import _package_.common.*;
 
-public final class ConcurrentJarpc_Service_Server implements Agent, AutoCloseable {
+public final class _Service_ConcurrentJarpcServer implements Agent, AutoCloseable {
 
-  private final SingleThreadedJarpc_Service_Server singleThreadedServer;
+  private final _Service_SingleThreadedJarpcServer singleThreadedServer;
 
-  private final Concurrent_Service_Server concurrent_Service_Server;
+  private final _Service_ConcurrentServer concurrent_Service_Server;
 
   private final ServerErrorHandler errorHandler;
 
-  private final Concurrent_Service_Server.PostOrderResponseHandler postOrderResponseHandler;
-  private final Concurrent_Service_Server.CancelAllResponseHandler cancelAllResponseHandler;
+  private final _Service_ConcurrentServer.PostOrderResponseHandler postOrderResponseHandler;
+  private final _Service_ConcurrentServer.CancelAllResponseHandler cancelAllResponseHandler;
 
   private final MPSCRingBuffer<PostOrderResponseScratch> postOrderResponses;
   private final MPSCRingBuffer<CancelAllResponseScratch> cancelAllResponses;
@@ -28,8 +28,8 @@ public final class ConcurrentJarpc_Service_Server implements Agent, AutoCloseabl
   private final PostOrderAgent postOrderAgent;
   private final CancelAllAgent cancelAllAgent;
 
-  ConcurrentJarpc_Service_Server(
-      Concurrent_Service_Server concurrent_Service_Server,
+  _Service_ConcurrentJarpcServer(
+      _Service_ConcurrentServer concurrent_Service_Server,
       Subscription subscription,
       ServerPublications publications,
       ServerErrorHandler errorHandler,
@@ -38,7 +38,7 @@ public final class ConcurrentJarpc_Service_Server implements Agent, AutoCloseabl
     this.errorHandler = errorHandler;
     this.concurrent_Service_Server = concurrent_Service_Server;
     this.singleThreadedServer =
-        new SingleThreadedJarpc_Service_Server(
+        new _Service_SingleThreadedJarpcServer(
             subscription,
             publications,
             images,
@@ -53,8 +53,8 @@ public final class ConcurrentJarpc_Service_Server implements Agent, AutoCloseabl
     /// foreachType
   }
 
-  public static ConcurrentJarpc_Service_Server create(
-      Concurrent_Service_Server concurrent_Service_Server,
+  public static _Service_ConcurrentJarpcServer create(
+      _Service_ConcurrentServer concurrent_Service_Server,
       ConnectivityConfig cfg,
       ServerErrorHandler errorHandler,
       int queueCapacity) {
@@ -63,7 +63,7 @@ public final class ConcurrentJarpc_Service_Server implements Agent, AutoCloseabl
     Subscription subscription =
         createServerSubscription(cfg.aeron(), images, cfg.requestEndpoint(), cfg.requestStreamId());
 
-    return new ConcurrentJarpc_Service_Server(
+    return new _Service_ConcurrentJarpcServer(
         concurrent_Service_Server,
         subscription,
         new ServerPublications(cfg.responseControl(), cfg.aeron(), cfg.responseStreamId()),
@@ -101,7 +101,7 @@ public final class ConcurrentJarpc_Service_Server implements Agent, AutoCloseabl
 
   /// foreachType
   private final class _Type_RequestHandler
-      implements SingleThreaded_Service_Server._Type_RequestHandler {
+      implements _Service_SingleThreadedServer._Type_RequestHandler {
     @Override
     public boolean onRequest(long clientId, long correlationId, _Type_RequestDecode t) {
       return concurrent_Service_Server._type_(clientId, correlationId, t);
@@ -109,7 +109,7 @@ public final class ConcurrentJarpc_Service_Server implements Agent, AutoCloseabl
   }
 
   private final class _Type_ResponseHandler
-      implements Concurrent_Service_Server._Type_ResponseHandler {
+      implements _Service_ConcurrentServer._Type_ResponseHandler {
     @Override
     public boolean onResponse(long clientId, long correlationId, _Type_ResponseDecode t) {
       return _type_Responses.offer(_Type_ResponseScratch::setter, t, clientId, correlationId);

@@ -7,6 +7,9 @@ public final class _Type_ResponseScratch implements _Type_ResponseDecode, _Type_
 
   /// foreachResponseField
 
+  private long correlationId;
+  private long clientId;
+
   public static void copy(_Type_ResponseScratch scratch1, _Type_ResponseScratch scratch2) {
     setter(scratch1, scratch2, scratch2.clientId, scratch2.correlationId);
   }
@@ -32,5 +35,21 @@ public final class _Type_ResponseScratch implements _Type_ResponseDecode, _Type_
     this._field_ = _field_;
   }
   /// foreachResponseField
+
+  public void setCorrelationId(long correlationId) {
+    this.correlationId = correlationId;
+  }
+
+  public void setClientId(long clientId) {
+    this.clientId = clientId;
+  }
+
+  public long getCorrelationId() {
+    return correlationId;
+  }
+
+  public long getClientId() {
+    return clientId;
+  }
 }
 /// foreachType

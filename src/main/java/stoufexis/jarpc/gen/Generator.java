@@ -42,7 +42,9 @@ public final class Generator {
         String relativePath =
             "/" + path.subdir + "/" + typ.rpcName().toPascalCase() + path.name + ".java";
 
-        output.add(new OutputFile(path.subdir, relativePath, globalTypeBlock.fill(typ)));
+        output.add(
+            new OutputFile(
+                path.subdir, relativePath, spec.replacements().applyTo(globalTypeBlock.fill(typ))));
       }
 
       return List.copyOf(output);

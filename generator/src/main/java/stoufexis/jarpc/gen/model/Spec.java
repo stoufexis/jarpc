@@ -60,14 +60,16 @@ public record Spec(Variable serviceName, String pkg, List<RpcType> types) {
 
   private static Type parseType(String type) {
     return switch (type.toLowerCase()) {
-      case "byte" -> new Type.Byte();
-      case "short" -> new Type.Short();
-      case "int" -> new Type.Int();
-      case "float" -> new Type.Float();
-      case "long" -> new Type.Long();
-      case "double" -> new Type.Double();
-      case String w when w.startsWith("bytes") ->
-          new Type.Bytes(Integer.parseInt(w.replace("bytes", "")));
+      case "byte" -> Type.BYTE;
+      case "short" -> Type.SHORT;
+      case "int" -> Type.INT;
+      case "float" -> Type.FLOAT;
+      case "long" -> Type.LONG;
+      case "double" -> Type.DOUBLE;
+      case "bytes16" -> Type.BYTES16;
+      case "bytes32" -> Type.BYTES32;
+      case "bytes64" -> Type.BYTES64;
+      case "bytes128" -> Type.BYTES128;
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }

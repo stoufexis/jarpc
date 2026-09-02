@@ -1,14 +1,30 @@
 package stoufexis.jarpc.gen.model;
 
-public abstract class Type {
+public enum Type {
+  BOOLEAN(1, "boolean", "boolean", "", ""),
+  BYTE(1, "byte", "byte", "", ""),
+  SHORT(2, "short", "short", "", ""),
+  INT(4, "int", "int", "", ""),
+  LONG(8, "long", "long", "", ""),
+  FLOAT(4, "float", "float", "", ""),
+  DOUBLE(8, "double", "double", "", ""),
+  BYTES16(16, "bytes16", "byte[]", "byte[] src", ", src"),
+  BYTES32(32, "bytes32", "byte[]", "byte[] src", ", src"),
+  BYTES64(64, "bytes64", "byte[]", "byte[] src", ", src"),
+  BYTES128(128, "bytes128", "byte[]", "byte[] src", ", src");
+
   private final int length;
   private final Variable name;
   private final String javaType;
+  private final String fieldParam;
+  private final String fieldParamTarget;
 
-  protected Type(int length, String name, String javaType) {
+  Type(int length, String name, String javaType, String fieldParam, String fieldParamTarget) {
     this.length = length;
     this.name = new Variable(name);
     this.javaType = javaType;
+    this.fieldParam = fieldParam;
+    this.fieldParamTarget = fieldParamTarget;
   }
 
   public String getJavaType() {
@@ -23,45 +39,11 @@ public abstract class Type {
     return length;
   }
 
-  static final class Byte extends Type {
-    Byte() {
-      super(1, "byte", "byte");
-    }
+  public String getFieldParamTarget() {
+    return fieldParamTarget;
   }
 
-  static final class Short extends Type {
-    Short() {
-      super(2, "short", "short");
-    }
-  }
-
-  static final class Int extends Type {
-    Int() {
-      super(4, "int", "int");
-    }
-  }
-
-  static final class Long extends Type {
-    Long() {
-      super(8, "long", "long");
-    }
-  }
-
-  static final class Float extends Type {
-    Float() {
-      super(4, "float", "float");
-    }
-  }
-
-  static final class Double extends Type {
-    Double() {
-      super(8, "double", "double");
-    }
-  }
-
-  public static final class Bytes extends Type {
-    Bytes(int length) {
-      super(length, "bytes", "bytes");
-    }
+  public String getFieldParam() {
+    return fieldParam;
   }
 }

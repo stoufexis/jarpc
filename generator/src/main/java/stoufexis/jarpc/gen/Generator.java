@@ -11,30 +11,8 @@ public final class Generator {
   public static List<OutputFile> generate(Spec spec) throws IOException {
     LinkedList<OutputFile> outputs = new LinkedList<>();
 
-    for (TemplatePath template : singleThread) {
+    for (TemplatePath template : templates) {
       outputs.addAll(generate(spec, template));
-    }
-
-    switch (spec.singleThread()) {
-      case BOTH -> {}
-      case CLIENT -> {
-        for (TemplatePath template : concurrentServer) {
-          outputs.addAll(generate(spec, template));
-        }
-      }
-      case SERVER -> {
-        for (TemplatePath template : concurrentClient) {
-          outputs.addAll(generate(spec, template));
-        }
-      }
-      case NEITHER -> {
-        for (TemplatePath template : concurrentServer) {
-          outputs.addAll(generate(spec, template));
-        }
-        for (TemplatePath template : concurrentClient) {
-          outputs.addAll(generate(spec, template));
-        }
-      }
     }
 
     return List.copyOf(outputs);
@@ -67,7 +45,7 @@ public final class Generator {
     return List.of(new OutputFile("/" + path.subdir, relativePath, root.fill(spec)));
   }
 
-  private static final List<TemplatePath> singleThread =
+  private static final List<TemplatePath> templates =
       List.of(
           new TemplatePath("client", "SingleThreadedClient"),
           new TemplatePath("client", "SingleThreadedJarpcClient"),
@@ -77,19 +55,10 @@ public final class Generator {
           new TemplatePath("common", "ResponseDecode"),
           new TemplatePath("common", "ResponseEncode"),
           new TemplatePath("server", "SingleThreadedJarpcServer"),
-          new TemplatePath("server", "SingleThreadedServer"));
-
-  private static final List<TemplatePath> concurrentClient =
-      List.of(
+          new TemplatePath("server", "SingleThreadedServer"),
           new TemplatePath("common", "RequestScratch"),
           new TemplatePath("client", "ConcurrentClient"),
           new TemplatePath("client", "ConcurrentJarpcClient"));
-
-  private static final List<TemplatePath> concurrentServer =
-      List.of(
-          new TemplatePath("common", "ResponseScratch"),
-          new TemplatePath("server", "ConcurrentJarpcServer"),
-          new TemplatePath("server", "ConcurrentServer"));
 
   private record TemplatePath(String subdir, String name) {
     String getPath() {

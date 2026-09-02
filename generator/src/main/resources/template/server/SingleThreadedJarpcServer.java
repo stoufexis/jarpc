@@ -18,9 +18,9 @@ import static _package_.common._Service_Metadata.*;
 public class _Service_SingleThreadedJarpcServer extends SingleThreadedJarpcServer
     implements _Service_SingleThreadedServer, AutoCloseable {
 
-  /// foreachType
-  private final _Type_RequestHandler _type_RequestHandler;
+  private final _Service_SingleThreadedStateMachine stateMachine;
 
+  /// foreachType
   private final _Type_ResponseEncodeImpl _type_ResponseEncode = new _Type_ResponseEncodeImpl();
 
   private final _Type_RequestDecodeImpl _type_RequestDecode = new _Type_RequestDecodeImpl();
@@ -31,25 +31,13 @@ public class _Service_SingleThreadedJarpcServer extends SingleThreadedJarpcServe
       Subscription subscription,
       ServerPublications publications,
       Images images,
-      /// foreachType
-      _Type_RequestHandler _type_RequestHandler,
-      /// foreachType
-      ClientHook clientHook,
-      ServerErrorHandler errorHandler) {
-    super(subscription, publications, images, clientHook, errorHandler);
-    /// foreachType
-    this._type_RequestHandler = _type_RequestHandler;
-    /// foreachType
-
+      _Service_SingleThreadedStateMachine stateMachine) {
+    super(subscription, publications, images, stateMachine, stateMachine);
+    this.stateMachine = stateMachine;
   }
 
   public static _Service_SingleThreadedJarpcServer create(
-      ConnectivityConfig cfg,
-      /// foreachType
-      _Type_RequestHandler _type_RequestHandler,
-      /// foreachType
-      ClientHook clientHook,
-      ServerErrorHandler serverErrorHandler) {
+      ConnectivityConfig cfg, _Service_SingleThreadedStateMachine stateMachine) {
     Images images = new Images();
 
     Subscription serverSubscription =
@@ -59,11 +47,7 @@ public class _Service_SingleThreadedJarpcServer extends SingleThreadedJarpcServe
         serverSubscription,
         new ServerPublications(cfg.responseControl(), cfg.aeron(), cfg.responseStreamId()),
         images,
-        /// foreachType
-        _type_RequestHandler,
-        /// foreachType
-        clientHook,
-        serverErrorHandler);
+        stateMachine);
   }
 
   protected boolean onMessage(
@@ -114,7 +98,7 @@ public class _Service_SingleThreadedJarpcServer extends SingleThreadedJarpcServe
     }
 
     _type_RequestDecode.set(buffer, offset);
-    return _type_RequestHandler.onRequest(clientId, correlationId, _type_RequestDecode, this);
+    return stateMachine.onRequest(clientId, correlationId, _type_RequestDecode, this);
   }
 
   /// foreachType

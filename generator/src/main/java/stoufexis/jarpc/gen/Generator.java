@@ -56,6 +56,7 @@ public final class Generator {
           new TemplatePath("common", "ResponseEncode"),
           new TemplatePath("server", "SingleThreadedJarpcServer"),
           new TemplatePath("server", "SingleThreadedServer"),
+          new TemplatePath("server", "SingleThreadedStateMachine"),
           new TemplatePath("common", "RequestScratch"),
           new TemplatePath("client", "ConcurrentClient"),
           new TemplatePath("client", "ConcurrentJarpcClient"));

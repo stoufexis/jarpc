@@ -18,20 +18,16 @@ import static stoufexis.sample.generated.lease.common.LeaseMetadata.*;
 public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
     implements LeaseSingleThreadedServer, AutoCloseable {
 
+  private final LeaseSingleThreadedStateMachine stateMachine;
 
-  private final AcquireRequestHandler acquireRequestHandler;
 
   private final AcquireResponseEncodeImpl acquireResponseEncode = new AcquireResponseEncodeImpl();
 
   private final AcquireRequestDecodeImpl acquireRequestDecode = new AcquireRequestDecodeImpl();
 
-  private final RefreshRequestHandler refreshRequestHandler;
-
   private final RefreshResponseEncodeImpl refreshResponseEncode = new RefreshResponseEncodeImpl();
 
   private final RefreshRequestDecodeImpl refreshRequestDecode = new RefreshRequestDecodeImpl();
-
-  private final QueryRequestHandler queryRequestHandler;
 
   private final QueryResponseEncodeImpl queryResponseEncode = new QueryResponseEncodeImpl();
 
@@ -43,31 +39,13 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
       Subscription subscription,
       ServerPublications publications,
       Images images,
-
-      AcquireRequestHandler acquireRequestHandler,
-      RefreshRequestHandler refreshRequestHandler,
-      QueryRequestHandler queryRequestHandler,
-
-      ClientHook clientHook,
-      ServerErrorHandler errorHandler) {
-    super(subscription, publications, images, clientHook, errorHandler);
-
-    this.acquireRequestHandler = acquireRequestHandler;
-    this.refreshRequestHandler = refreshRequestHandler;
-    this.queryRequestHandler = queryRequestHandler;
-
-
+      LeaseSingleThreadedStateMachine stateMachine) {
+    super(subscription, publications, images, stateMachine, stateMachine);
+    this.stateMachine = stateMachine;
   }
 
   public static LeaseSingleThreadedJarpcServer create(
-      ConnectivityConfig cfg,
-
-      AcquireRequestHandler acquireRequestHandler,
-      RefreshRequestHandler refreshRequestHandler,
-      QueryRequestHandler queryRequestHandler,
-
-      ClientHook clientHook,
-      ServerErrorHandler serverErrorHandler) {
+      ConnectivityConfig cfg, LeaseSingleThreadedStateMachine stateMachine) {
     Images images = new Images();
 
     Subscription serverSubscription =
@@ -77,13 +55,7 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
         serverSubscription,
         new ServerPublications(cfg.responseControl(), cfg.aeron(), cfg.responseStreamId()),
         images,
-
-        acquireRequestHandler,
-        refreshRequestHandler,
-        queryRequestHandler,
-
-        clientHook,
-        serverErrorHandler);
+        stateMachine);
   }
 
   protected boolean onMessage(
@@ -136,7 +108,7 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
     }
 
     acquireRequestDecode.set(buffer, offset);
-    return acquireRequestHandler.onRequest(clientId, correlationId, acquireRequestDecode, this);
+    return stateMachine.onRequest(clientId, correlationId, acquireRequestDecode, this);
   }
 
   @Override
@@ -171,7 +143,7 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
     }
 
     refreshRequestDecode.set(buffer, offset);
-    return refreshRequestHandler.onRequest(clientId, correlationId, refreshRequestDecode, this);
+    return stateMachine.onRequest(clientId, correlationId, refreshRequestDecode, this);
   }
 
   @Override
@@ -206,7 +178,7 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
     }
 
     queryRequestDecode.set(buffer, offset);
-    return queryRequestHandler.onRequest(clientId, correlationId, queryRequestDecode, this);
+    return stateMachine.onRequest(clientId, correlationId, queryRequestDecode, this);
   }
 
 

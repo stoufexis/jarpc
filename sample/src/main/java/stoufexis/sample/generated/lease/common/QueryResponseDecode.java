@@ -1,10 +1,12 @@
 package stoufexis.sample.generated.lease.common;
 
+import stoufexis.jarpc.lib.model.*;
+
 public interface QueryResponseDecode {
 
   boolean getExists();
 
-  byte[] getValue();
+  Bytes getValue();
 
   int getExpiresInSeconds();
 

@@ -1,13 +1,13 @@
 
 package stoufexis.sample.generated.lease.common;
 
+import stoufexis.jarpc.lib.model.*;
+
 public interface AcquireRequestDecode {
 
   long getKey();
 
-  byte[] getValue();
-
-  int getTtlSeconds();
+  Bytes getValue();
 
 
 }

@@ -1,6 +1,7 @@
 /// foreachType
 package _package_.common;
 
+import stoufexis.jarpc.lib.model.*;
 import _package_.client._Service_ConcurrentClient;
 
 public final class _Type_RequestScratch implements _Type_RequestDecode, _Type_RequestEncode {

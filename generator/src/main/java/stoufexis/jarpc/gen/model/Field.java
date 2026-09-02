@@ -16,13 +16,7 @@ public record Field(Variable fieldName, Type fieldType, int fieldOffset) {
         new Replacement(
             "_copy_",
             fieldType.isArray()
-                ? "System.arraycopy("
-                    + fieldName.toCamelCase()
-                    + ", 0, this."
-                    + fieldName.toCamelCase()
-                    + ", 0, "
-                    + fieldType.getLength()
-                    + ")"
+                ? "this." + fieldName.toCamelCase() + ".copy(" + fieldName.toCamelCase() + ")"
                 : "this." + fieldName.toCamelCase() + " = " + fieldName.toCamelCase()));
   }
 }

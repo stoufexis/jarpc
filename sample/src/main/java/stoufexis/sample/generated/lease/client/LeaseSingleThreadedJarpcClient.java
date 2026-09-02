@@ -132,13 +132,8 @@ public final class LeaseSingleThreadedJarpcClient extends SingleThreadedJarpcCli
     }
 
     @Override
-    public void setValue(byte[] value) {
+    public void setValue(Bytes value) {
       buffer.putBytes16(8, value);
-    }
-
-    @Override
-    public void setTtlSeconds(int ttlSeconds) {
-      buffer.putInt(24, ttlSeconds);
     }
 
   }
@@ -243,7 +238,7 @@ public final class LeaseSingleThreadedJarpcClient extends SingleThreadedJarpcCli
     }
 
     @Override
-    public byte[] getValue() {
+    public Bytes getValue() {
       return buffer.getBytes16(1);
     }
 

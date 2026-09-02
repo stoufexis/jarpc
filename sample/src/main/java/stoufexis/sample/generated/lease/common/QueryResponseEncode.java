@@ -1,11 +1,13 @@
 package stoufexis.sample.generated.lease.common;
 
+import stoufexis.jarpc.lib.model.*;
+
 public interface QueryResponseEncode {
 
   void setExists(boolean exists);
 
 
-  void setValue(byte[] value);
+  void setValue(Bytes value);
 
 
   void setExpiresInSeconds(int expiresInSeconds);

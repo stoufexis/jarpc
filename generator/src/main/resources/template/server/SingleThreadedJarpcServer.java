@@ -114,7 +114,7 @@ public class _Service_SingleThreadedJarpcServer extends SingleThreadedJarpcServe
     }
 
     _type_RequestDecode.set(buffer, offset);
-    return _type_RequestHandler.onRequest(clientId, correlationId, _type_RequestDecode);
+    return _type_RequestHandler.onRequest(clientId, correlationId, _type_RequestDecode, this);
   }
 
   /// foreachType

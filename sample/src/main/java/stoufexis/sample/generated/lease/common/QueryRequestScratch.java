@@ -1,5 +1,6 @@
 package stoufexis.sample.generated.lease.common;
 
+import stoufexis.jarpc.lib.model.*;
 import stoufexis.sample.generated.lease.client.LeaseConcurrentClient;
 
 public final class QueryRequestScratch implements QueryRequestDecode, QueryRequestEncode {

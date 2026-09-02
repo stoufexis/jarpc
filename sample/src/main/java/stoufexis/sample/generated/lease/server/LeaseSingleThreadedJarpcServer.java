@@ -136,7 +136,7 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
     }
 
     acquireRequestDecode.set(buffer, offset);
-    return acquireRequestHandler.onRequest(clientId, correlationId, acquireRequestDecode);
+    return acquireRequestHandler.onRequest(clientId, correlationId, acquireRequestDecode, this);
   }
 
   @Override
@@ -171,7 +171,7 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
     }
 
     refreshRequestDecode.set(buffer, offset);
-    return refreshRequestHandler.onRequest(clientId, correlationId, refreshRequestDecode);
+    return refreshRequestHandler.onRequest(clientId, correlationId, refreshRequestDecode, this);
   }
 
   @Override
@@ -206,7 +206,7 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
     }
 
     queryRequestDecode.set(buffer, offset);
-    return queryRequestHandler.onRequest(clientId, correlationId, queryRequestDecode);
+    return queryRequestHandler.onRequest(clientId, correlationId, queryRequestDecode, this);
   }
 
 
@@ -220,13 +220,8 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
     }
 
     @Override
-    public byte[] getValue() {
+    public Bytes getValue() {
       return buffer.getBytes16(8);
-    }
-
-    @Override
-    public int getTtlSeconds() {
-      return buffer.getInt(24);
     }
 
   }
@@ -273,7 +268,7 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
     }
 
     @Override
-    public void setValue(byte[] value) {
+    public void setValue(Bytes value) {
       buffer.putBytes16(1, value);
     }
 

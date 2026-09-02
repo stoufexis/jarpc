@@ -1,5 +1,6 @@
 package stoufexis.sample.generated.lease.common;
 
+import stoufexis.jarpc.lib.model.*;
 import stoufexis.sample.generated.lease.client.LeaseConcurrentClient;
 
 public final class AcquireRequestScratch implements AcquireRequestDecode, AcquireRequestEncode {
@@ -7,10 +8,7 @@ public final class AcquireRequestScratch implements AcquireRequestDecode, Acquir
   private long key = 0;
 
 
-  private byte[] value = new byte[16];
-
-
-  private int ttlSeconds = 0;
+  private Bytes value = new Bytes(16);
 
 
 
@@ -45,24 +43,13 @@ public final class AcquireRequestScratch implements AcquireRequestDecode, Acquir
 
 
   @Override
-  public byte[] getValue() {
+  public Bytes getValue() {
     return value;
   }
 
   @Override
-  public void setValue(byte[] value) {
-    System.arraycopy(value, 0, this.value, 0, 16);
-  }
-
-
-  @Override
-  public int getTtlSeconds() {
-    return ttlSeconds;
-  }
-
-  @Override
-  public void setTtlSeconds(int ttlSeconds) {
-    this.ttlSeconds = ttlSeconds;
+  public void setValue(Bytes value) {
+    this.value.copy(value);
   }
 
 

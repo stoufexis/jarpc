@@ -1,6 +1,8 @@
 /// foreachType
 package _package_.common;
 
+import stoufexis.jarpc.lib.model.*;
+
 public interface _Type_ResponseEncode {
   /// foreachResponseField
   void set_Field_(_javaType_ _field_);

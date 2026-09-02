@@ -8,10 +8,10 @@ public enum Type {
   LONG(8, "long", "long", "0", false),
   FLOAT(4, "float", "float", "0", false),
   DOUBLE(8, "double", "double", "0", false),
-  BYTES16(16, "bytes16", "byte[]", "new byte[16]", true),
-  BYTES32(32, "bytes32", "byte[]", "new byte[32]", true),
-  BYTES64(64, "bytes64", "byte[]", "new byte[64]", true),
-  BYTES128(128, "bytes128", "byte[]", "new byte[128]", true);
+  BYTES16(16, "bytes16", "Bytes", "new Bytes(16)", true),
+  BYTES32(32, "bytes32", "Bytes", "new Bytes(32)", true),
+  BYTES64(64, "bytes64", "Bytes", "new Bytes(64)", true),
+  BYTES128(128, "bytes128", "Bytes", "new Bytes(128)", true);
 
   private final int length;
   private final Variable name;

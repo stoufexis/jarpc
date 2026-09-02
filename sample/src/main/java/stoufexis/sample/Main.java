@@ -1,6 +1,4 @@
-package stoufexis;
-
-import stoufexis.jarpc.lib.util.MPSCRingBuffer;
+package stoufexis.sample;
 
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.

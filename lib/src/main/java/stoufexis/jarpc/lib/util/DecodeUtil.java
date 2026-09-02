@@ -1,6 +1,7 @@
 package stoufexis.jarpc.lib.util;
 
 import org.agrona.DirectBuffer;
+import stoufexis.jarpc.lib.model.Bytes;
 
 public abstract class DecodeUtil {
   protected BufferExt buffer = new BufferExt();
@@ -12,10 +13,10 @@ public abstract class DecodeUtil {
   public static final class BufferExt {
     private DirectBuffer buffer;
     private int offset;
-    private byte[] bytes16;
-    private byte[] bytes32;
-    private byte[] bytes64;
-    private byte[] bytes128;
+    private Bytes bytes16;
+    private Bytes bytes32;
+    private Bytes bytes64;
+    private Bytes bytes128;
 
     private void wrap(DirectBuffer buffer, int offset) {
       this.buffer = buffer;
@@ -50,27 +51,27 @@ public abstract class DecodeUtil {
       return buffer.getByte(offset + index);
     }
 
-    public byte[] getBytes16(int index) {
-      if (bytes16 == null) bytes16 = new byte[16];
-      buffer.getBytes(offset + index, bytes16);
+    public Bytes getBytes16(int index) {
+      if (bytes16 == null) bytes16 = new Bytes(16);
+      buffer.getBytes(offset + index, bytes16.getArray());
       return bytes16;
     }
 
-    public byte[] getBytes32(int index) {
-      if (bytes32 == null) bytes32 = new byte[32];
-      buffer.getBytes(offset + index, bytes32);
+    public Bytes getBytes32(int index) {
+      if (bytes32 == null) bytes32 = new Bytes(32);
+      buffer.getBytes(offset + index, bytes32.getArray());
       return bytes32;
     }
 
-    public byte[] getBytes64(int index) {
-      if (bytes64 == null) bytes64 = new byte[64];
-      buffer.getBytes(offset + index, bytes64);
+    public Bytes getBytes64(int index) {
+      if (bytes64 == null) bytes64 = new Bytes(64);
+      buffer.getBytes(offset + index, bytes64.getArray());
       return bytes64;
     }
 
-    public byte[] getBytes128(int index) {
-      if (bytes128 == null) bytes128 = new byte[128];
-      buffer.getBytes(offset + index, bytes128);
+    public Bytes getBytes128(int index) {
+      if (bytes128 == null) bytes128 = new Bytes(128);
+      buffer.getBytes(offset + index, bytes128.getArray());
       return bytes128;
     }
   }

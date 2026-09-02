@@ -1,14 +1,13 @@
 package stoufexis.sample.generated.lease.common;
 
+import stoufexis.jarpc.lib.model.*;
+
 public interface AcquireRequestEncode {
 
   void setKey(long key);
 
 
-  void setValue(byte[] value);
-
-
-  void setTtlSeconds(int ttlSeconds);
+  void setValue(Bytes value);
 
 
 
@@ -18,8 +17,6 @@ public interface AcquireRequestEncode {
     setKey(decode.getKey());
 
     setValue(decode.getValue());
-
-    setTtlSeconds(decode.getTtlSeconds());
 
 
   }

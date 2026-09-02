@@ -1,6 +1,7 @@
 package stoufexis.jarpc.lib.util;
 
 import org.agrona.MutableDirectBuffer;
+import stoufexis.jarpc.lib.model.Bytes;
 
 public abstract class EncodeUtil {
   protected BufferExt buffer = new BufferExt();
@@ -46,20 +47,20 @@ public abstract class EncodeUtil {
       buffer.putByte(offset + index, value);
     }
 
-    public void putBytes16(int index, byte[] src) {
-      buffer.putBytes(offset + index, src, 0, 16);
+    public void putBytes16(int index, Bytes src) {
+      buffer.putBytes(offset + index, src.getArray(), 0, 16);
     }
 
-    public void putBytes32(int index, byte[] src) {
-      buffer.putBytes(offset + index, src, 0, 32);
+    public void putBytes32(int index, Bytes src) {
+      buffer.putBytes(offset + index, src.getArray(), 0, 32);
     }
 
-    public void putBytes64(int index, byte[] src) {
-      buffer.putBytes(offset + index, src, 0, 64);
+    public void putBytes64(int index, Bytes src) {
+      buffer.putBytes(offset + index, src.getArray(), 0, 64);
     }
 
-    public void putBytes128(int index, byte[] src) {
-      buffer.putBytes(offset + index, src, 0, 128);
+    public void putBytes128(int index, Bytes src) {
+      buffer.putBytes(offset + index, src.getArray(), 0, 128);
     }
   }
 }

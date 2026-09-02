@@ -9,10 +9,6 @@
       {
         "name": "value",
         "type": "bytes16"
-      },
-      {
-        "name": "ttlSeconds",
-        "type": "int"
       }
     ],
     "response": [

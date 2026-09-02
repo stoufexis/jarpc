@@ -37,7 +37,7 @@ public record Spec(Variable serviceName, String pkg, List<RpcType> types) {
   private static int messageSize(List<Field> fields) {
     int size = 0;
     for (var field : fields) {
-      size += typeLength(field.fieldType().value());
+      size += field.fieldType().getLength();
     }
 
     return size;
@@ -50,18 +50,24 @@ public record Spec(Variable serviceName, String pkg, List<RpcType> types) {
     for (var obj2 : rpc.getJSONArray(key)) {
       JSONObject field = (JSONObject) obj2;
       String fieldName = field.getString("name");
-      String fieldType = field.getString("type");
-      fields.add(new Field(var(fieldName), var(fieldType), offset));
-      offset += typeLength(fieldType);
+      Type fieldType = parseType(field.getString("type"));
+      fields.add(new Field(var(fieldName), fieldType, offset));
+      offset += fieldType.getLength();
     }
 
     return List.copyOf(fields);
   }
 
-  private static int typeLength(String type) {
+  private static Type parseType(String type) {
     return switch (type.toLowerCase()) {
-      case "int" -> 4;
-      case "long" -> 8;
+      case "byte" -> new Type.Byte();
+      case "short" -> new Type.Short();
+      case "int" -> new Type.Int();
+      case "float" -> new Type.Float();
+      case "long" -> new Type.Long();
+      case "double" -> new Type.Double();
+      case String w when w.startsWith("bytes") ->
+          new Type.Bytes(Integer.parseInt(w.replace("bytes", "")));
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }

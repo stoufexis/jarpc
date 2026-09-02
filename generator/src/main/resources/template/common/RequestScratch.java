@@ -5,7 +5,7 @@ import _package_.client._Service_ConcurrentClient;
 
 public final class _Type_RequestScratch implements _Type_RequestDecode, _Type_RequestEncode {
   /// foreachRequestField
-  private _fieldType_ _field_;
+  private _javaType_ _field_;
 
   /// foreachRequestField
   private _Service_ConcurrentClient._Type_ResponseHandler handler;
@@ -28,12 +28,12 @@ public final class _Type_RequestScratch implements _Type_RequestDecode, _Type_Re
 
   /// foreachRequestField
   @Override
-  public _fieldType_ get_Field_() {
+  public _javaType_ get_Field_() {
     return _field_;
   }
 
   @Override
-  public void set_Field_(_fieldType_ _field_) {
+  public void set_Field_(_javaType_ _field_) {
     this._field_ = _field_;
   }
 

@@ -124,7 +124,7 @@ public class _Service_SingleThreadedJarpcServer extends SingleThreadedJarpcServe
       implements _Type_RequestDecode {
     /// foreachRequestField
     @Override
-    public _fieldType_ get_Field_() {
+    public _javaType_ get_Field_() {
       return buffer.get_FieldType_(offset + _fieldOffset_);
     }
     /// foreachRequestField
@@ -134,7 +134,7 @@ public class _Service_SingleThreadedJarpcServer extends SingleThreadedJarpcServe
       implements _Type_ResponseEncode {
     /// foreachResponseField
     @Override
-    public void set_Field_(_fieldType_ _field_) {
+    public void set_Field_(_javaType_ _field_) {
       buffer.put_FieldType_(offset + _fieldOffset_, _field_);
     }
     /// foreachResponseField

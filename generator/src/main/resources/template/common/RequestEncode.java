@@ -3,7 +3,7 @@ package _package_.common;
 
 public interface _Type_RequestEncode {
   /// foreachRequestField
-  void set_Field_(_fieldType_ _field_);
+  void set_Field_(_javaType_ _field_);
 
   /// foreachRequestField
 

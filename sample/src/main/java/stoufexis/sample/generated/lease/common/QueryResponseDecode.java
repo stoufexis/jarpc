@@ -4,11 +4,11 @@ import stoufexis.jarpc.lib.model.*;
 
 public interface QueryResponseDecode {
 
-  boolean getExists();
+  boolean exists();
 
-  Bytes getValue();
+  Bytes value();
 
-  int getExpiresInSeconds();
+  int expiresInSeconds();
 
 
 }

@@ -17,11 +17,11 @@ public interface QueryResponseEncode {
 
   default void set(QueryResponseDecode decode) {
 
-    setExists(decode.getExists());
+    setExists(decode.exists());
 
-    setValue(decode.getValue());
+    setValue(decode.value());
 
-    setExpiresInSeconds(decode.getExpiresInSeconds());
+    setExpiresInSeconds(decode.expiresInSeconds());
 
 
   }

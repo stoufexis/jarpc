@@ -14,9 +14,9 @@ public interface AcquireRequestEncode {
 
   default void set(AcquireRequestDecode decode) {
 
-    setKey(decode.getKey());
+    setKey(decode.key());
 
-    setValue(decode.getValue());
+    setValue(decode.value());
 
 
   }

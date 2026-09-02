@@ -48,7 +48,7 @@ public final class LeaseSingleThreadedJarpcClient extends SingleThreadedJarpcCli
       RefreshResponseHandler refreshHandler,
       QueryResponseHandler queryHandler,
 
-      ErrorHandler errorHandler) {
+      ClientErrorHandler errorHandler) {
     super(publication, subscription, errorHandler);
 
     this.acquireResponseHandler = acquireHandler;
@@ -64,7 +64,7 @@ public final class LeaseSingleThreadedJarpcClient extends SingleThreadedJarpcCli
       RefreshResponseHandler refreshHandler,
       QueryResponseHandler queryHandler,
 
-      ErrorHandler errorHandler) {
+      ClientErrorHandler errorHandler) {
     Subscription sub =
         createClientSubscription(cfg.aeron(), cfg.responseControl(), cfg.responseStreamId());
     Publication pub =
@@ -141,7 +141,7 @@ public final class LeaseSingleThreadedJarpcClient extends SingleThreadedJarpcCli
   private static final class AcquireResponseDecodeImpl extends DecodeUtil
       implements AcquireResponseDecode {
     @Override
-    public boolean getAcquired() {
+    public boolean acquired() {
       return buffer.getBoolean(0);
     }
 
@@ -187,7 +187,7 @@ public final class LeaseSingleThreadedJarpcClient extends SingleThreadedJarpcCli
   private static final class RefreshResponseDecodeImpl extends DecodeUtil
       implements RefreshResponseDecode {
     @Override
-    public boolean getAcquired() {
+    public boolean acquired() {
       return buffer.getBoolean(0);
     }
 
@@ -233,17 +233,17 @@ public final class LeaseSingleThreadedJarpcClient extends SingleThreadedJarpcCli
   private static final class QueryResponseDecodeImpl extends DecodeUtil
       implements QueryResponseDecode {
     @Override
-    public boolean getExists() {
+    public boolean exists() {
       return buffer.getBoolean(0);
     }
 
     @Override
-    public Bytes getValue() {
+    public Bytes value() {
       return buffer.getBytes16(1);
     }
 
     @Override
-    public int getExpiresInSeconds() {
+    public int expiresInSeconds() {
       return buffer.getInt(17);
     }
 

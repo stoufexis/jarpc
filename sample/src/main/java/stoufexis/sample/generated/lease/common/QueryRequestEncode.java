@@ -11,7 +11,7 @@ public interface QueryRequestEncode {
 
   default void set(QueryRequestDecode decode) {
 
-    setKey(decode.getKey());
+    setKey(decode.key());
 
 
   }

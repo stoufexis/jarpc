@@ -5,9 +5,9 @@ import stoufexis.jarpc.lib.model.*;
 
 public interface AcquireRequestDecode {
 
-  long getKey();
+  long key();
 
-  Bytes getValue();
+  Bytes value();
 
 
 }

@@ -11,7 +11,7 @@ public interface RefreshResponseEncode {
 
   default void set(RefreshResponseDecode decode) {
 
-    setAcquired(decode.getAcquired());
+    setAcquired(decode.acquired());
 
 
   }

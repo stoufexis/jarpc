@@ -29,7 +29,7 @@ public final class _Type_RequestScratch implements _Type_RequestDecode, _Type_Re
 
   /// foreachRequestField
   @Override
-  public _javaType_ get_Field_() {
+  public _javaType_ _field_() {
     return _field_;
   }
 

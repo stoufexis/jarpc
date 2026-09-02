@@ -17,12 +17,12 @@ public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll {
   private final Publication publication;
   private final Subscription subscription;
   private final ControlledFragmentHandler fragmentHandler;
-  private final ErrorHandler errorHandler;
+  private final ClientErrorHandler errorHandler;
 
   protected final Publisher publisher;
 
   protected SingleThreadedJarpcClient(
-      Publication publication, Subscription subscription, ErrorHandler errorHandler) {
+      Publication publication, Subscription subscription, ClientErrorHandler errorHandler) {
     this.fragmentHandler = new ControlledFragmentAssembler(this::onFragment);
     this.publication = publication;
     this.subscription = subscription;

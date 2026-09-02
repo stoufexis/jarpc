@@ -11,7 +11,7 @@ public interface AcquireResponseEncode {
 
   default void set(AcquireResponseDecode decode) {
 
-    setAcquired(decode.getAcquired());
+    setAcquired(decode.acquired());
 
 
   }

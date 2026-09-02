@@ -29,7 +29,7 @@ public final class QueryRequestScratch implements QueryRequestDecode, QueryReque
 
 
   @Override
-  public long getKey() {
+  public long key() {
     return key;
   }
 

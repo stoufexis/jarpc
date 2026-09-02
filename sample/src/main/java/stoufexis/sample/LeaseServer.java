@@ -4,17 +4,15 @@ import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 import stoufexis.jarpc.lib.model.*;
-import stoufexis.jarpc.lib.server.ServerErrorHandler;
 import stoufexis.sample.generated.lease.common.*;
 import stoufexis.sample.generated.lease.server.LeaseSingleThreadedJarpcServer;
 import stoufexis.sample.generated.lease.server.LeaseSingleThreadedServer;
-import stoufexis.sample.generated.lease.server.LeaseSingleThreadedServer.*;
 import stoufexis.sample.generated.lease.server.LeaseSingleThreadedStateMachine;
 
 import java.util.ArrayDeque;
 import java.util.concurrent.TimeUnit;
 
-public class LeaseServer implements Agent {
+public class LeaseServer implements Agent, AutoCloseable {
   private final LeaseSingleThreadedJarpcServer singleThreadedJarpcServer;
   private final StateMachine stateMachine;
 
@@ -34,6 +32,11 @@ public class LeaseServer implements Agent {
   @Override
   public String roleName() {
     return "LeaseServer";
+  }
+
+  @Override
+  public void close() {
+    singleThreadedJarpcServer.close();
   }
 
   private static final class StateMachine implements LeaseSingleThreadedStateMachine {
@@ -66,7 +69,7 @@ public class LeaseServer implements Agent {
         return true;
       }
 
-      long key = t.getKey();
+      long key = t.key();
       System.out.println("got acquire for " + key + " from " + clientId);
 
       if (payloads.containsKey(key)) {
@@ -74,7 +77,7 @@ public class LeaseServer implements Agent {
 
       } else {
         Bytes payload = getPayloadBuffer();
-        payload.copy(t.getValue());
+        payload.copy(t.value());
         put(key, payload, clientId, System.nanoTime());
 
         encode.setAcquired(true);
@@ -98,7 +101,7 @@ public class LeaseServer implements Agent {
         return true;
       }
 
-      long key = t.getKey();
+      long key = t.key();
       System.out.println("got query for " + key + " from " + clientId);
 
       Bytes payload = payloads.get(key);
@@ -135,7 +138,7 @@ public class LeaseServer implements Agent {
         return true;
       }
 
-      long key = t.getKey();
+      long key = t.key();
       System.out.println("got refresh for " + key + " from " + clientId);
 
       if (owners.get(key) != clientId) {
@@ -157,10 +160,7 @@ public class LeaseServer implements Agent {
 
       for (long key : payloads.keySet()) {
         if (owners.get(key) == clientId) {
-          removePayload(key);
-          owners.remove(key);
-          received.remove(key);
-
+          remove(key);
           System.out.println(
               "removing " + key + " because its owner " + clientId + " disconnected");
         }
@@ -177,10 +177,7 @@ public class LeaseServer implements Agent {
 
         for (long key : payloads.keySet()) {
           if (now - received.get(key) > TTL_NANOS) {
-            removePayload(key);
-            owners.remove(key);
-            received.remove(key);
-
+            remove(key);
             System.out.println("key " + key + " expired");
             i++;
           }
@@ -212,8 +209,10 @@ public class LeaseServer implements Agent {
       System.out.println("CorruptPublication " + code);
     }
 
-    private void removePayload(long key) {
+    private void remove(long key) {
       Bytes payload = payloads.remove(key);
+      owners.remove(key);
+      received.remove(key);
 
       // return to the pool, so future gets can avoid allocation
       if (payload != null && bytesPool.size() < POOL_CAPACITY) {

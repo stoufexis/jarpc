@@ -11,7 +11,7 @@ public interface _Type_RequestEncode {
 
   default void set(_Type_RequestDecode decode) {
     /// foreachRequestField
-    set_Field_(decode.get_Field_());
+    set_Field_(decode._field_());
     /// foreachRequestField
   }
 }

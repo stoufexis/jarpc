@@ -34,7 +34,7 @@ public final class _Service_SingleThreadedJarpcClient extends SingleThreadedJarp
       /// foreachType
       _Type_ResponseHandler _type_Handler,
       /// foreachType
-      ErrorHandler errorHandler) {
+      ClientErrorHandler errorHandler) {
     super(publication, subscription, errorHandler);
     /// foreachType
     this._type_ResponseHandler = _type_Handler;
@@ -46,7 +46,7 @@ public final class _Service_SingleThreadedJarpcClient extends SingleThreadedJarp
       /// foreachType
       _Type_ResponseHandler _type_Handler,
       /// foreachType
-      ErrorHandler errorHandler) {
+      ClientErrorHandler errorHandler) {
     Subscription sub =
         createClientSubscription(cfg.aeron(), cfg.responseControl(), cfg.responseStreamId());
     Publication pub =
@@ -116,7 +116,7 @@ public final class _Service_SingleThreadedJarpcClient extends SingleThreadedJarp
       implements _Type_ResponseDecode {
     /// foreachResponseField
     @Override
-    public _javaType_ get_Field_() {
+    public _javaType_ _field_() {
       return buffer.get_FieldType_(_fieldOffset_);
     }
     /// foreachResponseField

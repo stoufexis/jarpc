@@ -32,7 +32,7 @@ public final class AcquireRequestScratch implements AcquireRequestDecode, Acquir
 
 
   @Override
-  public long getKey() {
+  public long key() {
     return key;
   }
 
@@ -43,7 +43,7 @@ public final class AcquireRequestScratch implements AcquireRequestDecode, Acquir
 
 
   @Override
-  public Bytes getValue() {
+  public Bytes value() {
     return value;
   }
 

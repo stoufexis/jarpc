@@ -4,7 +4,7 @@ import stoufexis.jarpc.lib.model.*;
 
 public interface RefreshResponseDecode {
 
-  boolean getAcquired();
+  boolean acquired();
 
 
 }

@@ -187,12 +187,12 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
   private static final class AcquireRequestDecodeImpl extends DecodeUtil
       implements AcquireRequestDecode {
     @Override
-    public long getKey() {
+    public long key() {
       return buffer.getLong(0);
     }
 
     @Override
-    public Bytes getValue() {
+    public Bytes value() {
       return buffer.getBytes16(8);
     }
 
@@ -209,7 +209,7 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
   private static final class RefreshRequestDecodeImpl extends DecodeUtil
       implements RefreshRequestDecode {
     @Override
-    public long getKey() {
+    public long key() {
       return buffer.getLong(0);
     }
 
@@ -226,7 +226,7 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
   private static final class QueryRequestDecodeImpl extends DecodeUtil
       implements QueryRequestDecode {
     @Override
-    public long getKey() {
+    public long key() {
       return buffer.getLong(0);
     }
 

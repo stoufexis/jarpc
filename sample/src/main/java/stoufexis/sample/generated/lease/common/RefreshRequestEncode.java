@@ -11,7 +11,7 @@ public interface RefreshRequestEncode {
 
   default void set(RefreshRequestDecode decode) {
 
-    setKey(decode.getKey());
+    setKey(decode.key());
 
 
   }

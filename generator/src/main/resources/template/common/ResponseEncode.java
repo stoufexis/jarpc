@@ -11,7 +11,7 @@ public interface _Type_ResponseEncode {
 
   default void set(_Type_ResponseDecode decode) {
     /// foreachResponseField
-    set_Field_(decode.get_Field_());
+    set_Field_(decode._field_());
     /// foreachResponseField
   }
 }

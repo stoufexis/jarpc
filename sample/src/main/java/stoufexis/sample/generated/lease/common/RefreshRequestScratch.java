@@ -29,7 +29,7 @@ public final class RefreshRequestScratch implements RefreshRequestDecode, Refres
 
 
   @Override
-  public long getKey() {
+  public long key() {
     return key;
   }
 

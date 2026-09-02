@@ -3,29 +3,38 @@ package stoufexis.sample;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
-import stoufexis.jarpc.lib.model.Bytes;
-import stoufexis.jarpc.lib.model.ClaimHandle;
-import stoufexis.jarpc.lib.model.ClientHook;
-import stoufexis.jarpc.lib.model.ErrorCode;
+import stoufexis.jarpc.lib.model.*;
 import stoufexis.jarpc.lib.server.ServerErrorHandler;
 import stoufexis.sample.generated.lease.common.*;
+import stoufexis.sample.generated.lease.server.LeaseSingleThreadedJarpcServer;
 import stoufexis.sample.generated.lease.server.LeaseSingleThreadedServer;
 import stoufexis.sample.generated.lease.server.LeaseSingleThreadedServer.*;
 
 import java.util.ArrayDeque;
 import java.util.concurrent.TimeUnit;
 
-public class Server implements Agent {
-  private final ServerEvents serverEvents = new ServerEvents();
+public class LeaseServer implements Agent {
+  private final LeaseSingleThreadedJarpcServer singleThreadedJarpcServer;
+  private final ServerEvents serverEvents;
+
+  public LeaseServer(ConnectivityConfig cfg) {
+    this.serverEvents = new ServerEvents();
+    this.singleThreadedJarpcServer =
+        LeaseSingleThreadedJarpcServer.create(
+            cfg, serverEvents, serverEvents, serverEvents, serverEvents, serverEvents);
+  }
 
   @Override
-  public int doWork() throws Exception {
-    return 0;
+  public int doWork() {
+    int work = 0;
+    work += serverEvents.onTick();
+    work += singleThreadedJarpcServer.poll(1);
+    return work;
   }
 
   @Override
   public String roleName() {
-    return "";
+    return "LeaseServer";
   }
 }
 
@@ -158,7 +167,9 @@ final class ServerEvents
     }
   }
 
-  void onTick() {
+  int onTick() {
+    int i = 0;
+
     long now = System.nanoTime();
 
     if (now - lastTickAtNanos > TICK_NANOS) {
@@ -171,9 +182,12 @@ final class ServerEvents
           received.remove(key);
 
           System.out.println("key " + key + " expired");
+          i++;
         }
       }
     }
+
+    return i;
   }
 
   @Override

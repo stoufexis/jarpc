@@ -60,6 +60,7 @@ public record Spec(Variable serviceName, String pkg, List<RpcType> types) {
 
   private static Type parseType(String type) {
     return switch (type.toLowerCase()) {
+      case "boolean" -> Type.BOOLEAN;
       case "byte" -> Type.BYTE;
       case "short" -> Type.SHORT;
       case "int" -> Type.INT;

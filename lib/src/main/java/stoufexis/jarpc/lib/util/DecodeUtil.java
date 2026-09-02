@@ -4,7 +4,6 @@ import org.agrona.DirectBuffer;
 
 public abstract class DecodeUtil {
   protected BufferExt buffer = new BufferExt();
-  protected int offset;
 
   public final void set(DirectBuffer buffer, int offset) {
     this.buffer.wrap(buffer, offset);
@@ -13,6 +12,10 @@ public abstract class DecodeUtil {
   public static final class BufferExt {
     private DirectBuffer buffer;
     private int offset;
+    private byte[] bytes16;
+    private byte[] bytes32;
+    private byte[] bytes64;
+    private byte[] bytes128;
 
     private void wrap(DirectBuffer buffer, int offset) {
       this.buffer = buffer;
@@ -47,24 +50,28 @@ public abstract class DecodeUtil {
       return buffer.getByte(offset + index);
     }
 
-    public byte[] getBytes16(int index, byte[] src) {
-      buffer.getBytes(offset + index, src, 0, 16);
-      return src;
+    public byte[] getBytes16(int index) {
+      if (bytes16 == null) bytes16 = new byte[16];
+      buffer.getBytes(offset + index, bytes16);
+      return bytes16;
     }
 
-    public byte[] getBytes32(int index, byte[] src) {
-      buffer.getBytes(offset + index, src, 0, 32);
-      return src;
+    public byte[] getBytes32(int index) {
+      if (bytes32 == null) bytes32 = new byte[32];
+      buffer.getBytes(offset + index, bytes32);
+      return bytes32;
     }
 
-    public byte[] getBytes64(int index, byte[] src) {
-      buffer.getBytes(offset + index, src, 0, 64);
-      return src;
+    public byte[] getBytes64(int index) {
+      if (bytes64 == null) bytes64 = new byte[64];
+      buffer.getBytes(offset + index, bytes64);
+      return bytes64;
     }
 
-    public byte[] getBytes128(int index, byte[] src) {
-      buffer.getBytes(offset + index, src, 0, 128);
-      return src;
+    public byte[] getBytes128(int index) {
+      if (bytes128 == null) bytes128 = new byte[128];
+      buffer.getBytes(offset + index, bytes128);
+      return bytes128;
     }
   }
 }

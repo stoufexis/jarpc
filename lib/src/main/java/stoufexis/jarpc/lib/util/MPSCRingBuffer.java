@@ -66,26 +66,6 @@ public final class MPSCRingBuffer<E> {
     }
   }
 
-  public <B> boolean offer(Consume4Long<E, B> filler, B b, long longC, long longD) {
-    for (; ; ) {
-      long seq = producerSeq.get();
-
-      if (seq - consumerSeq >= capacity) {
-        return false; // full
-      }
-
-      // Try to claim slot `seq`. If another producer beats us to it, reload and retry.
-      if (producerSeq.compareAndSet(seq, seq + 1)) {
-        int idx = index(seq);
-        filler.accept(arr[idx], b, longC, longD);
-        // Publish: this volatile write is what the consumer waits on, since two producers
-        // can finish mutating their slots in a different order than they claimed them.
-        readySeq.set(idx, seq);
-        return true;
-      }
-    }
-  }
-
   public <B> boolean poll(Consume2<B, E> copy, B b) {
     long seq = consumerSeq;
     int idx = index(seq);

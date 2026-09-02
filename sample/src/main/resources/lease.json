@@ -8,7 +8,11 @@
       },
       {
         "name": "value",
-        "type": "bytes25"
+        "type": "bytes16"
+      },
+      {
+        "name": "ttlSeconds",
+        "type": "int"
       }
     ],
     "response": [
@@ -19,51 +23,39 @@
     ]
   },
   {
-    "rpcName": "cancelOrder",
+    "rpcName": "refresh",
     "request": [
       {
-        "name": "generatedId",
+        "name": "key",
         "type": "long"
       }
     ],
     "response": [
       {
-        "name": "statusCode",
-        "type": "int"
+        "name": "acquired",
+        "type": "boolean"
       }
     ]
   },
   {
-    "rpcName": "trackOrder",
+    "rpcName": "query",
     "request": [
       {
-        "name": "generatedId",
+        "name": "key",
         "type": "long"
       }
     ],
     "response": [
       {
-        "name": "assetId",
-        "type": "int"
+        "name": "exists",
+        "type": "boolean"
       },
       {
-        "name": "filledQuantityUnscaled",
-        "type": "long"
+        "name": "value",
+        "type": "bytes16"
       },
       {
-        "name": "quantityUnscaled",
-        "type": "long"
-      },
-      {
-        "name": "rateUnscaled",
-        "type": "long"
-      },
-      {
-        "name": "quantityScale",
-        "type": "int"
-      },
-      {
-        "name": "rateScale",
+        "name": "expiresInSeconds",
         "type": "int"
       }
     ]

@@ -116,8 +116,8 @@ public final class _Service_SingleThreadedJarpcClient extends SingleThreadedJarp
       implements _Type_ResponseDecode {
     /// foreachResponseField
     @Override
-    public _javaType_ get_Field_(_getFieldParam_) {
-      return buffer.get_FieldType_(_fieldOffset_ _getFieldParamTarget_);
+    public _javaType_ get_Field_() {
+      return buffer.get_FieldType_(_fieldOffset_);
     }
     /// foreachResponseField
   }

@@ -5,16 +5,6 @@ plugins {
 group = "stoufexis"
 version = "1.0-SNAPSHOT"
 
-repositories {
-    mavenCentral()
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
-    }
-}
-
 dependencies {
     implementation("io.aeron:aeron-client:1.52.2")
     implementation("io.aeron:aeron-driver:1.52.2")

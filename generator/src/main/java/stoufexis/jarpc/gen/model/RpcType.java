@@ -11,20 +11,17 @@ public record RpcType(
     int typeId) {
 
   public String foreachRequestField(String gen) {
-    StringBuilder output = new StringBuilder();
-
-    for (Field typ : requestFields) {
-      output.append(typ.replacements().applyTo(gen));
-      output.append("\n");
-    }
-
-    return output.toString();
+    return foreachField(gen, requestFields);
   }
 
   public String foreachResponseField(String gen) {
+    return foreachField(gen, responseFields);
+  }
+
+  private static String foreachField(String gen, List<Field> fields) {
     StringBuilder output = new StringBuilder();
 
-    for (Field typ : responseFields) {
+    for (Field typ : fields) {
       output.append(typ.replacements().applyTo(gen));
       output.append("\n");
     }

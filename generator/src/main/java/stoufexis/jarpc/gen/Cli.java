@@ -1,12 +1,11 @@
 package stoufexis.jarpc.gen;
 
-import stoufexis.jarpc.gen.model.Spec;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
+import stoufexis.jarpc.gen.model.Spec;
 
 public class Cli {
   static void main(String[] args) throws IOException {
@@ -22,12 +21,11 @@ public class Cli {
         case "--package", "-p" -> packageName = args[++i];
         case "--output", "-o" -> output = args[++i];
         case "--help", "-h" -> {
-          System.out.println(
-              "Usage: --spec <json file> --name <string> --package <string> --output <dir> [--single-thread-only]");
+          IO.println("Usage: --spec <json file> --name <string> --package <string> --output <dir>");
           return;
         }
         default -> {
-          System.out.println("Unknown argument: " + args[i]);
+          IO.println("Unknown argument: " + args[i]);
           return;
         }
       }

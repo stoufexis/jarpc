@@ -2,22 +2,19 @@ package stoufexis.jarpc.lib.server;
 
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Image;
-import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import stoufexis.jarpc.lib.model.ClientHook;
-import stoufexis.jarpc.lib.model.MessageHeaderCodec;
-import stoufexis.jarpc.lib.model.Poll;
+import stoufexis.jarpc.lib.common.MessageHeaderCodec;
+import stoufexis.jarpc.lib.common.Poll;
 
 public abstract class SingleThreadedJarpcServer implements AutoCloseable, Poll {
-  private final ServerPublications publications;
+  protected final ServerPublications publications;
   private final Images images;
   private final Subscription subscription;
-  private final ClientHook clientHook;
-  private final ServerErrorHandler errorHandler;
+  private final ServerStateMachine serverStateMachine;
 
   private final ControlledFragmentAssembler assembled =
       new ControlledFragmentAssembler(this::onFragment);
@@ -26,13 +23,11 @@ public abstract class SingleThreadedJarpcServer implements AutoCloseable, Poll {
       Subscription subscription,
       ServerPublications publications,
       Images images,
-      ClientHook clientHook,
-      ServerErrorHandler errorHandler) {
+      ServerStateMachine serverStateMachine) {
     this.subscription = subscription;
     this.publications = publications;
     this.images = images;
-    this.clientHook = clientHook;
-    this.errorHandler = errorHandler;
+    this.serverStateMachine = serverStateMachine;
   }
 
   @Override
@@ -49,7 +44,7 @@ public abstract class SingleThreadedJarpcServer implements AutoCloseable, Poll {
       work++;
       assembled.freeSessionBuffer(image.sessionId());
       CloseHelper.quietClose(publications.remove(image.correlationId()));
-      clientHook.onClientDisconnected(image.correlationId());
+      serverStateMachine.onClientDisconnected(image.correlationId());
     }
 
     return work + subscription.controlledPoll(assembled, limit);
@@ -69,10 +64,6 @@ public abstract class SingleThreadedJarpcServer implements AutoCloseable, Poll {
       int offset,
       int length);
 
-  protected final Publication getPublication(long clientId) {
-    return publications.get(clientId);
-  }
-
   private ControlledFragmentHandler.Action onFragment(
       DirectBuffer buffer, int offset, int length, Header aeronHeader) {
     try {
@@ -91,7 +82,7 @@ public abstract class SingleThreadedJarpcServer implements AutoCloseable, Poll {
         result = onMessage(clientId, messageType, correlationId, buffer, offset, length);
       } catch (RuntimeException e) {
         result = true;
-        errorHandler.onProcessingError(clientId, correlationId, messageType);
+        serverStateMachine.onProcessingError(clientId, correlationId, messageType);
       }
 
       return result
@@ -99,7 +90,7 @@ public abstract class SingleThreadedJarpcServer implements AutoCloseable, Poll {
           : ControlledFragmentHandler.Action.ABORT;
 
     } catch (RuntimeException e) {
-      errorHandler.onError(e);
+      serverStateMachine.onError(e);
       throw e;
     }
   }

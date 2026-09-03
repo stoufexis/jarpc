@@ -7,10 +7,9 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.ErrorHandler;
-import stoufexis.jarpc.lib.model.MessageHeaderCodec;
-import stoufexis.jarpc.lib.model.Poll;
-import stoufexis.jarpc.lib.util.Publisher;
+import stoufexis.jarpc.lib.common.MessageHeaderCodec;
+import stoufexis.jarpc.lib.common.Poll;
+import stoufexis.jarpc.lib.common.Publisher;
 
 public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll {
 
@@ -34,7 +33,7 @@ public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll {
       int messageType, long correlationId, DirectBuffer buffer, int offset, int length);
 
   private ControlledFragmentHandler.Action onFragment(
-      DirectBuffer buffer, int offset, int length, Header header) {
+      DirectBuffer buffer, int offset, int length, Header h_) {
     try {
       MessageHeaderCodec.assertSize(length);
       int messageType = MessageHeaderCodec.decodeMessageType(buffer, offset);

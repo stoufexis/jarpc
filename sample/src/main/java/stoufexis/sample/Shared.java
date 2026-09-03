@@ -6,11 +6,11 @@ import io.aeron.driver.ThreadingMode;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.SleepingIdleStrategy;
-import stoufexis.jarpc.lib.model.ConnectivityConfig;
+import stoufexis.jarpc.lib.common.ConnectionConfig;
 
 public final class Shared {
-  public static ConnectivityConfig connectivityConfig(Aeron aeron) {
-    return new ConnectivityConfig(aeron, "localhost:10000", 1, "localhost:10001", 2);
+  public static ConnectionConfig connectivityConfig(Aeron aeron) {
+    return new ConnectionConfig(aeron, "localhost:10000", 1, "localhost:10001", 2);
   }
 
   public static MediaDriver mediaDriver() {

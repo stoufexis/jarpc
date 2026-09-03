@@ -27,6 +27,23 @@ public enum Type {
     this.isArray = isArray;
   }
 
+  public static Type parse(String type) {
+    return switch (type.toLowerCase()) {
+      case "boolean" -> Type.BOOLEAN;
+      case "byte" -> Type.BYTE;
+      case "short" -> Type.SHORT;
+      case "int" -> Type.INT;
+      case "float" -> Type.FLOAT;
+      case "long" -> Type.LONG;
+      case "double" -> Type.DOUBLE;
+      case "bytes16" -> Type.BYTES16;
+      case "bytes32" -> Type.BYTES32;
+      case "bytes64" -> Type.BYTES64;
+      case "bytes128" -> Type.BYTES128;
+      default -> throw new IllegalArgumentException("Unsupported type: " + type);
+    };
+  }
+
   public String getJavaType() {
     return javaType;
   }

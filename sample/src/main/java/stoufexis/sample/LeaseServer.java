@@ -1,22 +1,21 @@
 package stoufexis.sample;
 
+import java.util.ArrayDeque;
+import java.util.concurrent.TimeUnit;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
-import stoufexis.jarpc.lib.model.*;
-import stoufexis.sample.generated.lease.common.*;
-import stoufexis.sample.generated.lease.server.LeaseSingleThreadedJarpcServer;
-import stoufexis.sample.generated.lease.server.LeaseSingleThreadedServer;
-import stoufexis.sample.generated.lease.server.LeaseSingleThreadedStateMachine;
-
-import java.util.ArrayDeque;
-import java.util.concurrent.TimeUnit;
+import stoufexis.jarpc.lib.common.*;
+import stoufexis.sample.generated.common.*;
+import stoufexis.sample.generated.server.LeaseSingleThreadedJarpcServer;
+import stoufexis.sample.generated.server.LeaseSingleThreadedServer;
+import stoufexis.sample.generated.server.LeaseSingleThreadedStateMachine;
 
 public class LeaseServer implements Agent, AutoCloseable {
   private final LeaseSingleThreadedJarpcServer singleThreadedJarpcServer;
   private final StateMachine stateMachine;
 
-  public LeaseServer(ConnectivityConfig cfg) {
+  public LeaseServer(ConnectionConfig cfg) {
     this.stateMachine = new StateMachine();
     this.singleThreadedJarpcServer = LeaseSingleThreadedJarpcServer.create(cfg, stateMachine);
   }
@@ -70,7 +69,7 @@ public class LeaseServer implements Agent, AutoCloseable {
       }
 
       long key = t.key();
-      System.out.println("got acquire for " + key + " from " + clientId);
+      IO.println("got acquire for " + key + " from " + clientId);
 
       if (payloads.containsKey(key)) {
         encode.setAcquired(false);
@@ -80,7 +79,7 @@ public class LeaseServer implements Agent, AutoCloseable {
         Bytes payload = getPayloadBuffer();
         payload.copy(t.value());
         put(key, payload, clientId, now);
-        System.out.println("now " + now);
+        IO.println("now " + now);
 
         encode.setAcquired(true);
       }
@@ -104,7 +103,7 @@ public class LeaseServer implements Agent, AutoCloseable {
       }
 
       long key = t.key();
-      System.out.println("got query for " + key + " from " + clientId);
+      IO.println("got query for " + key + " from " + clientId);
 
       Bytes payload = payloads.get(key);
 
@@ -141,7 +140,7 @@ public class LeaseServer implements Agent, AutoCloseable {
       }
 
       long key = t.key();
-      System.out.println("got refresh for " + key + " from " + clientId);
+      IO.println("got refresh for " + key + " from " + clientId);
 
       if (owners.get(key) != clientId) {
         encode.setAcquired(false);
@@ -159,13 +158,12 @@ public class LeaseServer implements Agent, AutoCloseable {
     @Override
     public void onClientDisconnected(long clientId) {
       illegalClientId(clientId);
-      System.out.println(clientId + " disconnected");
+      IO.println(clientId + " disconnected");
 
       for (long key : payloads.keySet()) {
         if (owners.get(key) == clientId) {
           remove(key);
-          System.out.println(
-              "removing " + key + " because its owner " + clientId + " disconnected");
+          IO.println("removing " + key + " because its owner " + clientId + " disconnected");
         }
       }
     }
@@ -182,7 +180,7 @@ public class LeaseServer implements Agent, AutoCloseable {
           long receivedAt = refreshed.get(key);
           if (now - receivedAt > TTL_NANOS) {
             remove(key);
-            System.out.println(
+            IO.println(
                 "key "
                     + key
                     + " expired after "
@@ -200,25 +198,14 @@ public class LeaseServer implements Agent, AutoCloseable {
     }
 
     @Override
-    public void onInternalError(long clientId, long correlationId, int errorCode) {
-      illegalClientId(clientId);
-      System.out.println("InternalError " + clientId + ", " + correlationId + ", " + errorCode);
-    }
-
-    @Override
     public void onProcessingError(long clientId, long correlationId, int messageType) {
       illegalClientId(clientId);
-      System.out.println("ProcessingError " + clientId + ", " + correlationId);
+      IO.println("ProcessingError " + clientId + ", " + correlationId);
     }
 
     @Override
     public void onError(Throwable throwable) {
-      System.out.println(throwable.toString());
-    }
-
-    @Override
-    public void onCorruptPublication(ErrorCode code) {
-      System.out.println("CorruptPublication " + code);
+      IO.println(throwable.toString());
     }
 
     private void remove(long key) {
@@ -252,7 +239,7 @@ public class LeaseServer implements Agent, AutoCloseable {
     }
 
     private void couldNotRespond(ErrorCode code) {
-      System.out.println("Could not deliver response " + code);
+      IO.println("Could not deliver response " + code);
     }
   }
 }

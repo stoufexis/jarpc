@@ -6,21 +6,13 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public record ParsedTemplate(List<RootComponent> block) {
   public ForEachTypeBlock globalTypeBlock() {
-    if (block.size() != 1) return null;
-
-    switch (block.getFirst()) {
-      case ForEachTypeBlock forEachTypeBlock -> {
-        return forEachTypeBlock;
-      }
-
-      case PlainBlock _ -> {
-        return null;
-      }
-    }
+    return switch (block.getFirst()) {
+      case ForEachTypeBlock forEachTypeBlock when block.size() == 1 -> forEachTypeBlock;
+      default -> null;
+    };
   }
 
   public String fill(Spec spec) {
@@ -50,22 +42,20 @@ public record ParsedTemplate(List<RootComponent> block) {
     while (iter.hasNext()) {
       String line = iter.next();
 
-      if (foreachType(line)) {
+      if (containsForeachType(line)) {
         if (!builder.isEmpty()) {
-          blocks.add(new PlainBlock(builder.toString()));
+          blocks.add(plain(builder));
           builder = new StringBuilder();
         }
-
         blocks.add(parseForEachTypeBlock(iter));
+
       } else {
         builder.append(line);
         builder.append("\n");
       }
     }
 
-    if (!builder.isEmpty()) {
-      blocks.add(new PlainBlock(builder.toString()));
-    }
+    if (!builder.isEmpty()) blocks.add(plain(builder));
 
     return new ParsedTemplate(List.copyOf(blocks));
   }
@@ -77,19 +67,19 @@ public record ParsedTemplate(List<RootComponent> block) {
     while (iter.hasNext()) {
       String line = iter.next();
 
-      if (foreachType(line)) {
+      if (containsForeachType(line)) {
         if (!builder.isEmpty()) {
-          blocks.add(new PlainBlock(builder.toString()));
+          blocks.add(plain(builder));
         }
         break;
 
-      } else if (foreachReqField(line) || foreachResField(line)) {
+      } else if (containsForeachReqField(line) || containsForeachResField(line)) {
         if (!builder.isEmpty()) {
-          blocks.add(new PlainBlock(builder.toString()));
+          blocks.add(plain(builder));
           builder = new StringBuilder();
         }
+        blocks.add(parseRequestFieldBlock(iter, containsForeachReqField(line)));
 
-        blocks.add(parseRequestFieldBlock(iter, foreachReqField(line)));
       } else {
         builder.append(line);
         builder.append("\n");
@@ -104,33 +94,36 @@ public record ParsedTemplate(List<RootComponent> block) {
 
     while (iter.hasNext()) {
       String line = iter.next();
-
-      if (foreachReqField(line) || foreachResField(line)) break;
-
+      if (containsForeachReqField(line) || containsForeachResField(line)) break;
       builder.append(line);
       builder.append("\n");
     }
 
-    return req
-        ? new ForEachRequestFieldBlock(builder.toString())
-        : new ForEachResponseFieldBlock(builder.toString());
+    return req ? foreachRequest(builder) : foreachResponse(builder);
   }
 
-  private static boolean foreachType(String line) {
+  private static boolean containsForeachType(String line) {
     return line.replace(" ", "").contains("///foreachType");
   }
 
-  private static boolean foreachReqField(String line) {
+  private static boolean containsForeachReqField(String line) {
     return line.replace(" ", "").contains("///foreachRequestField");
   }
 
-  private static boolean foreachResField(String line) {
+  private static boolean containsForeachResField(String line) {
     return line.replace(" ", "").contains("///foreachResponseField");
   }
 
-  @Override
-  public String toString() {
-    return block.stream().map(Object::toString).collect(Collectors.joining("\n"));
+  private static PlainBlock plain(StringBuilder builder) {
+    return new PlainBlock(builder.toString());
+  }
+
+  private static ForEachRequestFieldBlock foreachRequest(StringBuilder builder) {
+    return new ForEachRequestFieldBlock(builder.toString());
+  }
+
+  private static ForEachResponseFieldBlock foreachResponse(StringBuilder builder) {
+    return new ForEachResponseFieldBlock(builder.toString());
   }
 
   public sealed interface RootComponent {
@@ -146,11 +139,6 @@ public record ParsedTemplate(List<RootComponent> block) {
     @Override
     public String fill(RpcType type) {
       return this.block;
-    }
-
-    @Override
-    public String toString() {
-      return block;
     }
   }
 
@@ -182,13 +170,6 @@ public record ParsedTemplate(List<RootComponent> block) {
 
       return spec.replacements().applyTo(typ.replacements().applyTo(perType.toString()));
     }
-
-    @Override
-    public String toString() {
-      return "/// foreachType\n"
-          + block.stream().map(Object::toString).collect(Collectors.joining("\n"))
-          + "/// foreachType\n";
-    }
   }
 
   public sealed interface ForEachTypeComponent {
@@ -200,22 +181,12 @@ public record ParsedTemplate(List<RootComponent> block) {
     public String fill(RpcType type) {
       return type.foreachRequestField(block);
     }
-
-    @Override
-    public String toString() {
-      return "/// foreachRequestField\n" + block + "/// foreachRequestField\n";
-    }
   }
 
   public record ForEachResponseFieldBlock(String block) implements ForEachTypeComponent {
     @Override
     public String fill(RpcType type) {
       return type.foreachResponseField(block);
-    }
-
-    @Override
-    public String toString() {
-      return "/// foreachResponseField\n" + block + "/// foreachResponseField\n";
     }
   }
 }

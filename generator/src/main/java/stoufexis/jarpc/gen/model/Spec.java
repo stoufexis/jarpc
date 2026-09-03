@@ -1,23 +1,26 @@
 package stoufexis.jarpc.gen.model;
 
+import java.util.LinkedList;
+import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.LinkedList;
-import java.util.List;
-
 public record Spec(Variable serviceName, String pkg, List<RpcType> types) {
 
+  public Replacements replacements() {
+    return Replacements.of(
+        new Replacement("_package_", pkg),
+        new Replacement("_Service_", serviceName.toPascalCase()),
+        new Replacement("_service_", serviceName.toCamelCase()),
+        new Replacement("_SERVICE_", serviceName.toSnakeCaseUpper()));
+  }
+
   public static Spec parse(String serviceName, String serviceSpec, String pkg) {
-    Variable service = var(serviceName);
-
-    LinkedList<RpcType> types = new LinkedList<>();
-    JSONArray specJson = new JSONArray(serviceSpec);
-
     int typeId = 1;
-    for (var obj : specJson) {
-      JSONObject rpc = (JSONObject) obj;
+    LinkedList<RpcType> types = new LinkedList<>();
 
+    for (var obj : new JSONArray(serviceSpec)) {
+      JSONObject rpc = (JSONObject) obj;
       Variable rpcName = var(rpc.getString("rpcName"));
       List<Field> requestFields = getFields(rpc, "request");
       List<Field> responseFields = getFields(rpc, "response");
@@ -31,15 +34,12 @@ public record Spec(Variable serviceName, String pkg, List<RpcType> types) {
               typeId++));
     }
 
-    return new Spec(service, pkg, List.copyOf(types));
+    return new Spec(var(serviceName), pkg, List.copyOf(types));
   }
 
   private static int messageSize(List<Field> fields) {
     int size = 0;
-    for (var field : fields) {
-      size += field.fieldType().getLength();
-    }
-
+    for (Field f : fields) size += f.fieldType().getLength();
     return size;
   }
 
@@ -50,7 +50,7 @@ public record Spec(Variable serviceName, String pkg, List<RpcType> types) {
     for (var obj2 : rpc.getJSONArray(key)) {
       JSONObject field = (JSONObject) obj2;
       String fieldName = field.getString("name");
-      Type fieldType = parseType(field.getString("type"));
+      Type fieldType = Type.parse(field.getString("type"));
       fields.add(new Field(var(fieldName), fieldType, offset));
       offset += fieldType.getLength();
     }
@@ -58,32 +58,7 @@ public record Spec(Variable serviceName, String pkg, List<RpcType> types) {
     return List.copyOf(fields);
   }
 
-  private static Type parseType(String type) {
-    return switch (type.toLowerCase()) {
-      case "boolean" -> Type.BOOLEAN;
-      case "byte" -> Type.BYTE;
-      case "short" -> Type.SHORT;
-      case "int" -> Type.INT;
-      case "float" -> Type.FLOAT;
-      case "long" -> Type.LONG;
-      case "double" -> Type.DOUBLE;
-      case "bytes16" -> Type.BYTES16;
-      case "bytes32" -> Type.BYTES32;
-      case "bytes64" -> Type.BYTES64;
-      case "bytes128" -> Type.BYTES128;
-      default -> throw new IllegalArgumentException("Unsupported type: " + type);
-    };
-  }
-
   private static Variable var(String v) {
     return new Variable(v);
-  }
-
-  public Replacements replacements() {
-    return Replacements.of(
-        new Replacement("_package_", pkg),
-        new Replacement("_Service_", serviceName.toPascalCase()),
-        new Replacement("_service_", serviceName.toCamelCase()),
-        new Replacement("_SERVICE_", serviceName.toSnakeCaseUpper()));
   }
 }

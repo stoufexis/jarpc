@@ -2,34 +2,33 @@ package stoufexis.sample;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
-import org.agrona.concurrent.AgentRunner;
-import stoufexis.jarpc.lib.client.ClientErrorHandler;
-import stoufexis.jarpc.lib.model.Bytes;
-import stoufexis.jarpc.lib.model.ErrorCode;
-import stoufexis.sample.generated.lease.client.LeaseConcurrentClient.*;
-import stoufexis.sample.generated.lease.client.LeaseConcurrentJarpcClient;
-import stoufexis.sample.generated.lease.common.*;
-
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import org.agrona.concurrent.AgentRunner;
+import stoufexis.jarpc.lib.client.ClientErrorHandler;
+import stoufexis.jarpc.lib.common.Bytes;
+import stoufexis.jarpc.lib.common.ErrorCode;
+import stoufexis.sample.generated.client.LeaseConcurrentClient.*;
+import stoufexis.sample.generated.client.LeaseConcurrentJarpcClient;
+import stoufexis.sample.generated.common.*;
 
 public final class ClientMain {
   static class ErrorHandler implements ClientErrorHandler {
     @Override
     public void onCallbackNotFound(long correlationId, String type) {
-      System.out.println("Callback not found " + type);
+      IO.println("Callback not found " + type);
     }
 
     @Override
     public void onCorruptPublication(ErrorCode code) {
-      System.out.println("Corrupt publication " + code);
+      IO.println("Corrupt publication " + code);
     }
 
     @Override
     public void onError(Throwable throwable) {
-      System.out.println(throwable.toString());
+      IO.println(throwable.toString());
     }
   }
 
@@ -41,10 +40,10 @@ public final class ClientMain {
 
   static void compete(UUID clientId, long key, LeaseConcurrentJarpcClient client)
       throws InterruptedException, ExecutionException {
-    System.out.println("Assigned " + clientId);
+    IO.println("Assigned " + clientId);
 
     Bytes bytes = new Bytes(16);
-    ByteBuffer.wrap(bytes.getArray())
+    ByteBuffer.wrap(bytes.backingArray())
         .putLong(clientId.getMostSignificantBits())
         .putLong(clientId.getLeastSignificantBits());
 
@@ -63,14 +62,14 @@ public final class ClientMain {
 
             @Override
             public boolean onClientDecodeError(long correlationId) {
-              System.out.println("ClientDecodeError");
+              IO.println("ClientDecodeError");
               return true;
             }
           });
 
       boolean acquired = acquiredFut.get();
 
-      System.out.println("Acquired " + acquired);
+      IO.println("Acquired " + acquired);
       CompletableFuture<Void> qFut = new CompletableFuture<>();
 
       client.query(
@@ -78,10 +77,9 @@ public final class ClientMain {
           new QueryResponseHandler() {
             @Override
             public boolean onResponse(QueryResponseDecode t) {
-              ByteBuffer buf = ByteBuffer.wrap(t.value().getArray());
+              ByteBuffer buf = ByteBuffer.wrap(t.value().backingArray());
 
-              System.out.println(
-                  "QueryResponse Owned by >>" + new UUID(buf.getLong(), buf.getLong()));
+              IO.println("QueryResponse Owned by >>" + new UUID(buf.getLong(), buf.getLong()));
 
               qFut.complete(null);
               return true;
@@ -89,7 +87,7 @@ public final class ClientMain {
 
             @Override
             public boolean onClientDecodeError(long correlationId) {
-              System.out.println("ClientDecodeError");
+              IO.println("ClientDecodeError");
               return true;
             }
           });
@@ -105,14 +103,14 @@ public final class ClientMain {
               new RefreshResponseHandler() {
                 @Override
                 public boolean onResponse(RefreshResponseDecode t) {
-                  System.out.println("RefreshResponse " + t.acquired());
+                  IO.println("RefreshResponse " + t.acquired());
                   rFut.complete(null);
                   return true;
                 }
 
                 @Override
                 public boolean onClientDecodeError(long correlationId) {
-                  System.out.println("ClientDecodeError");
+                  IO.println("ClientDecodeError");
                   return true;
                 }
               });

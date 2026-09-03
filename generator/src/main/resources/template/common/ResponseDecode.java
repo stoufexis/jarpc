@@ -1,7 +1,7 @@
 /// foreachType
 package _package_.common;
 
-import stoufexis.jarpc.lib.model.*;
+import stoufexis.jarpc.lib.common.*;
 
 public interface _Type_ResponseDecode {
   /// foreachResponseField

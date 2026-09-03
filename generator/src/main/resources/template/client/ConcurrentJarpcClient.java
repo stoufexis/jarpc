@@ -6,13 +6,12 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 
 import stoufexis.jarpc.lib.client.*;
-import stoufexis.jarpc.lib.model.*;
-import stoufexis.jarpc.lib.util.*;
+import stoufexis.jarpc.lib.common.*;
 
 import _package_.common.*;
 
-import static stoufexis.jarpc.lib.util.Util.createClientSubscription;
-import static stoufexis.jarpc.lib.util.Util.createExclusiveClientPublication;
+import static stoufexis.jarpc.lib.common.Util.createClientSubscription;
+import static stoufexis.jarpc.lib.common.Util.createExclusiveClientPublication;
 
 // FIXME add timeouts and ad-hoc cancel
 
@@ -56,7 +55,7 @@ public final class _Service_ConcurrentJarpcClient
   }
 
   public static _Service_ConcurrentJarpcClient create(
-      ConnectivityConfig cfg, ClientErrorHandler handler, int queueCapacity) {
+      ConnectionConfig cfg, ClientErrorHandler handler, int queueCapacity) {
     Subscription sub =
         createClientSubscription(cfg.aeron(), cfg.responseControl(), cfg.responseStreamId());
     Publication pub =
@@ -128,7 +127,7 @@ public final class _Service_ConcurrentJarpcClient
     }
 
     @Override
-    protected boolean processRequest(_Type_RequestScratch scratch) {
+    protected boolean process(_Type_RequestScratch scratch) {
       _Type_RequestEncode encode = singleThreadedClient.claim_Type_(claimHandle);
 
       if (encode == null) return handleError();

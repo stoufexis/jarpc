@@ -1,10 +1,8 @@
 package stoufexis.jarpc.lib.client;
 
-import org.agrona.ErrorHandler;
-import stoufexis.jarpc.lib.model.ErrorCode;
-import stoufexis.jarpc.lib.util.OnCorruptPublication;
+import stoufexis.jarpc.lib.common.ErrorCode;
 
-public interface ClientErrorHandler extends OnCorruptPublication {
+public interface ClientErrorHandler {
   void onCallbackNotFound(long correlationId, String type);
 
   void onCorruptPublication(ErrorCode code);

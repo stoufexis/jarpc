@@ -1,10 +1,12 @@
 package stoufexis.jarpc.gen;
 
-import stoufexis.jarpc.gen.model.*;
+import static stoufexis.jarpc.gen.Util.javaFile;
+import static stoufexis.jarpc.gen.Util.path;
 
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import stoufexis.jarpc.gen.model.*;
 
 public final class Generator {
 
@@ -23,26 +25,24 @@ public final class Generator {
   /** returns a list of file contents */
   private static List<OutputFile> generate(Spec spec, TemplatePath path) throws IOException {
     ParsedTemplate root = ParsedTemplate.parseResource(path.getPath());
-    ParsedTemplate.ForEachTypeBlock globalTypeBlock = root.globalTypeBlock();
+    ParsedTemplate.ForEachTypeBlock global = root.globalTypeBlock();
 
-    if (globalTypeBlock != null) {
-      LinkedList<OutputFile> output = new LinkedList<>();
-
-      for (RpcType typ : spec.types()) {
-        String relativePath =
-            "/" + path.subdir + "/" + typ.rpcName().toPascalCase() + path.name + ".java";
-
-        output.add(
-            new OutputFile("/" + path.subdir, relativePath, globalTypeBlock.fillAsRoot(spec, typ)));
-      }
-
-      return List.copyOf(output);
+    if (global == null) {
+      return List.of(outputFile(path.subdir, spec.serviceName(), path.name, root.fill(spec)));
     }
 
-    String relativePath =
-        "/" + path.subdir + "/" + spec.serviceName().toPascalCase() + path.name + ".java";
+    LinkedList<OutputFile> output = new LinkedList<>();
+    for (RpcType typ : spec.types()) {
+      output.add(outputFile(path.subdir, typ.rpcName(), path.name, global.fillAsRoot(spec, typ)));
+    }
 
-    return List.of(new OutputFile("/" + path.subdir, relativePath, root.fill(spec)));
+    return List.copyOf(output);
+  }
+
+  private static OutputFile outputFile(
+      String dir, Variable filePrefix, String fileSuffix, String content) {
+    return new OutputFile(
+        path(dir), javaFile(dir, filePrefix.toPascalCase() + fileSuffix), content);
   }
 
   private static final List<TemplatePath> templates =
@@ -63,7 +63,7 @@ public final class Generator {
 
   private record TemplatePath(String subdir, String name) {
     String getPath() {
-      return "/template/" + subdir + "/" + name + ".java";
+      return javaFile("template", subdir, name);
     }
   }
 }

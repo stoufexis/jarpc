@@ -6,16 +6,6 @@ plugins {
 group = "stoufexis"
 version = "1.0-SNAPSHOT"
 
-repositories {
-    mavenCentral()
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
-    }
-}
-
 dependencies {
     implementation("org.json:json:20260814")
 

@@ -1,15 +1,15 @@
 package stoufexis.jarpc.lib.server;
 
+import static stoufexis.jarpc.lib.common.Util.createExclusiveServerPublication;
+
 import io.aeron.Aeron;
 import io.aeron.Publication;
 import org.agrona.CloseHelper;
 import org.agrona.collections.Long2ObjectHashMap;
 
-import static stoufexis.jarpc.lib.util.Util.createExclusiveServerPublication;
-
 public final class ServerPublications {
 
-  private final Long2ObjectHashMap<Publication> clientToPublicationMap = new Long2ObjectHashMap<>();
+  private final Long2ObjectHashMap<Publication> map = new Long2ObjectHashMap<>();
 
   private final String responseControl;
   private final Aeron aeron;
@@ -22,26 +22,24 @@ public final class ServerPublications {
   }
 
   public Publication ensurePublicationExists(long clientId) {
-    // We don't need computeIfAbsent, put/remove only happen in the agent thread.
-    Publication publication = clientToPublicationMap.get(clientId);
+    Publication publication = map.get(clientId);
     if (null == publication) {
       publication =
           createExclusiveServerPublication(aeron, clientId, responseControl, responseStreamId);
-      clientToPublicationMap.put(clientId, publication);
+      map.put(clientId, publication);
     }
-
     return publication;
   }
 
   public Publication remove(long clientId) {
-    return clientToPublicationMap.remove(clientId);
+    return map.remove(clientId);
   }
 
   public void closeAll() {
-    clientToPublicationMap.values().forEach(CloseHelper::quietClose);
+    map.values().forEach(CloseHelper::quietClose);
   }
 
   public Publication get(long clientId) {
-    return clientToPublicationMap.get(clientId);
+    return map.get(clientId);
   }
 }

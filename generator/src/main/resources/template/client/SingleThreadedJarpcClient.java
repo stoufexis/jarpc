@@ -7,11 +7,10 @@ import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 
-import stoufexis.jarpc.lib.util.*;
 import stoufexis.jarpc.lib.client.*;
-import stoufexis.jarpc.lib.model.*;
+import stoufexis.jarpc.lib.common.*;
 
-import static stoufexis.jarpc.lib.util.Util.*;
+import static stoufexis.jarpc.lib.common.Util.*;
 
 import static _package_.common._Service_Metadata.*;
 import _package_.common.*;
@@ -42,7 +41,7 @@ public final class _Service_SingleThreadedJarpcClient extends SingleThreadedJarp
   }
 
   public static _Service_SingleThreadedJarpcClient create(
-      ConnectivityConfig cfg,
+      ConnectionConfig cfg,
       /// foreachType
       _Type_ResponseHandler _type_Handler,
       /// foreachType
@@ -75,31 +74,21 @@ public final class _Service_SingleThreadedJarpcClient extends SingleThreadedJarp
   /// foreachType
   @Override
   public _Type_RequestEncode claim_Type_(ClaimHandle claimHandle) {
-    BufferClaim claim = claimHandle.getClaim();
-    ErrorCode code = publisher.tryClaim(_TYPE__REQUEST_SIZE, claim);
 
-    if (code != null) {
-      claimHandle.setFailed(code);
-      return null;
-    }
-
-    long id = publisher.nextCorrelationId();
-    int newOffset = Publisher.encodeHeader(id, _TYPE__MESSAGE_TYPE, claim);
-    claimHandle.setSuccess(id);
-    _type_RequestEncode.set(claim.buffer(), newOffset);
+    publisher.tryClaim(_TYPE__REQUEST_SIZE, claimHandle);
+    if (claimHandle.isFailed()) return null;
+    _type_RequestEncode.set(claimHandle, publisher.encodeHeader(_TYPE__MESSAGE_TYPE, claimHandle));
     return _type_RequestEncode;
   }
 
   private boolean on_Type_Response(
       long correlationId, DirectBuffer buffer, int offset, int length) {
 
-    if (length == _TYPE__RESPONSE_SIZE) {
-      _type_ResponseDecode.set(buffer, offset);
-      return _type_ResponseHandler.onResponse(correlationId, _type_ResponseDecode);
-
-    } else {
+    if (length != _TYPE__RESPONSE_SIZE) {
       return _type_ResponseHandler.onClientDecodeError(correlationId);
     }
+    _type_ResponseDecode.set(buffer, offset);
+    return _type_ResponseHandler.onResponse(correlationId, _type_ResponseDecode);
   }
 
   private static final class _Type_RequestEncodeImpl extends EncodeUtil
@@ -107,7 +96,7 @@ public final class _Service_SingleThreadedJarpcClient extends SingleThreadedJarp
     /// foreachRequestField
     @Override
     public void set_Field_(_javaType_ _field_) {
-      buffer.put_FieldType_(_fieldOffset_, _field_);
+      put_FieldType_(_fieldOffset_, _field_);
     }
     /// foreachRequestField
   }
@@ -117,7 +106,7 @@ public final class _Service_SingleThreadedJarpcClient extends SingleThreadedJarp
     /// foreachResponseField
     @Override
     public _javaType_ _field_() {
-      return buffer.get_FieldType_(_fieldOffset_);
+      return get_FieldType_(_fieldOffset_);
     }
     /// foreachResponseField
   }

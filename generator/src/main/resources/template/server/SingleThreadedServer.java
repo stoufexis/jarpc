@@ -1,6 +1,6 @@
 package _package_.server;
 
-import stoufexis.jarpc.lib.model.*;
+import stoufexis.jarpc.lib.common.*;
 
 import _package_.common.*;
 

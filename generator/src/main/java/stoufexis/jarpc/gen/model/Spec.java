@@ -1,5 +1,6 @@
 package stoufexis.jarpc.gen.model;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import org.json.JSONArray;
@@ -18,12 +19,19 @@ public record Spec(Variable serviceName, String pkg, List<RpcType> types) {
   public static Spec parse(String serviceName, String serviceSpec, String pkg) {
     int typeId = 1;
     LinkedList<RpcType> types = new LinkedList<>();
+    HashSet<String> names = new HashSet<>();
 
     for (var obj : new JSONArray(serviceSpec)) {
       JSONObject rpc = (JSONObject) obj;
       Variable rpcName = var(rpc.getString("rpcName"));
+
+      if (names.contains(rpcName.value().toLowerCase()))
+        throw new IllegalArgumentException("Duplicate rpc names");
+
       List<Field> requestFields = getFields(rpc, "request");
       List<Field> responseFields = getFields(rpc, "response");
+
+      names.add(rpcName.value().toLowerCase());
       types.add(
           new RpcType(
               rpcName,

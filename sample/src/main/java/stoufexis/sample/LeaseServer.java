@@ -41,8 +41,8 @@ public class LeaseServer implements Agent, AutoCloseable {
 
   private static final class StateMachine implements LeaseSingleThreadedStateMachine {
     private static final int POOL_CAPACITY = 1024;
-    private static final int TTL_SECONDS = 10;
-    private static final int TTL_NANOS = (int) TimeUnit.SECONDS.toNanos(TTL_SECONDS);
+    private static final int TTL_SECONDS = 120;
+    private static final long TTL_NANOS = TimeUnit.SECONDS.toNanos(TTL_SECONDS);
     private static final long TICK_NANOS = 100_000_000;
 
     private long lastTickAtNanos = Long.MIN_VALUE;
@@ -50,7 +50,7 @@ public class LeaseServer implements Agent, AutoCloseable {
     private final ArrayDeque<Bytes> bytesPool = new ArrayDeque<>(1024);
     private final Long2ObjectHashMap<Bytes> payloads = new Long2ObjectHashMap<>();
     private final Long2LongHashMap owners = new Long2LongHashMap(Long.MIN_VALUE);
-    private final Long2LongHashMap received = new Long2LongHashMap(Long.MIN_VALUE);
+    private final Long2LongHashMap refreshed = new Long2LongHashMap(Long.MIN_VALUE);
 
     @Override
     public boolean onRequest(
@@ -76,9 +76,11 @@ public class LeaseServer implements Agent, AutoCloseable {
         encode.setAcquired(false);
 
       } else {
+        long now = System.nanoTime();
         Bytes payload = getPayloadBuffer();
         payload.copy(t.value());
-        put(key, payload, clientId, System.nanoTime());
+        put(key, payload, clientId, now);
+        System.out.println("now " + now);
 
         encode.setAcquired(true);
       }
@@ -110,7 +112,7 @@ public class LeaseServer implements Agent, AutoCloseable {
         encode.setExists(false);
 
       } else {
-        long expiresInNanos = TTL_NANOS - (System.nanoTime() - received.get(key));
+        long expiresInNanos = TTL_NANOS - (System.nanoTime() - refreshed.get(key));
 
         encode.setExists(true);
         encode.setExpiresInSeconds((int) TimeUnit.NANOSECONDS.toSeconds(expiresInNanos));
@@ -145,7 +147,7 @@ public class LeaseServer implements Agent, AutoCloseable {
         encode.setAcquired(false);
 
       } else {
-        received.put(key, System.nanoTime());
+        refreshed.put(key, System.nanoTime());
         encode.setAcquired(true);
       }
 
@@ -157,6 +159,7 @@ public class LeaseServer implements Agent, AutoCloseable {
     @Override
     public void onClientDisconnected(long clientId) {
       illegalClientId(clientId);
+      System.out.println(clientId + " disconnected");
 
       for (long key : payloads.keySet()) {
         if (owners.get(key) == clientId) {
@@ -172,13 +175,22 @@ public class LeaseServer implements Agent, AutoCloseable {
 
       long now = System.nanoTime();
 
-      if (now - lastTickAtNanos > TICK_NANOS) {
+      if (lastTickAtNanos == Long.MIN_VALUE || now - lastTickAtNanos > TICK_NANOS) {
         lastTickAtNanos = now;
 
         for (long key : payloads.keySet()) {
-          if (now - received.get(key) > TTL_NANOS) {
+          long receivedAt = refreshed.get(key);
+          if (now - receivedAt > TTL_NANOS) {
             remove(key);
-            System.out.println("key " + key + " expired");
+            System.out.println(
+                "key "
+                    + key
+                    + " expired after "
+                    + TTL_NANOS
+                    + " nanos. Received at "
+                    + receivedAt
+                    + " now "
+                    + now);
             i++;
           }
         }
@@ -212,7 +224,7 @@ public class LeaseServer implements Agent, AutoCloseable {
     private void remove(long key) {
       Bytes payload = payloads.remove(key);
       owners.remove(key);
-      received.remove(key);
+      refreshed.remove(key);
 
       // return to the pool, so future gets can avoid allocation
       if (payload != null && bytesPool.size() < POOL_CAPACITY) {
@@ -220,10 +232,10 @@ public class LeaseServer implements Agent, AutoCloseable {
       }
     }
 
-    private void put(long key, Bytes payload, long clientId, long receivedAt) {
+    private void put(long key, Bytes payload, long clientId, long refreshedAt) {
       payloads.put(key, payload);
       owners.put(key, clientId);
-      received.put(key, receivedAt);
+      refreshed.put(key, refreshedAt);
     }
 
     private Bytes getPayloadBuffer() {

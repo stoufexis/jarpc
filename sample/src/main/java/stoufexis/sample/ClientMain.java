@@ -2,20 +2,18 @@ package stoufexis.sample;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
 import org.agrona.concurrent.AgentRunner;
-import org.agrona.concurrent.SleepingIdleStrategy;
 import stoufexis.jarpc.lib.client.ClientErrorHandler;
 import stoufexis.jarpc.lib.model.Bytes;
-import stoufexis.jarpc.lib.model.ConnectivityConfig;
 import stoufexis.jarpc.lib.model.ErrorCode;
+import stoufexis.sample.generated.lease.client.LeaseConcurrentClient.*;
 import stoufexis.sample.generated.lease.client.LeaseConcurrentJarpcClient;
-import stoufexis.sample.generated.lease.common.AcquireRequestDecode;
-import stoufexis.sample.generated.lease.common.QueryRequestDecode;
-import stoufexis.sample.generated.lease.common.RefreshRequestDecode;
+import stoufexis.sample.generated.lease.common.*;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public final class ClientMain {
   static class ErrorHandler implements ClientErrorHandler {
@@ -41,31 +39,114 @@ public final class ClientMain {
 
   record Refresh(long key) implements RefreshRequestDecode {}
 
-  static void main() throws InterruptedException {
-    try (MediaDriver mediaDriver =
-            MediaDriver.launchEmbedded(
-                new MediaDriver.Context()
-                    .dirDeleteOnStart(true)
-                    .threadingMode(ThreadingMode.SHARED)
-                    .sharedIdleStrategy(new SleepingIdleStrategy())
-                    .dirDeleteOnShutdown(true));
-        Aeron aeron =
-            Aeron.connect(
-                new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()))) {
+  static void compete(UUID clientId, long key, LeaseConcurrentJarpcClient client)
+      throws InterruptedException, ExecutionException {
+    System.out.println("Assigned " + clientId);
 
-      ConnectivityConfig cfg = Constants.connectivityConfig(aeron);
+    Bytes bytes = new Bytes(16);
+    ByteBuffer.wrap(bytes.getArray())
+        .putLong(clientId.getMostSignificantBits())
+        .putLong(clientId.getLeastSignificantBits());
 
-      try (LeaseConcurrentJarpcClient client =
-              LeaseConcurrentJarpcClient.create(cfg, new ErrorHandler(), 1024);
-          AgentRunner agentRunner =
-              new AgentRunner(new SleepingIdleStrategy(), System.out::println, null, client)) {
+    while (true) {
 
-        AgentRunner.startOnThread(agentRunner);
+      CompletableFuture<Boolean> acquiredFut = new CompletableFuture<>();
 
-        while (!client.isConnected()) {
-          Thread.sleep(100);
+      client.acquire(
+          new Acquire(key, bytes),
+          new AcquireResponseHandler() {
+            @Override
+            public boolean onResponse(AcquireResponseDecode t) {
+              acquiredFut.complete(t.acquired());
+              return true;
+            }
+
+            @Override
+            public boolean onClientDecodeError(long correlationId) {
+              System.out.println("ClientDecodeError");
+              return true;
+            }
+          });
+
+      boolean acquired = acquiredFut.get();
+
+      System.out.println("Acquired " + acquired);
+      CompletableFuture<Void> qFut = new CompletableFuture<>();
+
+      client.query(
+          new Query(key),
+          new QueryResponseHandler() {
+            @Override
+            public boolean onResponse(QueryResponseDecode t) {
+              ByteBuffer buf = ByteBuffer.wrap(t.value().getArray());
+
+              System.out.println(
+                  "QueryResponse Owned by >>" + new UUID(buf.getLong(), buf.getLong()));
+
+              qFut.complete(null);
+              return true;
+            }
+
+            @Override
+            public boolean onClientDecodeError(long correlationId) {
+              System.out.println("ClientDecodeError");
+              return true;
+            }
+          });
+
+      qFut.get();
+
+      if (acquired) {
+        for (int i = 0; i < 15; i++) {
+          CompletableFuture<Void> rFut = new CompletableFuture<>();
+
+          client.refresh(
+              new Refresh(key),
+              new RefreshResponseHandler() {
+                @Override
+                public boolean onResponse(RefreshResponseDecode t) {
+                  System.out.println("RefreshResponse " + t.acquired());
+                  rFut.complete(null);
+                  return true;
+                }
+
+                @Override
+                public boolean onClientDecodeError(long correlationId) {
+                  System.out.println("ClientDecodeError");
+                  return true;
+                }
+              });
+
+          rFut.get();
+          Thread.sleep(1000);
         }
+
+        break;
       }
+
+      Thread.sleep(2500);
+    }
+  }
+
+  static void main() throws InterruptedException, ExecutionException {
+    try (MediaDriver mediaDriver = Shared.mediaDriver();
+        Aeron aeron = Shared.aeron(mediaDriver);
+        //
+        LeaseConcurrentJarpcClient client =
+            LeaseConcurrentJarpcClient.create(
+                Shared.connectivityConfig(aeron), new ErrorHandler(), 1024);
+        //
+        AgentRunner agentRunner = Shared.runner(client)) {
+
+      AgentRunner.startOnThread(agentRunner);
+
+      while (!client.isConnected()) {
+        Thread.sleep(100);
+      }
+
+      long key = 123123123;
+      UUID clientId = UUID.randomUUID();
+      compete(clientId, key, client);
     }
   }
 }

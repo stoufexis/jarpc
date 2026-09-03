@@ -21,4 +21,9 @@ public class Bytes {
       throw new IllegalArgumentException("Cannot copy Bytes of different sizes");
     System.arraycopy(that.bytes, 0, this.bytes, 0, this.size);
   }
+
+  @Override
+  public String toString() {
+    return new String(bytes);
+  }
 }

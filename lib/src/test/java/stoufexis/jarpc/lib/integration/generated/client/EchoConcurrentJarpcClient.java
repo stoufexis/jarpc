@@ -1,4 +1,4 @@
-package _package_.client;
+package stoufexis.jarpc.lib.integration.generated.client;
 
 import io.aeron.Publication;
 import io.aeron.Subscription;
@@ -10,77 +10,77 @@ import stoufexis.jarpc.lib.client.concurrent.*;
 import stoufexis.jarpc.lib.client.ringbuffer.*;
 import stoufexis.jarpc.lib.common.*;
 
-import _package_.common.*;
+import stoufexis.jarpc.lib.integration.generated.common.*;
 
 import static stoufexis.jarpc.lib.common.Util.createClientSubscription;
 import static stoufexis.jarpc.lib.common.Util.createExclusiveClientPublication;
 
 // FIXME add timeouts and ad-hoc cancel
 
-public final class _Service_ConcurrentJarpcClient
-    implements _Service_ConcurrentClient, Agent, AutoCloseable, IsConnected {
+public final class EchoConcurrentJarpcClient
+    implements EchoConcurrentClient, Agent, AutoCloseable, IsConnected {
 
-  private final _Service_SingleThreadedJarpcClient singleThreadedClient;
-  /// foreachType
-  private final Long2ObjectHashMap<_Type_ResponseHandler> _type_Callbacks;
-  private final _Type_RingBuffer _type_RingBuffer;
-  /// foreachType
+  private final EchoSingleThreadedJarpcClient singleThreadedClient;
+
+  private final Long2ObjectHashMap<EchoResponseHandler> echoCallbacks;
+  private final EchoRingBuffer echoRingBuffer;
+
   private final ClientErrorHandler errorHandler;
   private final ConnectivityProbe connectivityProbe;
   private final int queueCapacity;
 
-  _Service_ConcurrentJarpcClient(
+  EchoConcurrentJarpcClient(
       Publication publication,
       Subscription subscription,
       ClientErrorHandler errorHandler,
       int queueCapacity) {
     this.queueCapacity = queueCapacity;
-    /// foreachType
-    this._type_Callbacks = new Long2ObjectHashMap<>();
-    this._type_RingBuffer = new _Type_RingBuffer();
-    /// foreachType
+
+    this.echoCallbacks = new Long2ObjectHashMap<>();
+    this.echoRingBuffer = new EchoRingBuffer();
+
     this.singleThreadedClient =
-        new _Service_SingleThreadedJarpcClient(
+        new EchoSingleThreadedJarpcClient(
             publication,
             subscription,
-            /// foreachType
-            new _Type_Handler(),
-            /// foreachType
+
+            new EchoHandler(),
+
             errorHandler);
     this.errorHandler = errorHandler;
     this.connectivityProbe = new ConnectivityProbe(singleThreadedClient);
   }
 
-  public static _Service_ConcurrentJarpcClient create(
+  public static EchoConcurrentJarpcClient create(
       ConnectionConfig cfg, ClientErrorHandler handler, int queueCapacity) {
     Subscription sub =
         createClientSubscription(cfg.aeron(), cfg.responseControl(), cfg.responseStreamId());
     Publication pub =
         createExclusiveClientPublication(
             cfg.aeron(), cfg.requestEndpoint(), cfg.requestStreamId(), sub);
-    return new _Service_ConcurrentJarpcClient(pub, sub, handler, queueCapacity);
+    return new EchoConcurrentJarpcClient(pub, sub, handler, queueCapacity);
   }
-  /// foreachType
+
   @Override
-  public boolean _type_(_Type_RequestDecode request, _Type_ResponseHandler response) {
-    return _type_RingBuffer.offer(_Type_RequestScratch::setter, request, response);
+  public boolean echo(EchoRequestDecode request, EchoResponseHandler response) {
+    return echoRingBuffer.offer(EchoRequestScratch::setter, request, response);
   }
-  /// foreachType
+
   @Override
   public int doWork() {
     int work = 0;
 
     connectivityProbe.probeConnected();
-    /// foreachType
-    work += _type_RingBuffer.doWork();
-    /// foreachType
+
+    work += echoRingBuffer.doWork();
+
     work += singleThreadedClient.poll(1);
     return work;
   }
 
   @Override
   public String roleName() {
-    return "_Service_ConcurrentJarpcClient";
+    return "EchoConcurrentJarpcClient";
   }
 
   @Override
@@ -92,16 +92,16 @@ public final class _Service_ConcurrentJarpcClient
   public boolean isConnected() {
     return connectivityProbe.isConnected();
   }
-  /// foreachType
-  private final class _Type_Handler extends ResponseHandlerUtil<_Type_ResponseHandler>
-      implements _Service_SingleThreadedJarpcClient._Type_ResponseHandler {
-    _Type_Handler() {
-      super(_type_Callbacks, errorHandler, "_Type_");
+
+  private final class EchoHandler extends ResponseHandlerUtil<EchoResponseHandler>
+      implements EchoSingleThreadedJarpcClient.EchoResponseHandler {
+    EchoHandler() {
+      super(echoCallbacks, errorHandler, "Echo");
     }
 
     @Override
-    public boolean onResponse(long correlationId, _Type_ResponseDecode t) {
-      _Type_ResponseHandler callback = getCallback(correlationId);
+    public boolean onResponse(long correlationId, EchoResponseDecode t) {
+      EchoResponseHandler callback = getCallback(correlationId);
       if (callback == null) return true;
 
       boolean dispatched = callback.onResponse(t);
@@ -111,20 +111,21 @@ public final class _Service_ConcurrentJarpcClient
     }
   }
 
-  private final class _Type_RingBuffer extends MPSCBufferPollAgent<_Type_RequestScratch> {
-    _Type_RingBuffer() {
-      super(_Type_RequestScratch::new, _Type_RequestScratch::copy, errorHandler, queueCapacity);
+  private final class EchoRingBuffer extends MPSCBufferPollAgent<EchoRequestScratch> {
+    EchoRingBuffer() {
+      super(EchoRequestScratch::new, EchoRequestScratch::copy, errorHandler, queueCapacity);
     }
 
     @Override
-    protected boolean process(_Type_RequestScratch scratch, OnError onError) {
-      _Type_RequestEncode encode = singleThreadedClient.claim_Type_(claimHandle);
+    protected boolean process(EchoRequestScratch scratch, OnError onError) {
+      EchoRequestEncode encode = singleThreadedClient.claimEcho(claimHandle);
       if (encode == null) return onError.run();
 
-      _type_Callbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());
+      echoCallbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());
       encode.set(scratch);
       return true;
     }
   }
-  /// foreachType
+
 }
+

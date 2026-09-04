@@ -85,7 +85,7 @@ public abstract class SingleThreadedJarpcServer implements AutoCloseable, Poll {
         result = onMessage(clientId, messageType, correlationId, buffer, offset, length);
       } catch (RuntimeException e) {
         result = true;
-        serverStateMachine.onProcessingError(clientId, correlationId, messageType);
+        serverStateMachine.onProcessingError(clientId, correlationId, messageType, e);
       }
 
       return result

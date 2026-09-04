@@ -54,8 +54,4 @@ public abstract class EncodeUtil {
   protected void putBytes64(int index, Bytes src) {
     buffer.putBytes(offset + index, src.backingArray(), 0, 64);
   }
-
-  protected void putBytes128(int index, Bytes src) {
-    buffer.putBytes(offset + index, src.backingArray(), 0, 128);
-  }
 }

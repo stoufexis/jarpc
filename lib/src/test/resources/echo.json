@@ -1,0 +1,89 @@
+[
+  {
+    "rpcName": "echo",
+    "request": [
+      {
+        "name": "bool",
+        "type": "boolean"
+      },
+      {
+        "name": "bite",
+        "type": "byte"
+      },
+      {
+        "name": "sort",
+        "type": "short"
+      },
+      {
+        "name": "eent",
+        "type": "int"
+      },
+      {
+        "name": "log",
+        "type": "long"
+      },
+      {
+        "name": "flowt",
+        "type": "float"
+      },
+      {
+        "name": "twice",
+        "type": "double"
+      },
+      {
+        "name": "sBytes",
+        "type": "bytes16"
+      },
+      {
+        "name": "mBytes",
+        "type": "bytes32"
+      },
+      {
+        "name": "lBytes",
+        "type": "bytes64"
+      }
+    ],
+    "response": [
+      {
+        "name": "lBytes",
+        "type": "bytes64"
+      },
+      {
+        "name": "mBytes",
+        "type": "bytes32"
+      },
+      {
+        "name": "sBytes",
+        "type": "bytes16"
+      },
+      {
+        "name": "twice",
+        "type": "double"
+      },
+      {
+        "name": "flowt",
+        "type": "float"
+      },
+      {
+        "name": "log",
+        "type": "long"
+      },
+      {
+        "name": "eent",
+        "type": "int"
+      },
+      {
+        "name": "sort",
+        "type": "short"
+      },
+      {
+        "name": "bite",
+        "type": "byte"
+      },
+      {
+        "name": "bool",
+        "type": "boolean"
+      }
+    ]
+  }
+]

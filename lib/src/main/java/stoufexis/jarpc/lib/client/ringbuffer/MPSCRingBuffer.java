@@ -23,7 +23,7 @@ final class MPSCRingBuffer<E> {
 
   MPSCRingBuffer(int capacity, Supplier<E> factory) {
     if (capacity <= 0 || (capacity & (capacity - 1)) != 0) {
-      throw new IllegalArgumentException("capacity must be a positive power of 2");
+      throw new IllegalArgumentException("capacity must be a positive power of 2. Was " + capacity);
     }
     this.capacity = capacity;
     this.mask = capacity - 1;

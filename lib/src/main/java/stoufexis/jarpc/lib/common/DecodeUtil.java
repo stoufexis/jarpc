@@ -8,7 +8,6 @@ public abstract class DecodeUtil {
   private Bytes bytes16;
   private Bytes bytes32;
   private Bytes bytes64;
-  private Bytes bytes128;
 
   public final void set(DirectBuffer buffer, int offset) {
     this.buffer = buffer;
@@ -63,11 +62,5 @@ public abstract class DecodeUtil {
     if (bytes64 == null) bytes64 = new Bytes(64);
     buffer.getBytes(offset + index, bytes64.backingArray());
     return bytes64;
-  }
-
-  protected Bytes getBytes128(int index) {
-    if (bytes128 == null) bytes128 = new Bytes(128);
-    buffer.getBytes(offset + index, bytes128.backingArray());
-    return bytes128;
   }
 }

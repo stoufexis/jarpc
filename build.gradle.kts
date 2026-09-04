@@ -22,7 +22,7 @@ subprojects {
             trimTrailingWhitespace()
             endWithNewline()
             target("src/*/java/**/*.java")
-            targetExclude("**/sample/generated/**")
+            targetExclude("**/generated/**")
         }
     }
 

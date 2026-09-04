@@ -38,6 +38,7 @@ public final class LeaseConcurrentJarpcClient
       Subscription subscription,
       ClientErrorHandler errorHandler,
       int queueCapacity) {
+    this.queueCapacity = queueCapacity;
 
     this.acquireCallbacks = new Long2ObjectHashMap<>();
     this.acquireRingBuffer = new AcquireRingBuffer();
@@ -58,7 +59,6 @@ public final class LeaseConcurrentJarpcClient
             errorHandler);
     this.errorHandler = errorHandler;
     this.connectivityProbe = new ConnectivityProbe(singleThreadedClient);
-    this.queueCapacity = queueCapacity;
   }
 
   public static LeaseConcurrentJarpcClient create(
@@ -112,7 +112,6 @@ public final class LeaseConcurrentJarpcClient
   public boolean isConnected() {
     return connectivityProbe.isConnected();
   }
-
 
   private final class AcquireHandler extends ResponseHandlerUtil<AcquireResponseHandler>
       implements LeaseSingleThreadedJarpcClient.AcquireResponseHandler {

@@ -198,9 +198,10 @@ public class LeaseServer implements Agent, AutoCloseable {
     }
 
     @Override
-    public void onProcessingError(long clientId, long correlationId, int messageType) {
+    public void onProcessingError(
+        long clientId, long correlationId, int messageType, RuntimeException error) {
       illegalClientId(clientId);
-      IO.println("ProcessingError " + clientId + ", " + correlationId);
+      IO.println("ProcessingError " + clientId + ", " + correlationId + ", " + error);
     }
 
     @Override

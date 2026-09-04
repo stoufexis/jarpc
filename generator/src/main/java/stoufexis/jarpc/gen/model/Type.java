@@ -10,8 +10,7 @@ public enum Type {
   DOUBLE(8, "double", "double", "0", false),
   BYTES16(16, "bytes16", "Bytes", "new Bytes(16)", true),
   BYTES32(32, "bytes32", "Bytes", "new Bytes(32)", true),
-  BYTES64(64, "bytes64", "Bytes", "new Bytes(64)", true),
-  BYTES128(128, "bytes128", "Bytes", "new Bytes(128)", true);
+  BYTES64(64, "bytes64", "Bytes", "new Bytes(64)", true);
 
   private final int length;
   private final Variable name;
@@ -39,7 +38,6 @@ public enum Type {
       case "bytes16" -> Type.BYTES16;
       case "bytes32" -> Type.BYTES32;
       case "bytes64" -> Type.BYTES64;
-      case "bytes128" -> Type.BYTES128;
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }

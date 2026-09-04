@@ -1,5 +1,7 @@
 package stoufexis.jarpc.lib.common;
 
+import java.util.Arrays;
+
 /**
  * Instances of Bytes must be copied immediately upon reading, as they will be re-used internally
  */
@@ -25,5 +27,17 @@ public class Bytes {
   @Override
   public String toString() {
     return new String(bytes);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Bytes that)) return false;
+    return Arrays.equals(this.bytes, that.bytes);
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(bytes);
   }
 }

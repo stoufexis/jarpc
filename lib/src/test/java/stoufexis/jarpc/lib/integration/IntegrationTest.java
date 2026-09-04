@@ -71,7 +71,6 @@ public class IntegrationTest {
     int concurrency = 50_000;
     AtomicInteger succeeded = new AtomicInteger();
     AtomicInteger failed = new AtomicInteger();
-    AtomicInteger unexpectedFailed = new AtomicInteger();
 
     for (int i = 0; i < concurrency; i++) {
       final int param = i;
@@ -84,16 +83,17 @@ public class IntegrationTest {
 
             } catch (ExecutionException e) {
               // send fails for exactly half of the requests
+              IO.println(param + " failed assertion " + e);
               failed.incrementAndGet();
 
             } catch (InterruptedException e) {
               IO.println(param + " interrupted");
               Thread.currentThread().interrupt();
-              unexpectedFailed.incrementAndGet();
+              failed.incrementAndGet();
 
             } catch (TimeoutException e) {
               IO.println(param + " timed out");
-              unexpectedFailed.incrementAndGet();
+              failed.incrementAndGet();
 
             } catch (RuntimeException e) {
               IO.println(param + " some other exception " + e);
@@ -105,9 +105,8 @@ public class IntegrationTest {
       LockSupport.parkNanos(100_000_000);
     }
 
-    assertEquals(concurrency / 2, failed.get());
-    assertEquals(concurrency / 2, succeeded.get());
-    assertEquals(0, unexpectedFailed.get());
+    assertEquals(concurrency, succeeded.get());
+    assertEquals(0, failed.get());
   }
 
   private static AgentRunner runner(Agent agent) {
@@ -116,18 +115,6 @@ public class IntegrationTest {
 
   private static CompletableFuture<Void> send(EchoConcurrentJarpcClient client, int i) {
     var fut = new CompletableFuture<Void>();
-
-    Bytes sBytes = new Bytes(16);
-    ByteBuffer sBuf = ByteBuffer.wrap(sBytes.backingArray());
-    for (int pos = 0; pos < 16; pos += 4) sBuf.putInt(i);
-
-    Bytes mBytes = new Bytes(32);
-    ByteBuffer mBuf = ByteBuffer.wrap(mBytes.backingArray());
-    for (int pos = 0; pos < 32; pos += 4) mBuf.putInt(i);
-
-    Bytes lBytes = new Bytes(64);
-    ByteBuffer lBuf = ByteBuffer.wrap(lBytes.backingArray());
-    for (int pos = 0; pos < 64; pos += 4) lBuf.putInt(i);
 
     var request =
         new EchoRequestDecode() {
@@ -168,17 +155,24 @@ public class IntegrationTest {
 
           @Override
           public Bytes sBytes() {
-            return sBytes;
+            return bytes(16);
           }
 
           @Override
           public Bytes mBytes() {
-            return mBytes;
+            return bytes(32);
           }
 
           @Override
           public Bytes lBytes() {
-            return lBytes;
+            return bytes(64);
+          }
+
+          private Bytes bytes(int size) {
+            Bytes bytes = new Bytes(size);
+            ByteBuffer buf = ByteBuffer.wrap(bytes.backingArray());
+            for (int pos = 0; pos < size; pos += 4) buf.putInt(i);
+            return bytes;
           }
         };
 
@@ -191,15 +185,15 @@ public class IntegrationTest {
 
           @Override
           public boolean onResponse(EchoResponseDecode t) {
-            if (t.bool() // this will fail half of the requests
-                && t.bite() == (byte) i
-                && t.sort() == (short) i
-                && t.eent() == i
-                && t.log() == ((((long) i) << 32) | (i & 0xffffffffL))
-                && t.flowt() == (float) i
-                && t.sBytes().equals(sBytes)
-                && t.mBytes().equals(mBytes)
-                && t.lBytes().equals(lBytes)) {
+            if (t.bool() == request.bool() // this will fail half of the requests
+                && t.bite() == request.bite()
+                && t.sort() == request.sort()
+                && t.eent() == request.eent()
+                && t.log() == request.log()
+                && t.flowt() == request.flowt()
+                && t.sBytes().equals(request.sBytes())
+                && t.mBytes().equals(request.mBytes())
+                && t.lBytes().equals(request.lBytes())) {
               fut.complete(null);
             } else {
               fut.completeExceptionally(

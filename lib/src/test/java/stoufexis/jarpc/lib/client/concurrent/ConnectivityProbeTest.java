@@ -1,10 +1,9 @@
 package stoufexis.jarpc.lib.client.concurrent;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 public class ConnectivityProbeTest {
 

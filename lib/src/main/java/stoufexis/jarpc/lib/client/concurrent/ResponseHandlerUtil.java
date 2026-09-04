@@ -34,11 +34,9 @@ public abstract class ResponseHandlerUtil<T extends OnClientDecodeError>
   @Override
   public final boolean onClientDecodeError(long correlationId) {
     T callback = getCallback(correlationId);
-
     if (callback == null) return true;
 
     boolean dispatched = callback.onClientDecodeError(correlationId);
-
     if (dispatched) removeCallback(correlationId);
 
     return dispatched;

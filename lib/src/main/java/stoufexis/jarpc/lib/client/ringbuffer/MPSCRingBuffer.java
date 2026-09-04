@@ -27,6 +27,7 @@ final class MPSCRingBuffer<E> {
     }
     this.capacity = capacity;
     this.mask = capacity - 1;
+    //noinspection unchecked
     this.arr = (E[]) new Object[capacity];
     this.readySeq = new AtomicLongArray(capacity);
     for (int i = 0; i < capacity; i++) {
@@ -35,6 +36,7 @@ final class MPSCRingBuffer<E> {
     }
   }
 
+  /** Filler must never throw */
   <B, C> boolean offer(Consume3<E, B, C> filler, B b, C c) {
     for (; ; ) {
       long seq = producerSeq.get();
@@ -52,7 +54,8 @@ final class MPSCRingBuffer<E> {
     }
   }
 
-  <B> boolean poll(Consume2<B, E> copy, B b) {
+  /** Copy must never throw */
+  boolean poll(Consume2<E, E> copy, E b) {
     long seq = consumerSeq;
     int idx = index(seq);
 

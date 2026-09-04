@@ -19,18 +19,33 @@ public abstract class MPSCBufferPollAgent<T> {
   private final OnError onError;
 
   private boolean populated = false;
-  protected final ClaimHandle claimHandle = new ClaimHandle();
+  protected final ClaimHandle claimHandle;
 
   protected MPSCBufferPollAgent(
       Supplier<T> factory,
       Consume2<T, T> copy,
       ClientErrorHandler errorHandler,
       int queueCapacity) {
-    this.scratch = factory.get();
-    this.ringBuffer = new MPSCRingBuffer<>(queueCapacity, factory);
+    this(
+        factory.get(),
+        copy,
+        errorHandler,
+        new MPSCRingBuffer<>(queueCapacity, factory),
+        new ClaimHandle());
+  }
+
+  MPSCBufferPollAgent(
+      T scratch,
+      Consume2<T, T> copy,
+      ClientErrorHandler errorHandler,
+      MPSCRingBuffer<T> buffer,
+      ClaimHandle claimHandle) {
+    this.scratch = scratch;
+    this.ringBuffer = buffer;
     this.copy = copy;
     this.errorHandler = errorHandler;
     this.onError = this::handleError;
+    this.claimHandle = claimHandle;
   }
 
   protected abstract boolean process(T scratch, OnError onError);
@@ -48,7 +63,7 @@ public abstract class MPSCBufferPollAgent<T> {
     }
 
     if (populated && process(scratch, onError)) {
-      claimHandle.commit();
+      if (claimHandle != null) claimHandle.commit();
       populated = false;
       work++;
     }

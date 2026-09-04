@@ -1,6 +1,7 @@
 package stoufexis.jarpc.lib.client.ringbuffer;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static stoufexis.jarpc.lib.client.ringbuffer.DoubleReference.*;
 
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -178,32 +179,5 @@ public class MPSCRingBufferTest {
       executor.shutdownNow();
       executor.close();
     }
-  }
-
-  private static class DoubleReference {
-    int intA;
-    int intB;
-
-    void set(int intA, int intB) {
-      this.intA = intA;
-      this.intB = intB;
-    }
-
-    void copy(DoubleReference ref) {
-      set(ref.intA, ref.intB);
-    }
-  }
-
-  private static void assertScratch(int a, int b, DoubleReference scratch) {
-    assertEquals(a, scratch.intA);
-    assertEquals(b, scratch.intB);
-  }
-
-  private static boolean offer(MPSCRingBuffer<DoubleReference> buf, int a, int b) {
-    return buf.offer(DoubleReference::set, a, b);
-  }
-
-  private static boolean poll(MPSCRingBuffer<DoubleReference> buf, DoubleReference scratch) {
-    return buf.poll(DoubleReference::copy, scratch);
   }
 }

@@ -1,8 +1,6 @@
 package stoufexis.sample.generated.server;
 
-import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 
 import stoufexis.jarpc.lib.server.*;

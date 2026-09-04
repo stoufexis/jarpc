@@ -7,8 +7,6 @@ public interface RefreshRequestEncode {
   void setKey(long key);
 
 
-
-
   default void set(RefreshRequestDecode decode) {
 
     setKey(decode.key());

@@ -12,6 +12,5 @@ public interface _Service_ConcurrentClient {
   interface _Type_ResponseHandler extends ClientHandler {
     boolean onResponse(_Type_ResponseDecode t);
   }
-
   /// foreachType
 }

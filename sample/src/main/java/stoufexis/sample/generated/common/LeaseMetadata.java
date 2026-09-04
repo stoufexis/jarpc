@@ -3,7 +3,6 @@ package stoufexis.sample.generated.common;
 public final class LeaseMetadata {
   private LeaseMetadata() {}
 
-
   public static final int ACQUIRE_REQUEST_SIZE = 24;
   public static final int ACQUIRE_RESPONSE_SIZE = 1;
   public static final int ACQUIRE_MESSAGE_TYPE = 1;

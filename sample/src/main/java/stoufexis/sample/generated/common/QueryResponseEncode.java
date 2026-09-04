@@ -6,12 +6,9 @@ public interface QueryResponseEncode {
 
   void setExists(boolean exists);
 
-
   void setValue(Bytes value);
 
-
   void setExpiresInSeconds(int expiresInSeconds);
-
 
 
 

@@ -19,17 +19,12 @@ public final class _Service_ConcurrentJarpcClient
     implements _Service_ConcurrentClient, Agent, AutoCloseable {
 
   private final _Service_SingleThreadedJarpcClient singleThreadedClient;
-
   /// foreachType
   private final MPSCRingBuffer<_Type_RequestScratch> _type_Requests;
-
   private final Long2ObjectHashMap<_Type_ResponseHandler> _type_Callbacks;
   private final _Type_Agent _type_Agent;
-
   /// foreachType
-
   private final ClientErrorHandler errorHandler;
-
   private final ConnectivityProbe connectivityProbe;
 
   _Service_ConcurrentJarpcClient(
@@ -63,15 +58,12 @@ public final class _Service_ConcurrentJarpcClient
             cfg.aeron(), cfg.requestEndpoint(), cfg.requestStreamId(), sub);
     return new _Service_ConcurrentJarpcClient(pub, sub, handler, queueCapacity);
   }
-
   /// foreachType
   @Override
   public boolean _type_(_Type_RequestDecode request, _Type_ResponseHandler response) {
     return _type_Requests.offer(_Type_RequestScratch::setter, request, response);
   }
-
   /// foreachType
-
   @Override
   public int doWork() {
     int work = 0;
@@ -110,11 +102,9 @@ public final class _Service_ConcurrentJarpcClient
     @Override
     public boolean onResponse(long correlationId, _Type_ResponseDecode t) {
       _Type_ResponseHandler callback = getCallback(correlationId);
-
       if (callback == null) return true;
 
       boolean dispatched = callback.onResponse(t);
-
       if (dispatched) removeCallback(correlationId);
 
       return dispatched;
@@ -129,7 +119,6 @@ public final class _Service_ConcurrentJarpcClient
     @Override
     protected boolean process(_Type_RequestScratch scratch) {
       _Type_RequestEncode encode = singleThreadedClient.claim_Type_(claimHandle);
-
       if (encode == null) return handleError();
 
       _type_Callbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());

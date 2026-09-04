@@ -8,7 +8,6 @@ public interface AcquireResponseEncode {
 
 
 
-
   default void set(AcquireResponseDecode decode) {
 
     setAcquired(decode.acquired());

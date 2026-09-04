@@ -1,5 +1,4 @@
 /// foreachType
-
 package _package_.common;
 
 import stoufexis.jarpc.lib.common.*;

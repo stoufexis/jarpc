@@ -2,10 +2,8 @@ package stoufexis.sample.generated.client;
 
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.logbuffer.BufferClaim;
 
 import org.agrona.DirectBuffer;
-import org.agrona.ErrorHandler;
 
 import stoufexis.jarpc.lib.client.*;
 import stoufexis.jarpc.lib.common.*;
@@ -18,26 +16,15 @@ import stoufexis.sample.generated.common.*;
 public final class LeaseSingleThreadedJarpcClient extends SingleThreadedJarpcClient
     implements LeaseSingleThreadedClient {
 
-
   private final AcquireRequestEncodeImpl acquireRequestEncode = new AcquireRequestEncodeImpl();
-
   private final AcquireResponseDecodeImpl acquireResponseDecode = new AcquireResponseDecodeImpl();
-
   private final AcquireResponseHandler acquireResponseHandler;
-
   private final RefreshRequestEncodeImpl refreshRequestEncode = new RefreshRequestEncodeImpl();
-
   private final RefreshResponseDecodeImpl refreshResponseDecode = new RefreshResponseDecodeImpl();
-
   private final RefreshResponseHandler refreshResponseHandler;
-
   private final QueryRequestEncodeImpl queryRequestEncode = new QueryRequestEncodeImpl();
-
   private final QueryResponseDecodeImpl queryResponseDecode = new QueryResponseDecodeImpl();
-
   private final QueryResponseHandler queryResponseHandler;
-
-
 
   LeaseSingleThreadedJarpcClient(
       Publication publication,

@@ -20,26 +20,17 @@ public final class LeaseConcurrentJarpcClient
 
   private final LeaseSingleThreadedJarpcClient singleThreadedClient;
 
-
   private final MPSCRingBuffer<AcquireRequestScratch> acquireRequests;
-
   private final Long2ObjectHashMap<AcquireResponseHandler> acquireCallbacks;
   private final AcquireAgent acquireAgent;
-
   private final MPSCRingBuffer<RefreshRequestScratch> refreshRequests;
-
   private final Long2ObjectHashMap<RefreshResponseHandler> refreshCallbacks;
   private final RefreshAgent refreshAgent;
-
   private final MPSCRingBuffer<QueryRequestScratch> queryRequests;
-
   private final Long2ObjectHashMap<QueryResponseHandler> queryCallbacks;
   private final QueryAgent queryAgent;
 
-
-
   private final ClientErrorHandler errorHandler;
-
   private final ConnectivityProbe connectivityProbe;
 
   LeaseConcurrentJarpcClient(
@@ -82,23 +73,18 @@ public final class LeaseConcurrentJarpcClient
     return new LeaseConcurrentJarpcClient(pub, sub, handler, queueCapacity);
   }
 
-
   @Override
   public boolean acquire(AcquireRequestDecode request, AcquireResponseHandler response) {
     return acquireRequests.offer(AcquireRequestScratch::setter, request, response);
   }
-
   @Override
   public boolean refresh(RefreshRequestDecode request, RefreshResponseHandler response) {
     return refreshRequests.offer(RefreshRequestScratch::setter, request, response);
   }
-
   @Override
   public boolean query(QueryRequestDecode request, QueryResponseHandler response) {
     return queryRequests.offer(QueryRequestScratch::setter, request, response);
   }
-
-
 
   @Override
   public int doWork() {
@@ -140,11 +126,9 @@ public final class LeaseConcurrentJarpcClient
     @Override
     public boolean onResponse(long correlationId, AcquireResponseDecode t) {
       AcquireResponseHandler callback = getCallback(correlationId);
-
       if (callback == null) return true;
 
       boolean dispatched = callback.onResponse(t);
-
       if (dispatched) removeCallback(correlationId);
 
       return dispatched;
@@ -159,7 +143,6 @@ public final class LeaseConcurrentJarpcClient
     @Override
     protected boolean process(AcquireRequestScratch scratch) {
       AcquireRequestEncode encode = singleThreadedClient.claimAcquire(claimHandle);
-
       if (encode == null) return handleError();
 
       acquireCallbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());
@@ -176,11 +159,9 @@ public final class LeaseConcurrentJarpcClient
     @Override
     public boolean onResponse(long correlationId, RefreshResponseDecode t) {
       RefreshResponseHandler callback = getCallback(correlationId);
-
       if (callback == null) return true;
 
       boolean dispatched = callback.onResponse(t);
-
       if (dispatched) removeCallback(correlationId);
 
       return dispatched;
@@ -195,7 +176,6 @@ public final class LeaseConcurrentJarpcClient
     @Override
     protected boolean process(RefreshRequestScratch scratch) {
       RefreshRequestEncode encode = singleThreadedClient.claimRefresh(claimHandle);
-
       if (encode == null) return handleError();
 
       refreshCallbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());
@@ -212,11 +192,9 @@ public final class LeaseConcurrentJarpcClient
     @Override
     public boolean onResponse(long correlationId, QueryResponseDecode t) {
       QueryResponseHandler callback = getCallback(correlationId);
-
       if (callback == null) return true;
 
       boolean dispatched = callback.onResponse(t);
-
       if (dispatched) removeCallback(correlationId);
 
       return dispatched;
@@ -231,7 +209,6 @@ public final class LeaseConcurrentJarpcClient
     @Override
     protected boolean process(QueryRequestScratch scratch) {
       QueryRequestEncode encode = singleThreadedClient.claimQuery(claimHandle);
-
       if (encode == null) return handleError();
 
       queryCallbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());

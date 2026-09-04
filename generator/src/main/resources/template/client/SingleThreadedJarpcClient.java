@@ -2,10 +2,8 @@ package _package_.client;
 
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.logbuffer.BufferClaim;
 
 import org.agrona.DirectBuffer;
-import org.agrona.ErrorHandler;
 
 import stoufexis.jarpc.lib.client.*;
 import stoufexis.jarpc.lib.common.*;
@@ -17,16 +15,11 @@ import _package_.common.*;
 
 public final class _Service_SingleThreadedJarpcClient extends SingleThreadedJarpcClient
     implements _Service_SingleThreadedClient {
-
   /// foreachType
   private final _Type_RequestEncodeImpl _type_RequestEncode = new _Type_RequestEncodeImpl();
-
   private final _Type_ResponseDecodeImpl _type_ResponseDecode = new _Type_ResponseDecodeImpl();
-
   private final _Type_ResponseHandler _type_ResponseHandler;
-
   /// foreachType
-
   _Service_SingleThreadedJarpcClient(
       Publication publication,
       Subscription subscription,

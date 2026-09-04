@@ -8,7 +8,6 @@ public final class QueryRequestScratch implements QueryRequestDecode, QueryReque
   private long key = 0;
 
 
-
   private LeaseConcurrentClient.QueryResponseHandler handler;
 
   public static void copy(QueryRequestScratch scratch1, QueryRequestScratch scratch2) {
@@ -37,8 +36,6 @@ public final class QueryRequestScratch implements QueryRequestDecode, QueryReque
   public void setKey(long key) {
     this.key = key;
   }
-
-
 
 
   public void setHandler(LeaseConcurrentClient.QueryResponseHandler handler) {

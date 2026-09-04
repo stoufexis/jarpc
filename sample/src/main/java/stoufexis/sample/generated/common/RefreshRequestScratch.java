@@ -8,7 +8,6 @@ public final class RefreshRequestScratch implements RefreshRequestDecode, Refres
   private long key = 0;
 
 
-
   private LeaseConcurrentClient.RefreshResponseHandler handler;
 
   public static void copy(RefreshRequestScratch scratch1, RefreshRequestScratch scratch2) {
@@ -37,8 +36,6 @@ public final class RefreshRequestScratch implements RefreshRequestDecode, Refres
   public void setKey(long key) {
     this.key = key;
   }
-
-
 
 
   public void setHandler(LeaseConcurrentClient.RefreshResponseHandler handler) {

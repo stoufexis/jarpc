@@ -8,7 +8,6 @@ public interface RefreshResponseEncode {
 
 
 
-
   default void set(RefreshResponseDecode decode) {
 
     setAcquired(decode.acquired());

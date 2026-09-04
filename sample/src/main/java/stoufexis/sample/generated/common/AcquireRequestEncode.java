@@ -6,10 +6,7 @@ public interface AcquireRequestEncode {
 
   void setKey(long key);
 
-
   void setValue(Bytes value);
-
-
 
 
   default void set(AcquireRequestDecode decode) {

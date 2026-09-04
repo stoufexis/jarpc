@@ -7,9 +7,7 @@ public final class AcquireRequestScratch implements AcquireRequestDecode, Acquir
 
   private long key = 0;
 
-
   private Bytes value = new Bytes(16);
-
 
 
   private LeaseConcurrentClient.AcquireResponseHandler handler;
@@ -41,7 +39,6 @@ public final class AcquireRequestScratch implements AcquireRequestDecode, Acquir
     this.key = key;
   }
 
-
   @Override
   public Bytes value() {
     return value;
@@ -51,8 +48,6 @@ public final class AcquireRequestScratch implements AcquireRequestDecode, Acquir
   public void setValue(Bytes value) {
     this.value.copy(value);
   }
-
-
 
 
   public void setHandler(LeaseConcurrentClient.AcquireResponseHandler handler) {

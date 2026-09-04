@@ -12,19 +12,16 @@ public interface LeaseConcurrentClient {
   interface AcquireResponseHandler extends ClientHandler {
     boolean onResponse(AcquireResponseDecode t);
   }
-
   boolean refresh(RefreshRequestDecode request, RefreshResponseHandler response);
 
   interface RefreshResponseHandler extends ClientHandler {
     boolean onResponse(RefreshResponseDecode t);
   }
-
   boolean query(QueryRequestDecode request, QueryResponseHandler response);
 
   interface QueryResponseHandler extends ClientHandler {
     boolean onResponse(QueryResponseDecode t);
   }
-
 
 }
 

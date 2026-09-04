@@ -8,11 +8,12 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import stoufexis.jarpc.lib.client.ClientErrorHandler;
+import stoufexis.jarpc.lib.client.concurrent.IsConnected;
 import stoufexis.jarpc.lib.common.Poll;
 import stoufexis.jarpc.lib.common.Publisher;
 import stoufexis.jarpc.lib.common.internal.MessageHeaderCodec;
 
-public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll {
+public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll, IsConnected {
 
   private final Publication publication;
   private final Subscription subscription;
@@ -53,6 +54,7 @@ public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll {
     }
   }
 
+  @Override
   public final boolean isConnected() {
     return publication.isConnected() && subscription.isConnected();
   }

@@ -1,15 +1,13 @@
 package stoufexis.jarpc.lib.client.concurrent;
 
-import stoufexis.jarpc.lib.client.singlethread.SingleThreadedJarpcClient;
-
 public final class ConnectivityProbe {
 
-  private final SingleThreadedJarpcClient singleThreadedClient;
+  private final IsConnected service;
   private volatile boolean isConnected = false;
   private boolean isConnectedLocal = false;
 
-  public ConnectivityProbe(SingleThreadedJarpcClient singleThreadedClient) {
-    this.singleThreadedClient = singleThreadedClient;
+  public ConnectivityProbe(IsConnected service) {
+    this.service = service;
   }
 
   /**
@@ -18,7 +16,7 @@ public final class ConnectivityProbe {
    */
   public void probeConnected() {
     // avoids a volatile read per duty cycle by using a non-volatile as reference
-    if (!isConnectedLocal && singleThreadedClient.isConnected()) {
+    if (!isConnectedLocal && service.isConnected()) {
       isConnected = true;
       isConnectedLocal = true;
     }

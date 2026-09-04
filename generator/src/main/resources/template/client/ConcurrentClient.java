@@ -1,6 +1,7 @@
 package _package_.client;
 
 import stoufexis.jarpc.lib.client.*;
+import stoufexis.jarpc.lib.client.concurrent.*;
 import stoufexis.jarpc.lib.common.*;
 
 import _package_.common.*;

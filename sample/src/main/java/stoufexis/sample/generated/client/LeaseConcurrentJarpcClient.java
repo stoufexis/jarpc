@@ -18,7 +18,7 @@ import static stoufexis.jarpc.lib.common.Util.createExclusiveClientPublication;
 // FIXME add timeouts and ad-hoc cancel
 
 public final class LeaseConcurrentJarpcClient
-    implements LeaseConcurrentClient, Agent, AutoCloseable {
+    implements LeaseConcurrentClient, Agent, AutoCloseable, IsConnected {
 
   private final LeaseSingleThreadedJarpcClient singleThreadedClient;
 
@@ -108,6 +108,7 @@ public final class LeaseConcurrentJarpcClient
     singleThreadedClient.close();
   }
 
+  @Override
   public boolean isConnected() {
     return connectivityProbe.isConnected();
   }

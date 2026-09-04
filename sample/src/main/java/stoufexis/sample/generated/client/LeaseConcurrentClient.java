@@ -1,6 +1,7 @@
 package stoufexis.sample.generated.client;
 
 import stoufexis.jarpc.lib.client.*;
+import stoufexis.jarpc.lib.client.concurrent.*;
 import stoufexis.jarpc.lib.common.*;
 
 import stoufexis.sample.generated.common.*;

@@ -6,6 +6,7 @@ import io.aeron.Subscription;
 import org.agrona.DirectBuffer;
 
 import stoufexis.jarpc.lib.client.*;
+import stoufexis.jarpc.lib.client.singlethread.SingleThreadedJarpcClient;
 import stoufexis.jarpc.lib.common.*;
 
 import static stoufexis.jarpc.lib.common.Util.*;

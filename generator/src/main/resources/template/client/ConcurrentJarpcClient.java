@@ -6,6 +6,7 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 
 import stoufexis.jarpc.lib.client.*;
+import stoufexis.jarpc.lib.client.concurrent.*;
 import stoufexis.jarpc.lib.client.ringbuffer.*;
 import stoufexis.jarpc.lib.common.*;
 

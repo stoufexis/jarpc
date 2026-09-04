@@ -1,4 +1,4 @@
-package stoufexis.jarpc.lib.client;
+package stoufexis.jarpc.lib.client.singlethread;
 
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Publication;
@@ -7,9 +7,10 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import stoufexis.jarpc.lib.common.MessageHeaderCodec;
+import stoufexis.jarpc.lib.client.ClientErrorHandler;
 import stoufexis.jarpc.lib.common.Poll;
 import stoufexis.jarpc.lib.common.Publisher;
+import stoufexis.jarpc.lib.common.internal.MessageHeaderCodec;
 
 public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll {
 

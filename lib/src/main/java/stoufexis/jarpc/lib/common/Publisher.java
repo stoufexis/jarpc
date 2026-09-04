@@ -4,7 +4,8 @@ import static stoufexis.jarpc.lib.common.Util.interpretErrorCode;
 
 import io.aeron.Publication;
 import org.agrona.MutableDirectBuffer;
-import stoufexis.jarpc.lib.server.ServerPublications;
+import stoufexis.jarpc.lib.common.internal.MessageHeaderCodec;
+import stoufexis.jarpc.lib.server.internal.ServerPublications;
 
 public final class Publisher {
   private final Publication publication;

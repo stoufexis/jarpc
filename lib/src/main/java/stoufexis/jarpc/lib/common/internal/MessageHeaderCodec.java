@@ -1,4 +1,4 @@
-package stoufexis.jarpc.lib.common;
+package stoufexis.jarpc.lib.common.internal;
 
 import static stoufexis.jarpc.lib.common.Util.illegal;
 

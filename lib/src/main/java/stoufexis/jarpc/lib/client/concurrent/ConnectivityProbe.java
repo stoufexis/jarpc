@@ -1,4 +1,6 @@
-package stoufexis.jarpc.lib.client;
+package stoufexis.jarpc.lib.client.concurrent;
+
+import stoufexis.jarpc.lib.client.singlethread.SingleThreadedJarpcClient;
 
 public final class ConnectivityProbe {
 

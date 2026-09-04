@@ -7,8 +7,10 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import stoufexis.jarpc.lib.common.MessageHeaderCodec;
+import stoufexis.jarpc.lib.common.ConnectionConfig;
 import stoufexis.jarpc.lib.common.Poll;
+import stoufexis.jarpc.lib.common.internal.MessageHeaderCodec;
+import stoufexis.jarpc.lib.server.internal.ServerPublications;
 
 public abstract class SingleThreadedJarpcServer implements AutoCloseable, Poll {
   protected final ServerPublications publications;
@@ -21,11 +23,12 @@ public abstract class SingleThreadedJarpcServer implements AutoCloseable, Poll {
 
   protected SingleThreadedJarpcServer(
       Subscription subscription,
-      ServerPublications publications,
       Images images,
-      ServerStateMachine serverStateMachine) {
+      ServerStateMachine serverStateMachine,
+      ConnectionConfig cfg) {
     this.subscription = subscription;
-    this.publications = publications;
+    this.publications =
+        new ServerPublications(cfg.responseControl(), cfg.aeron(), cfg.responseStreamId());
     this.images = images;
     this.serverStateMachine = serverStateMachine;
   }

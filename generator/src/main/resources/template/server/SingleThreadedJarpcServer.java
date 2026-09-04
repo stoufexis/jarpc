@@ -24,10 +24,10 @@ public class _Service_SingleThreadedJarpcServer extends SingleThreadedJarpcServe
 
   _Service_SingleThreadedJarpcServer(
       Subscription subscription,
-      ServerPublications publications,
       Images images,
-      _Service_SingleThreadedStateMachine stateMachine) {
-    super(subscription, publications, images, stateMachine);
+      _Service_SingleThreadedStateMachine stateMachine,
+      ConnectionConfig connectionConfig) {
+    super(subscription, images, stateMachine, connectionConfig);
     this.stateMachine = stateMachine;
   }
 
@@ -40,9 +40,9 @@ public class _Service_SingleThreadedJarpcServer extends SingleThreadedJarpcServe
 
     return new _Service_SingleThreadedJarpcServer(
         serverSubscription,
-        new ServerPublications(cfg.responseControl(), cfg.aeron(), cfg.responseStreamId()),
         images,
-        stateMachine);
+        stateMachine,
+        cfg);
   }
 
   protected boolean onMessage(

@@ -1,4 +1,4 @@
-package stoufexis.jarpc.lib.server;
+package stoufexis.jarpc.lib.server.internal;
 
 import static stoufexis.jarpc.lib.common.Util.createExclusiveServerPublication;
 

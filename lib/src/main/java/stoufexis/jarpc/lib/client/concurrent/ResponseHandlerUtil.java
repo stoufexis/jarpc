@@ -1,8 +1,11 @@
-package stoufexis.jarpc.lib.client;
+package stoufexis.jarpc.lib.client.concurrent;
 
 import org.agrona.collections.Long2ObjectHashMap;
+import stoufexis.jarpc.lib.client.ClientErrorHandler;
+import stoufexis.jarpc.lib.client.OnClientDecodeError;
 
-public abstract class ResponseHandlerUtil<T extends ClientHandler> implements ClientHandler {
+public abstract class ResponseHandlerUtil<T extends OnClientDecodeError>
+    implements OnClientDecodeError {
   private final Long2ObjectHashMap<T> callbacks;
   private final ClientErrorHandler errorHandler;
   private final String label;
@@ -36,7 +39,7 @@ public abstract class ResponseHandlerUtil<T extends ClientHandler> implements Cl
 
     boolean dispatched = callback.onClientDecodeError(correlationId);
 
-    if (dispatched) callbacks.remove(correlationId);
+    if (dispatched) removeCallback(correlationId);
 
     return dispatched;
   }

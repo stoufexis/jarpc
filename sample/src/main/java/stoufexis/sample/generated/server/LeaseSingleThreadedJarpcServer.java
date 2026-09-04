@@ -28,10 +28,10 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
 
   LeaseSingleThreadedJarpcServer(
       Subscription subscription,
-      ServerPublications publications,
       Images images,
-      LeaseSingleThreadedStateMachine stateMachine) {
-    super(subscription, publications, images, stateMachine);
+      LeaseSingleThreadedStateMachine stateMachine,
+      ConnectionConfig connectionConfig) {
+    super(subscription, images, stateMachine, connectionConfig);
     this.stateMachine = stateMachine;
   }
 
@@ -44,9 +44,9 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
 
     return new LeaseSingleThreadedJarpcServer(
         serverSubscription,
-        new ServerPublications(cfg.responseControl(), cfg.aeron(), cfg.responseStreamId()),
         images,
-        stateMachine);
+        stateMachine,
+        cfg);
   }
 
   protected boolean onMessage(

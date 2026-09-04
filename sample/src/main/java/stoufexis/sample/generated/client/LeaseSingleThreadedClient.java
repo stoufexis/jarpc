@@ -9,17 +9,17 @@ public interface LeaseSingleThreadedClient extends Poll {
 
   AcquireRequestEncode claimAcquire(ClaimHandle claimHandle);
 
-  interface AcquireResponseHandler extends ClientHandler {
+  interface AcquireResponseHandler extends OnClientDecodeError {
     boolean onResponse(long correlationId, AcquireResponseDecode t);
   }
   RefreshRequestEncode claimRefresh(ClaimHandle claimHandle);
 
-  interface RefreshResponseHandler extends ClientHandler {
+  interface RefreshResponseHandler extends OnClientDecodeError {
     boolean onResponse(long correlationId, RefreshResponseDecode t);
   }
   QueryRequestEncode claimQuery(ClaimHandle claimHandle);
 
-  interface QueryResponseHandler extends ClientHandler {
+  interface QueryResponseHandler extends OnClientDecodeError {
     boolean onResponse(long correlationId, QueryResponseDecode t);
   }
 

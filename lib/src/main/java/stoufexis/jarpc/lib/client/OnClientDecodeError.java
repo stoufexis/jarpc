@@ -1,5 +1,5 @@
 package stoufexis.jarpc.lib.client;
 
-public interface ClientHandler {
+public interface OnClientDecodeError {
   boolean onClientDecodeError(long correlationId);
 }

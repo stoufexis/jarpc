@@ -6,6 +6,7 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 
 import stoufexis.jarpc.lib.client.*;
+import stoufexis.jarpc.lib.client.ringbuffer.*;
 import stoufexis.jarpc.lib.common.*;
 
 import stoufexis.sample.generated.common.*;
@@ -20,18 +21,16 @@ public final class LeaseConcurrentJarpcClient
 
   private final LeaseSingleThreadedJarpcClient singleThreadedClient;
 
-  private final MPSCRingBuffer<AcquireRequestScratch> acquireRequests;
   private final Long2ObjectHashMap<AcquireResponseHandler> acquireCallbacks;
-  private final AcquireAgent acquireAgent;
-  private final MPSCRingBuffer<RefreshRequestScratch> refreshRequests;
+  private final AcquireRingBuffer acquireRingBuffer;
   private final Long2ObjectHashMap<RefreshResponseHandler> refreshCallbacks;
-  private final RefreshAgent refreshAgent;
-  private final MPSCRingBuffer<QueryRequestScratch> queryRequests;
+  private final RefreshRingBuffer refreshRingBuffer;
   private final Long2ObjectHashMap<QueryResponseHandler> queryCallbacks;
-  private final QueryAgent queryAgent;
+  private final QueryRingBuffer queryRingBuffer;
 
   private final ClientErrorHandler errorHandler;
   private final ConnectivityProbe connectivityProbe;
+  private final int queueCapacity;
 
   LeaseConcurrentJarpcClient(
       Publication publication,
@@ -40,14 +39,11 @@ public final class LeaseConcurrentJarpcClient
       int queueCapacity) {
 
     this.acquireCallbacks = new Long2ObjectHashMap<>();
-    this.acquireRequests = new MPSCRingBuffer<>(queueCapacity, AcquireRequestScratch::new);
-    this.acquireAgent = new AcquireAgent();
+    this.acquireRingBuffer = new AcquireRingBuffer();
     this.refreshCallbacks = new Long2ObjectHashMap<>();
-    this.refreshRequests = new MPSCRingBuffer<>(queueCapacity, RefreshRequestScratch::new);
-    this.refreshAgent = new RefreshAgent();
+    this.refreshRingBuffer = new RefreshRingBuffer();
     this.queryCallbacks = new Long2ObjectHashMap<>();
-    this.queryRequests = new MPSCRingBuffer<>(queueCapacity, QueryRequestScratch::new);
-    this.queryAgent = new QueryAgent();
+    this.queryRingBuffer = new QueryRingBuffer();
 
     this.singleThreadedClient =
         new LeaseSingleThreadedJarpcClient(
@@ -61,6 +57,7 @@ public final class LeaseConcurrentJarpcClient
             errorHandler);
     this.errorHandler = errorHandler;
     this.connectivityProbe = new ConnectivityProbe(singleThreadedClient);
+    this.queueCapacity = queueCapacity;
   }
 
   public static LeaseConcurrentJarpcClient create(
@@ -75,15 +72,15 @@ public final class LeaseConcurrentJarpcClient
 
   @Override
   public boolean acquire(AcquireRequestDecode request, AcquireResponseHandler response) {
-    return acquireRequests.offer(AcquireRequestScratch::setter, request, response);
+    return acquireRingBuffer.offer(AcquireRequestScratch::setter, request, response);
   }
   @Override
   public boolean refresh(RefreshRequestDecode request, RefreshResponseHandler response) {
-    return refreshRequests.offer(RefreshRequestScratch::setter, request, response);
+    return refreshRingBuffer.offer(RefreshRequestScratch::setter, request, response);
   }
   @Override
   public boolean query(QueryRequestDecode request, QueryResponseHandler response) {
-    return queryRequests.offer(QueryRequestScratch::setter, request, response);
+    return queryRingBuffer.offer(QueryRequestScratch::setter, request, response);
   }
 
   @Override
@@ -92,11 +89,9 @@ public final class LeaseConcurrentJarpcClient
 
     connectivityProbe.probeConnected();
 
-    // Use this instead of CompositeAgent to monomorphize all calls to doWork
-
-    work += acquireAgent.doWork();
-    work += refreshAgent.doWork();
-    work += queryAgent.doWork();
+    work += acquireRingBuffer.doWork();
+    work += refreshRingBuffer.doWork();
+    work += queryRingBuffer.doWork();
 
     work += singleThreadedClient.poll(1);
     return work;
@@ -135,15 +130,15 @@ public final class LeaseConcurrentJarpcClient
     }
   }
 
-  private final class AcquireAgent extends MPSCBufferPollAgent<AcquireRequestScratch> {
-    AcquireAgent() {
-      super(acquireRequests, new AcquireRequestScratch(), AcquireRequestScratch::copy, errorHandler);
+  private final class AcquireRingBuffer extends MPSCBufferPollAgent<AcquireRequestScratch> {
+    AcquireRingBuffer() {
+      super(AcquireRequestScratch::new, AcquireRequestScratch::copy, errorHandler, queueCapacity);
     }
 
     @Override
-    protected boolean process(AcquireRequestScratch scratch) {
+    protected boolean process(AcquireRequestScratch scratch, OnError onError) {
       AcquireRequestEncode encode = singleThreadedClient.claimAcquire(claimHandle);
-      if (encode == null) return handleError();
+      if (encode == null) return onError.run();
 
       acquireCallbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());
       encode.set(scratch);
@@ -168,15 +163,15 @@ public final class LeaseConcurrentJarpcClient
     }
   }
 
-  private final class RefreshAgent extends MPSCBufferPollAgent<RefreshRequestScratch> {
-    RefreshAgent() {
-      super(refreshRequests, new RefreshRequestScratch(), RefreshRequestScratch::copy, errorHandler);
+  private final class RefreshRingBuffer extends MPSCBufferPollAgent<RefreshRequestScratch> {
+    RefreshRingBuffer() {
+      super(RefreshRequestScratch::new, RefreshRequestScratch::copy, errorHandler, queueCapacity);
     }
 
     @Override
-    protected boolean process(RefreshRequestScratch scratch) {
+    protected boolean process(RefreshRequestScratch scratch, OnError onError) {
       RefreshRequestEncode encode = singleThreadedClient.claimRefresh(claimHandle);
-      if (encode == null) return handleError();
+      if (encode == null) return onError.run();
 
       refreshCallbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());
       encode.set(scratch);
@@ -201,15 +196,15 @@ public final class LeaseConcurrentJarpcClient
     }
   }
 
-  private final class QueryAgent extends MPSCBufferPollAgent<QueryRequestScratch> {
-    QueryAgent() {
-      super(queryRequests, new QueryRequestScratch(), QueryRequestScratch::copy, errorHandler);
+  private final class QueryRingBuffer extends MPSCBufferPollAgent<QueryRequestScratch> {
+    QueryRingBuffer() {
+      super(QueryRequestScratch::new, QueryRequestScratch::copy, errorHandler, queueCapacity);
     }
 
     @Override
-    protected boolean process(QueryRequestScratch scratch) {
+    protected boolean process(QueryRequestScratch scratch, OnError onError) {
       QueryRequestEncode encode = singleThreadedClient.claimQuery(claimHandle);
-      if (encode == null) return handleError();
+      if (encode == null) return onError.run();
 
       queryCallbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());
       encode.set(scratch);

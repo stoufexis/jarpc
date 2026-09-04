@@ -6,6 +6,7 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 
 import stoufexis.jarpc.lib.client.*;
+import stoufexis.jarpc.lib.client.ringbuffer.*;
 import stoufexis.jarpc.lib.common.*;
 
 import _package_.common.*;
@@ -20,12 +21,12 @@ public final class _Service_ConcurrentJarpcClient
 
   private final _Service_SingleThreadedJarpcClient singleThreadedClient;
   /// foreachType
-  private final MPSCRingBuffer<_Type_RequestScratch> _type_Requests;
   private final Long2ObjectHashMap<_Type_ResponseHandler> _type_Callbacks;
-  private final _Type_Agent _type_Agent;
+  private final _Type_RingBuffer _type_RingBuffer;
   /// foreachType
   private final ClientErrorHandler errorHandler;
   private final ConnectivityProbe connectivityProbe;
+  private final int queueCapacity;
 
   _Service_ConcurrentJarpcClient(
       Publication publication,
@@ -34,8 +35,7 @@ public final class _Service_ConcurrentJarpcClient
       int queueCapacity) {
     /// foreachType
     this._type_Callbacks = new Long2ObjectHashMap<>();
-    this._type_Requests = new MPSCRingBuffer<>(queueCapacity, _Type_RequestScratch::new);
-    this._type_Agent = new _Type_Agent();
+    this._type_RingBuffer = new _Type_RingBuffer();
     /// foreachType
     this.singleThreadedClient =
         new _Service_SingleThreadedJarpcClient(
@@ -47,6 +47,7 @@ public final class _Service_ConcurrentJarpcClient
             errorHandler);
     this.errorHandler = errorHandler;
     this.connectivityProbe = new ConnectivityProbe(singleThreadedClient);
+    this.queueCapacity = queueCapacity;
   }
 
   public static _Service_ConcurrentJarpcClient create(
@@ -61,7 +62,7 @@ public final class _Service_ConcurrentJarpcClient
   /// foreachType
   @Override
   public boolean _type_(_Type_RequestDecode request, _Type_ResponseHandler response) {
-    return _type_Requests.offer(_Type_RequestScratch::setter, request, response);
+    return _type_RingBuffer.offer(_Type_RequestScratch::setter, request, response);
   }
   /// foreachType
   @Override
@@ -69,10 +70,8 @@ public final class _Service_ConcurrentJarpcClient
     int work = 0;
 
     connectivityProbe.probeConnected();
-
-    // Use this instead of CompositeAgent to monomorphize all calls to doWork
     /// foreachType
-    work += _type_Agent.doWork();
+    work += _type_RingBuffer.doWork();
     /// foreachType
     work += singleThreadedClient.poll(1);
     return work;
@@ -111,15 +110,15 @@ public final class _Service_ConcurrentJarpcClient
     }
   }
 
-  private final class _Type_Agent extends MPSCBufferPollAgent<_Type_RequestScratch> {
-    _Type_Agent() {
-      super(_type_Requests, new _Type_RequestScratch(), _Type_RequestScratch::copy, errorHandler);
+  private final class _Type_RingBuffer extends MPSCBufferPollAgent<_Type_RequestScratch> {
+    _Type_RingBuffer() {
+      super(_Type_RequestScratch::new, _Type_RequestScratch::copy, errorHandler, queueCapacity);
     }
 
     @Override
-    protected boolean process(_Type_RequestScratch scratch) {
+    protected boolean process(_Type_RequestScratch scratch, OnError onError) {
       _Type_RequestEncode encode = singleThreadedClient.claim_Type_(claimHandle);
-      if (encode == null) return handleError();
+      if (encode == null) return onError.run();
 
       _type_Callbacks.put(claimHandle.getCorrelationId(), scratch.getHandler());
       encode.set(scratch);

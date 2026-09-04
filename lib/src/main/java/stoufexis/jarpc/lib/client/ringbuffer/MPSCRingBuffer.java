@@ -1,4 +1,4 @@
-package stoufexis.jarpc.lib.client;
+package stoufexis.jarpc.lib.client.ringbuffer;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
@@ -8,18 +8,10 @@ import java.util.function.Supplier;
  * Use this instead of a ManyToOneRingBuffer if you need to pass objects that cannot be serialized,
  * e.g. callbacks.
  */
-public final class MPSCRingBuffer<E> {
+final class MPSCRingBuffer<E> {
 
   // FIXME This implementation is fairly unoptimized. Theres false sharing, and not granular enough
   // atomic operations
-
-  public interface Consume2<A, B> {
-    void accept(A a, B b);
-  }
-
-  public interface Consume3<A, B, C> {
-    void accept(A a, B b, C c);
-  }
 
   private final E[] arr;
   private final AtomicLongArray readySeq;
@@ -29,8 +21,7 @@ public final class MPSCRingBuffer<E> {
   private final AtomicLong producerSeq = new AtomicLong();
   private volatile long consumerSeq = 0;
 
-  @SuppressWarnings("unchecked")
-  public MPSCRingBuffer(int capacity, Supplier<E> factory) {
+  MPSCRingBuffer(int capacity, Supplier<E> factory) {
     if (capacity <= 0 || (capacity & (capacity - 1)) != 0) {
       throw new IllegalArgumentException("capacity must be a positive power of 2");
     }
@@ -44,7 +35,7 @@ public final class MPSCRingBuffer<E> {
     }
   }
 
-  public <B, C> boolean offer(Consume3<E, B, C> filler, B b, C c) {
+  <B, C> boolean offer(Consume3<E, B, C> filler, B b, C c) {
     for (; ; ) {
       long seq = producerSeq.get();
 
@@ -61,7 +52,7 @@ public final class MPSCRingBuffer<E> {
     }
   }
 
-  public <B> boolean poll(Consume2<B, E> copy, B b) {
+  <B> boolean poll(Consume2<B, E> copy, B b) {
     long seq = consumerSeq;
     int idx = index(seq);
 

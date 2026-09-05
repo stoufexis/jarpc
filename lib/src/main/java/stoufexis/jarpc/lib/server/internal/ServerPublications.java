@@ -6,26 +6,24 @@ import io.aeron.Aeron;
 import io.aeron.Publication;
 import org.agrona.CloseHelper;
 import org.agrona.collections.Long2ObjectHashMap;
+import stoufexis.jarpc.lib.common.ConnectionConfig;
 
 public final class ServerPublications {
 
   private final Long2ObjectHashMap<Publication> map = new Long2ObjectHashMap<>();
 
-  private final String responseControl;
   private final Aeron aeron;
-  private final int responseStreamId;
+  private final ConnectionConfig connectionConfig;
 
-  public ServerPublications(String responseControl, Aeron aeron, int responseStreamId) {
-    this.responseControl = responseControl;
+  public ServerPublications(Aeron aeron, ConnectionConfig connectionConfig) {
     this.aeron = aeron;
-    this.responseStreamId = responseStreamId;
+    this.connectionConfig = connectionConfig;
   }
 
   public Publication ensurePublicationExists(long clientId) {
     Publication publication = map.get(clientId);
     if (null == publication) {
-      publication =
-          createExclusiveServerPublication(aeron, clientId, responseControl, responseStreamId);
+      publication = createExclusiveServerPublication(aeron, clientId, connectionConfig);
       map.put(clientId, publication);
     }
     return publication;

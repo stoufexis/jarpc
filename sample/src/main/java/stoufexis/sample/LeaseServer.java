@@ -1,5 +1,6 @@
 package stoufexis.sample;
 
+import io.aeron.Aeron;
 import java.util.ArrayDeque;
 import java.util.concurrent.TimeUnit;
 import org.agrona.collections.Long2LongHashMap;
@@ -15,9 +16,10 @@ public class LeaseServer implements Agent, AutoCloseable {
   private final LeaseSingleThreadedJarpcServer singleThreadedJarpcServer;
   private final StateMachine stateMachine;
 
-  public LeaseServer(ConnectionConfig cfg) {
+  public LeaseServer(Aeron aeron, ConnectionConfig cfg) {
     this.stateMachine = new StateMachine();
-    this.singleThreadedJarpcServer = LeaseSingleThreadedJarpcServer.create(cfg, stateMachine);
+    this.singleThreadedJarpcServer =
+        LeaseSingleThreadedJarpcServer.create(aeron, cfg, stateMachine);
   }
 
   @Override

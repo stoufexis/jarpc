@@ -1,5 +1,6 @@
 package _package_.client;
 
+import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 
@@ -35,16 +36,14 @@ public final class _Service_SingleThreadedJarpcClient extends SingleThreadedJarp
   }
 
   public static _Service_SingleThreadedJarpcClient create(
+      Aeron aeron,
       ConnectionConfig cfg,
       /// foreachType
       _Type_ResponseHandler _type_Handler,
       /// foreachType
       ClientErrorHandler errorHandler) {
-    Subscription sub =
-        createClientSubscription(cfg.aeron(), cfg.responseControl(), cfg.responseStreamId());
-    Publication pub =
-        createExclusiveClientPublication(
-            cfg.aeron(), cfg.requestEndpoint(), cfg.requestStreamId(), sub);
+    Subscription sub = createClientSubscription(aeron, cfg);
+    Publication pub = createExclusiveClientPublication(aeron, sub, cfg);
     return new _Service_SingleThreadedJarpcClient(
         pub,
         sub,

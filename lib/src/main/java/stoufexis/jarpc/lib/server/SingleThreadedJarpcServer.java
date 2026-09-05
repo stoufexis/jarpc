@@ -1,5 +1,6 @@
 package stoufexis.jarpc.lib.server;
 
+import io.aeron.Aeron;
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Image;
 import io.aeron.Subscription;
@@ -22,13 +23,13 @@ public abstract class SingleThreadedJarpcServer implements AutoCloseable, Poll {
       new ControlledFragmentAssembler(this::onFragment);
 
   protected SingleThreadedJarpcServer(
+      Aeron aeron,
       Subscription subscription,
       Images images,
       ServerStateMachine serverStateMachine,
       ConnectionConfig cfg) {
     this.subscription = subscription;
-    this.publications =
-        new ServerPublications(cfg.responseControl(), cfg.aeron(), cfg.responseStreamId());
+    this.publications = new ServerPublications(aeron, cfg);
     this.images = images;
     this.serverStateMachine = serverStateMachine;
   }

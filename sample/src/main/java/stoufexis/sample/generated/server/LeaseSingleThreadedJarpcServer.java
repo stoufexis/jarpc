@@ -1,6 +1,7 @@
 package stoufexis.sample.generated.server;
 
 import io.aeron.Subscription;
+import io.aeron.Aeron;
 import org.agrona.DirectBuffer;
 
 import stoufexis.jarpc.lib.server.*;
@@ -27,23 +28,21 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
 
 
   LeaseSingleThreadedJarpcServer(
+      Aeron aeron,
       Subscription subscription,
       Images images,
       LeaseSingleThreadedStateMachine stateMachine,
       ConnectionConfig connectionConfig) {
-    super(subscription, images, stateMachine, connectionConfig);
+    super(aeron, subscription, images, stateMachine, connectionConfig);
     this.stateMachine = stateMachine;
   }
 
   public static LeaseSingleThreadedJarpcServer create(
-      ConnectionConfig cfg, LeaseSingleThreadedStateMachine stateMachine) {
+      Aeron aeron, ConnectionConfig cfg, LeaseSingleThreadedStateMachine stateMachine) {
     Images images = new Images();
-
-    Subscription serverSubscription =
-        createServerSubscription(cfg.aeron(), images, cfg.requestEndpoint(), cfg.requestStreamId());
-
     return new LeaseSingleThreadedJarpcServer(
-        serverSubscription,
+        aeron,
+        createServerSubscription(aeron, images, cfg),
         images,
         stateMachine,
         cfg);

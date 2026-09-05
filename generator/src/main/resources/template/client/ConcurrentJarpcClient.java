@@ -1,5 +1,6 @@
 package _package_.client;
 
+import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -52,12 +53,9 @@ public final class _Service_ConcurrentJarpcClient
   }
 
   public static _Service_ConcurrentJarpcClient create(
-      ConnectionConfig cfg, ClientErrorHandler handler, int queueCapacity) {
-    Subscription sub =
-        createClientSubscription(cfg.aeron(), cfg.responseControl(), cfg.responseStreamId());
-    Publication pub =
-        createExclusiveClientPublication(
-            cfg.aeron(), cfg.requestEndpoint(), cfg.requestStreamId(), sub);
+      Aeron aeron, ConnectionConfig cfg, ClientErrorHandler handler, int queueCapacity) {
+    Subscription sub = createClientSubscription(aeron, cfg);
+    Publication pub = createExclusiveClientPublication(aeron, sub, cfg);
     return new _Service_ConcurrentJarpcClient(pub, sub, handler, queueCapacity);
   }
   /// foreachType

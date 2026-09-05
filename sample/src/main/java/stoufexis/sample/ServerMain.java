@@ -9,7 +9,7 @@ public final class ServerMain {
   static void main() {
     try (MediaDriver mediaDriver = Shared.mediaDriver();
         Aeron aeron = Shared.aeron(mediaDriver);
-        LeaseServer server = new LeaseServer(Shared.connectivityConfig(aeron));
+        LeaseServer server = new LeaseServer(aeron, Shared.connectivityConfig);
         AgentRunner agentRunner = Shared.runner(server)) {
       agentRunner.run();
     }

@@ -1,5 +1,6 @@
 package stoufexis.sample.generated.client;
 
+import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 
@@ -45,6 +46,7 @@ public final class LeaseSingleThreadedJarpcClient extends SingleThreadedJarpcCli
   }
 
   public static LeaseSingleThreadedJarpcClient create(
+      Aeron aeron,
       ConnectionConfig cfg,
 
       AcquireResponseHandler acquireHandler,
@@ -52,11 +54,8 @@ public final class LeaseSingleThreadedJarpcClient extends SingleThreadedJarpcCli
       QueryResponseHandler queryHandler,
 
       ClientErrorHandler errorHandler) {
-    Subscription sub =
-        createClientSubscription(cfg.aeron(), cfg.responseControl(), cfg.responseStreamId());
-    Publication pub =
-        createExclusiveClientPublication(
-            cfg.aeron(), cfg.requestEndpoint(), cfg.requestStreamId(), sub);
+    Subscription sub = createClientSubscription(aeron, cfg);
+    Publication pub = createExclusiveClientPublication(aeron, sub, cfg);
     return new LeaseSingleThreadedJarpcClient(
         pub,
         sub,

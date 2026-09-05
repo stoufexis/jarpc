@@ -19,46 +19,48 @@ public final class Util {
     };
   }
 
-  public static Subscription createClientSubscription(
-      Aeron aeron, String responseControl, int responseStreamId) {
+  public static Subscription createClientSubscription(Aeron aeron, ConnectionConfig cfg) {
     return aeron.addSubscription(
         new ChannelUriStringBuilder()
-            .media("udp")
+            .media(cfg.mediaString())
             .controlMode("response")
-            .controlEndpoint(responseControl)
+            .controlEndpoint(cfg.responseControl())
             .build(),
-        responseStreamId);
+        cfg.responseStreamId());
   }
 
   public static Publication createExclusiveClientPublication(
-      Aeron aeron, String requestEndpoint, int requestStreamId, Subscription subscription) {
+      Aeron aeron, Subscription subscription, ConnectionConfig cfg) {
     return aeron.addExclusivePublication(
         new ChannelUriStringBuilder()
-            .media("udp")
-            .endpoint(requestEndpoint)
+            .media(cfg.mediaString())
+            .endpoint(cfg.requestEndpoint())
             .responseCorrelationId(subscription.registrationId())
             .build(),
-        requestStreamId);
+        cfg.requestStreamId());
   }
 
   public static Subscription createServerSubscription(
-      Aeron aeron, Images images, String requestEndpoint, int requestStreamId) {
+      Aeron aeron, Images images, ConnectionConfig cfg) {
     return aeron.addSubscription(
-        new ChannelUriStringBuilder().media("udp").endpoint(requestEndpoint).build(),
-        requestStreamId,
+        new ChannelUriStringBuilder()
+            .media(cfg.mediaString())
+            .endpoint(cfg.requestEndpoint())
+            .build(),
+        cfg.requestStreamId(),
         images::enqueueAvailableImage,
         images::enqueueUnavailableImage);
   }
 
   public static Publication createExclusiveServerPublication(
-      Aeron aeron, long clientId, String responseControl, int responseStreamId) {
+      Aeron aeron, long clientId, ConnectionConfig cfg) {
     return aeron.addExclusivePublication(
         new ChannelUriStringBuilder()
-            .media("udp")
+            .media(cfg.mediaString())
             .controlMode("response")
-            .controlEndpoint(responseControl)
+            .controlEndpoint(cfg.responseControl())
             .responseCorrelationId(clientId)
             .build(),
-        responseStreamId);
+        cfg.responseStreamId());
   }
 }

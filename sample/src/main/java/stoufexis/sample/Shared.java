@@ -9,9 +9,8 @@ import org.agrona.concurrent.SleepingIdleStrategy;
 import stoufexis.jarpc.lib.common.ConnectionConfig;
 
 public final class Shared {
-  public static ConnectionConfig connectivityConfig(Aeron aeron) {
-    return new ConnectionConfig(aeron, "localhost:10000", 1, "localhost:10001", 2);
-  }
+  public static ConnectionConfig connectivityConfig =
+      new ConnectionConfig("localhost:10000", 1, "localhost:10001", 2, ConnectionConfig.Media.UDP);
 
   public static MediaDriver mediaDriver() {
     return MediaDriver.launchEmbedded(

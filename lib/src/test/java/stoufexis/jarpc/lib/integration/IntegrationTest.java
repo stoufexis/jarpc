@@ -33,6 +33,9 @@ public class IntegrationTest {
 
   @Test
   void smoke_test() {
+    ConnectionConfig cfg =
+        new ConnectionConfig("aeron:ipc", 1, "aeron:ipc", 2, ConnectionConfig.Media.IPC);
+
     try (MediaDriver mediaDriver =
             MediaDriver.launchEmbedded(
                 new MediaDriver.Context()
@@ -43,23 +46,19 @@ public class IntegrationTest {
         //
         Aeron aeron =
             Aeron.connect(
-                new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()))) {
+                new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+        //
+        EchoServerAgent server = new EchoServerAgent(aeron, cfg);
+        //
+        EchoConcurrentJarpcClient client =
+            EchoConcurrentJarpcClient.create(aeron, cfg, new ErrorHandler(), 1024);
+        //
+        ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+        //
+        AgentRunner runner = runner(new CompositeAgent(server, client))) {
 
-      ConnectionConfig cfg =
-          new ConnectionConfig(aeron, "localhost:10000", 1, "localhost:10001", 2);
-
-      try (EchoServerAgent server = new EchoServerAgent(cfg);
-          //
-          EchoConcurrentJarpcClient client =
-              EchoConcurrentJarpcClient.create(cfg, new ErrorHandler(), 1024);
-          //
-          ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
-          //
-          AgentRunner runner = runner(new CompositeAgent(server, client))) {
-
-        AgentRunner.startOnThread(runner);
-        runSmokeTest(client, executorService);
-      }
+      AgentRunner.startOnThread(runner);
+      runSmokeTest(client, executorService);
     }
   }
 
@@ -263,8 +262,8 @@ public class IntegrationTest {
   private static class EchoServerAgent implements Agent, AutoCloseable {
     EchoSingleThreadedJarpcServer server;
 
-    EchoServerAgent(ConnectionConfig cfg) {
-      this.server = EchoSingleThreadedJarpcServer.create(cfg, new EchoServerStateMachine());
+    EchoServerAgent(Aeron aeron, ConnectionConfig cfg) {
+      this.server = EchoSingleThreadedJarpcServer.create(aeron, cfg, new EchoServerStateMachine());
     }
 
     @Override

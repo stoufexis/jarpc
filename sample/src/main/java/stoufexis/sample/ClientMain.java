@@ -132,7 +132,7 @@ public final class ClientMain {
         //
         LeaseConcurrentJarpcClient client =
             LeaseConcurrentJarpcClient.create(
-                Shared.connectivityConfig(aeron), new ErrorHandler(), 1024);
+                aeron, Shared.connectivityConfig, new ErrorHandler(), 1024);
         //
         AgentRunner agentRunner = Shared.runner(client)) {
 

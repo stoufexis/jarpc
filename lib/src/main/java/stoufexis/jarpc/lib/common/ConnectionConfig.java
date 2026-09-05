@@ -1,10 +1,21 @@
 package stoufexis.jarpc.lib.common;
 
-import io.aeron.Aeron;
-
 public record ConnectionConfig(
-    Aeron aeron,
     String requestEndpoint,
     int requestStreamId,
     String responseControl,
-    int responseStreamId) {}
+    int responseStreamId,
+    Media media) {
+
+  public String mediaString() {
+    return switch (media) {
+      case UDP -> "udp";
+      case IPC -> "ipc";
+    };
+  }
+
+  public enum Media {
+    UDP,
+    IPC
+  }
+}

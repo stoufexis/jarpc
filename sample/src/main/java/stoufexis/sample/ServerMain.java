@@ -8,9 +8,9 @@ public final class ServerMain {
 
   static void main() {
     try (MediaDriver mediaDriver = Shared.mediaDriver();
-         Aeron aeron = Shared.aeron(mediaDriver);
-         LeaseServer server = new LeaseServer(aeron, Shared.connection);
-         AgentRunner agentRunner = Shared.runner(server)) {
+        Aeron aeron = Shared.aeron(mediaDriver);
+        LeaseServer server = new LeaseServer(aeron, Shared.connection);
+        AgentRunner agentRunner = Shared.runner(server)) {
       agentRunner.run();
     }
   }

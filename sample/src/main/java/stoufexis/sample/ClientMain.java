@@ -148,13 +148,12 @@ public final class ClientMain {
 
   static void main() throws InterruptedException, ExecutionException, TimeoutException {
     try (MediaDriver mediaDriver = Shared.mediaDriver();
-         Aeron aeron = Shared.aeron(mediaDriver);
-         //
-         LeaseConcurrentJarpcClient client =
-            LeaseConcurrentJarpcClient.create(
-                aeron, Shared.connection, new ErrorHandler(), 1024);
-         //
-         AgentRunner agentRunner = Shared.runner(client)) {
+        Aeron aeron = Shared.aeron(mediaDriver);
+        //
+        LeaseConcurrentJarpcClient client =
+            LeaseConcurrentJarpcClient.create(aeron, Shared.connection, new ErrorHandler(), 1024);
+        //
+        AgentRunner agentRunner = Shared.runner(client)) {
 
       AgentRunner.startOnThread(agentRunner);
 

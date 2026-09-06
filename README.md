@@ -81,8 +81,8 @@ Here is an example, taken from the [sample](./sample/src/main/resources/lease.js
 ]
 ```
 
-This service defines a lease store, where clients can acquire, hold, and refresh a lease on an arbitrary long key. The
-following types are supported:
+This service defines a lease store, where clients can acquire, hold, and refresh a lease on an arbitrary long key, while
+also placing a payload while they hold it. The following types are supported:
 
 * `boolean`
 * `byte`
@@ -250,10 +250,10 @@ public class LeaseSingleThreadedJarpcServer extends SingleThreadedJarpcServer
 
 ### Encode/Decode interfaces
 
-These interfaces model setting/retrieving the fields of each defined data type. They are temporary containers of fields
-as data is passed around internally or to the user. They are allocated only once and re-used. When an instance is
-exposed to a thread, the fields must be used in-place or copied in-place, never stored or passed to other threads
-directly.
+These interfaces model writing/reading the fields of each defined data type. Internally, these either function as
+wrappers for agrona direct buffers, or act as temporary intermediate containers. They are allocated once and re-used,
+never allocated per-request. When an instance is exposed to the user, it must be used in-place or copied in-place, never
+stored or passed to other threads directly.
 
 ```java
 public interface QueryResponseEncode {
@@ -298,8 +298,8 @@ public final class AcquireRequestScratch implements AcquireRequestDecode, Acquir
 
 ## Usage
 
-Having generated the classes, the only thing remaining to make the service functional is to implement the server logic.
-The following is taken from the [sample project](./sample/src/main/java/stoufexis/sample/LeaseServer.java).
+Having generated the classes, the only thing remaining to complete the service is to implement the server logic. The
+following is taken from the [sample project](./sample/src/main/java/stoufexis/sample/LeaseServer.java).
 
 ```java
 public class LeaseServer implements Agent, AutoCloseable {

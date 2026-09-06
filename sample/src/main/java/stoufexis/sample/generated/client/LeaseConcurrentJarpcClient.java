@@ -16,7 +16,7 @@ import stoufexis.sample.generated.common.*;
 import static stoufexis.jarpc.lib.common.Util.createClientSubscription;
 import static stoufexis.jarpc.lib.common.Util.createExclusiveClientPublication;
 
-// FIXME add timeouts and ad-hoc cancel
+// FIXME add timeouts and ad-hoc cancellations
 
 public final class LeaseConcurrentJarpcClient
     implements LeaseConcurrentClient, Agent, AutoCloseable, IsConnected {

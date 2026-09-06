@@ -4,6 +4,11 @@ import org.agrona.collections.Long2ObjectHashMap;
 import stoufexis.jarpc.lib.client.ClientErrorHandler;
 import stoufexis.jarpc.lib.client.OnClientDecodeError;
 
+/**
+ * Base class for response handler implementations. Exposes the components that are required to
+ * implement each handler, while implementing generically as much of the handler as possible,
+ * without introducing extreme abstraction.
+ */
 public abstract class ResponseHandlerUtil<T extends OnClientDecodeError>
     implements OnClientDecodeError {
   private final Long2ObjectHashMap<T> callbacks;

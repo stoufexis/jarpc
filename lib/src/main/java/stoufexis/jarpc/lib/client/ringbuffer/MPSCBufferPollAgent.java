@@ -5,7 +5,7 @@ import stoufexis.jarpc.lib.client.ClientErrorHandler;
 import stoufexis.jarpc.lib.common.ClaimHandle;
 import stoufexis.jarpc.lib.common.ErrorCode;
 
-// Does not need to implement Agent, its used manually
+/** Does not need to implement Agent, its used manually. */
 public abstract class MPSCBufferPollAgent<T> {
 
   public interface OnError {
@@ -57,6 +57,8 @@ public abstract class MPSCBufferPollAgent<T> {
   public final int doWork() {
     int work = 0;
 
+    // if the previous process returned false and our scratch buffer is still full, do not overwrite
+    // it
     if (!populated) {
       populated = ringBuffer.poll(copy, scratch);
       work++;

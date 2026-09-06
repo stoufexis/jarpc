@@ -1,5 +1,9 @@
 package stoufexis.jarpc.lib.client.concurrent;
 
+/**
+ * Utility for capturing the connected status from a single threaded service (e.g. exclusive
+ * publication) and exposing it in a thread-safe manner.
+ */
 public final class ConnectivityProbe {
 
   private final IsConnected service;
@@ -22,7 +26,11 @@ public final class ConnectivityProbe {
     }
   }
 
-  /** Thread-safe */
+  /**
+   * Thread-safe. This flag is only set once from false to true. It never reverts to false, even if
+   * the underlying service starts to return false. It is therefore only useful to detect when a
+   * service successfully starts up, not when it fails.
+   */
   public boolean isConnected() {
     return this.isConnected;
   }

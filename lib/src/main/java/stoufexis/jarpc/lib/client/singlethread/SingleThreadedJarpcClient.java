@@ -13,6 +13,11 @@ import stoufexis.jarpc.lib.common.Poll;
 import stoufexis.jarpc.lib.common.Publisher;
 import stoufexis.jarpc.lib.common.internal.MessageHeaderCodec;
 
+/**
+ * Base class for all single threaded client implementations. It manages the clients's subscription
+ * and publication. It exposes {@link #poll(int)}, which polls the subscription, parses the header,
+ * and feeds messages to onMessage. Note that fragments are always assembled.
+ */
 public abstract class SingleThreadedJarpcClient implements AutoCloseable, Poll, IsConnected {
 
   private final Publication publication;

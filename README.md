@@ -384,20 +384,19 @@ public class LeaseServer implements Agent, AutoCloseable {
 Then, the server can be started, e.g.
 
 ```java
-public final class ServerMain {
-  static void main() {
-    try (MediaDriver mediaDriver = mediaDriver();
-         Aeron aeron = aeron(mediaDriver);
-         LeaseServer server = new LeaseServer(aeron, connectionConfig);
-         AgentRunner agentRunner = runner(server)) {
-      agentRunner.run();
-    }
+static void main() {
+  try (MediaDriver mediaDriver = mediaDriver();
+       Aeron aeron = aeron(mediaDriver);
+       LeaseServer server = new LeaseServer(aeron, connectionConfig);
+       AgentRunner agentRunner = runner(server)) {
+    agentRunner.run();
   }
 }
 ```
 
-The client can be used without defining any additional logic. Note Jarpc supports multiple clients targeting the same
-server out-of-the-box, by using [Response Channels](https://github.com/aeron-io/aeron/wiki/Response-Channels).
+The client can be used without defining any additional logic. Note that Jarpc supports multiple clients targeting the
+same server instance out-of-the-box, by
+using [Response Channels](https://github.com/aeron-io/aeron/wiki/Response-Channels).
 
 ```java
 void main() {
@@ -423,9 +422,20 @@ possible to read and interpret directly, but it sacrifices readability to reduce
 to the library `stoufexis.jarpc.lib`, where it can be tested directly. Abstract classes and utility data structures are
 heavily used for this purpose, even in ways that obscure the actual logic.
 
+## Performance
+
+Jarpc's single-threaded classes are a fairly thin wrapper around aeron Response Channels, that standardize message
+encoding/decoding and request/response correlation. The concurrent client wraps the single threaded client and
+introduces a ring buffer as the entry point for messages. This is the minimum overhead necessary to make the concurrent
+client implementation possible. Additionally, agrona datastructures are used across the generated code and there are no
+steady-state allocations introduced.
+
 The generated code avoids forcing a level of abstraction that turns many calls in the hotpath into megamorphic calls
 when the number of RPC definitions grows large. As such, when it is simple to avoid megamorphic dispatch by repeating
 code for each rpc type, without making the generated code completely un-readable or giant, jarpc repeats the code.
+
+Real benchmarks are necessary to make any explicit claims about performance, but Jarpc is designed to perform very
+close, if not identically to using plain Aeron transport with custom message serialization.
 
 ## Code Generation Internals
 
@@ -434,10 +444,6 @@ defines placeholders and per-type or per-field loops. Each template is parsed by
 the json specification of the service.
 
 See an example template [here](./generator/src/main/resources/template/client/SingleThreadedJarpcClient.java)
-
-## Benchmarks
-
-TBD
 
 ## Data Model Limitations and SBE
 

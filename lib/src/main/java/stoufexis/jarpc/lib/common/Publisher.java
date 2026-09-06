@@ -7,6 +7,7 @@ import org.agrona.MutableDirectBuffer;
 import stoufexis.jarpc.lib.common.internal.MessageHeaderCodec;
 import stoufexis.jarpc.lib.server.internal.ServerPublications;
 
+/** Utility that encapsulates header encoding and error handling of publications. */
 public final class Publisher {
   private final Publication publication;
   private long correlationId = 0;

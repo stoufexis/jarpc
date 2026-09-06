@@ -11,7 +11,7 @@ under-documented, under-tested, and under-benchmarked. Additionally, it is not p
 
 ## Schema
 
-A jarpc service is specified using a schema. It defines each of the service's supported actions and the shape of its
+A jarpc service is specified using a spec file. It defines each of the service's supported actions and the shape of its
 request/response payloads.
 
 Here is an example, taken from the [sample](./sample/src/main/resources/lease.json) project.
@@ -94,7 +94,7 @@ also placing a payload while they hold it. The following types are supported:
 
 ## Code Generation
 
-Given a schema, the [code generator](./generator) creates all required classes;
+Given a spec file, the [code generator](./generator) creates all required classes;
 
 * Interfaces defining the client and server
 * Two client implementations; one that is thread-safe and usable across many programming paradigms, and a

@@ -16,6 +16,10 @@ import stoufexis.sample.generated.client.LeaseConcurrentClient.*;
 import stoufexis.sample.generated.client.LeaseConcurrentJarpcClient;
 import stoufexis.sample.generated.common.*;
 
+// This client implementation freely allocates to keep it simple. 0-allocation usage is possible
+// even with the concurrent client implementation. Usage of the single threaded client is not shown
+// here.
+
 public final class ClientMain {
   static class ErrorHandler implements ClientErrorHandler {
     @Override

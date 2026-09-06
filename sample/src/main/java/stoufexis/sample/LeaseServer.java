@@ -1,7 +1,6 @@
 package stoufexis.sample;
 
 import io.aeron.Aeron;
-import java.util.ArrayDeque;
 import java.util.concurrent.TimeUnit;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -11,6 +10,8 @@ import stoufexis.sample.generated.common.*;
 import stoufexis.sample.generated.server.LeaseSingleThreadedJarpcServer;
 import stoufexis.sample.generated.server.LeaseSingleThreadedServer;
 import stoufexis.sample.generated.server.LeaseSingleThreadedStateMachine;
+
+// This server implementation does not avoid all allocations, to keep it simple.
 
 public class LeaseServer implements Agent, AutoCloseable {
   private final LeaseSingleThreadedJarpcServer singleThreadedJarpcServer;
@@ -41,14 +42,12 @@ public class LeaseServer implements Agent, AutoCloseable {
   }
 
   private static final class StateMachine implements LeaseSingleThreadedStateMachine {
-    private static final int POOL_CAPACITY = 1024;
     private static final int TTL_SECONDS = 120;
     private static final long TTL_NANOS = TimeUnit.SECONDS.toNanos(TTL_SECONDS);
     private static final long TICK_NANOS = 100_000_000;
 
     private long lastTickAtNanos = Long.MIN_VALUE;
     private final ClaimHandle claimHandle = new ClaimHandle();
-    private final ArrayDeque<Bytes> bytesPool = new ArrayDeque<>(1024);
     private final Long2ObjectHashMap<Bytes> payloads = new Long2ObjectHashMap<>();
     private final Long2LongHashMap owners = new Long2LongHashMap(Long.MIN_VALUE);
     private final Long2LongHashMap refreshed = new Long2LongHashMap(Long.MIN_VALUE);
@@ -78,7 +77,7 @@ public class LeaseServer implements Agent, AutoCloseable {
 
       } else {
         long now = System.nanoTime();
-        Bytes payload = getPayloadBuffer();
+        Bytes payload = new Bytes(16);
         payload.copy(t.value());
         put(key, payload, clientId, now);
         IO.println("now " + now);
@@ -212,28 +211,15 @@ public class LeaseServer implements Agent, AutoCloseable {
     }
 
     private void remove(long key) {
-      Bytes payload = payloads.remove(key);
+      payloads.remove(key);
       owners.remove(key);
       refreshed.remove(key);
-
-      // return to the pool, so future gets can avoid allocation
-      if (payload != null && bytesPool.size() < POOL_CAPACITY) {
-        bytesPool.add(payload);
-      }
     }
 
     private void put(long key, Bytes payload, long clientId, long refreshedAt) {
       payloads.put(key, payload);
       owners.put(key, clientId);
       refreshed.put(key, refreshedAt);
-    }
-
-    private Bytes getPayloadBuffer() {
-      if (bytesPool.isEmpty()) {
-        return new Bytes(16);
-      } else {
-        return bytesPool.getFirst();
-      }
     }
 
     private void illegalClientId(long clientId) {

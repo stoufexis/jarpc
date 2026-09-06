@@ -2,7 +2,7 @@
 
 Jarpc is a performance-focused RPC library for Java. It is based on [Aeron](https://aeron.io/docs/)
 and [Agrona](https://aeron.io/docs/agrona/overview/) to provide the best possible latency and throughput achievable in
-the JVM.
+the JVM, and introduces no steady-state allocations.
 
 ## State of the Project
 
@@ -125,6 +125,13 @@ See [sample project](./sample/src/main/java/stoufexis/sample/generated) for the 
 
 ### Lease Concurrent Client Interface
 
+The concurrent client supports 2 usage modes, depending on garbage-tolerance:
+
+* Allocate a fresh request and callback object for each call
+* Define a re-usable class (potentially in thread-local) for the request and a singleton callback object. Correlation
+  between request/response can then be done via an application-level field passed in the request and echoed in the
+  response.
+
 ```java
 public interface LeaseConcurrentClient {
 
@@ -151,9 +158,9 @@ public interface LeaseConcurrentClient {
 
 ### Lease Single Threaded Client Interface
 
+A unique correlation id is issued for each request which can be used to associate it with its response
+
 ```java
-// A unique correlation id is issued for each request which can be used to associate it with its
-// response
 public interface LeaseSingleThreadedClient extends Poll {
 
   AcquireRequestEncode claimAcquire(ClaimHandle claimHandle);
@@ -179,9 +186,10 @@ public interface LeaseSingleThreadedClient extends Poll {
 
 ### Lease Concurrent Client Implementation
 
+It exposes an Agent, which drives the client's progress. The agent must be scheduled in the background with an
+AgentRunner.
+
 ```java
-// It exposes an Agent, which drives the client's progress. The agent must be scheduled in the
-// background with an AgentRunner.
 public final class LeaseConcurrentJarpcClient
     implements LeaseConcurrentClient, Agent, AutoCloseable, IsConnected {
   // -- Output omitted for brevity -- //
@@ -200,9 +208,10 @@ public final class LeaseSingleThreadedJarpcClient extends SingleThreadedJarpcCli
 
 ### Lease Single Threaded Server Interface
 
+Each request is identified by the clientId, correlationId pair. To respond to a particular request, this pair must be
+given to the claim call.
+
 ```java
-// Each request is identified by the clientId, correlationId pair. To respond to a particular
-// request, this pair must be given to the claim call.
 public interface LeaseSingleThreadedServer extends Poll {
 
   AcquireResponseEncode claimAcquire(long clientId, long correlationId, ClaimHandle claimHandle);
@@ -395,6 +404,13 @@ The client can be used without defining any additional logic. Note that Jarpc su
 same server instance out-of-the-box, by
 using [Response Channels](https://github.com/aeron-io/aeron/wiki/Response-Channels).
 
+Note that the sample project code does not avoid all allocation, to keep it simple. It also demonstrates that, while
+jarpc internals are explicitly 0-allocation, users do not need to adhere to the same standard to make good use of jarpc.
+
+Usage of the single threaded client is not shown in the sample project, but
+the [generated LeaseConcurrentJarpcClient](./sample/src/main/java/stoufexis/sample/generated/client/LeaseConcurrentJarpcClient.java)
+code can be inspected instead, since it uses the single threaded client internally.
+
 ```java
 void main() {
   try (MediaDriver mediaDriver = mediaDriver();
@@ -424,8 +440,10 @@ heavily used for this purpose, even in ways that obscure the actual logic.
 Jarpc's single-threaded classes are a fairly thin wrapper around aeron Response Channels, that standardize message
 encoding/decoding and request/response correlation. The concurrent client wraps the single threaded client and
 introduces a ring buffer as the entry point for messages. This is the minimum overhead necessary to make the concurrent
-client implementation possible. Additionally, agrona datastructures are used across the generated code and there are no
-steady-state allocations introduced.
+client implementation possible.
+
+Additionally, agrona datastructures are used across the generated code and there are no steady-state allocations
+introduced.
 
 The generated code avoids forcing a level of abstraction that turns many calls in the hotpath into megamorphic calls
 when the number of RPC definitions grows large. As such, when it is simple to avoid megamorphic dispatch by repeating

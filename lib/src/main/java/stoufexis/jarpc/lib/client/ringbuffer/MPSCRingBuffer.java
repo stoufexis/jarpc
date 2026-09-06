@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 final class MPSCRingBuffer<E> {
 
   // FIXME This implementation is fairly unoptimized. Theres false sharing, and not granular enough
-  // atomic operations
+  // atomic operations. It needs to either be properly optimized, or replaced by using Disruptor directly.
 
   private final E[] arr;
   private final AtomicLongArray readySeq;

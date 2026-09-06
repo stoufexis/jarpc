@@ -68,7 +68,7 @@ public class MPMCBufferPollAgentTest {
     var pollAgent =
         new MPSCBufferPollAgent<>(
             new DoubleReference(), DoubleReference::copy, new ErrorHandler(), buf, null) {
-          private LinkedList<Integer> integers = new LinkedList<>();
+          private final LinkedList<Integer> integers = new LinkedList<>();
           private int cnt = 0;
 
           @Override

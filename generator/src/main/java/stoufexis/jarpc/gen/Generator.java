@@ -22,7 +22,6 @@ public final class Generator {
 
   public record OutputFile(String dir, String relativePath, String content) {}
 
-  /** returns a list of file contents */
   private static List<OutputFile> generate(Spec spec, TemplatePath path) throws IOException {
     ParsedTemplate root = ParsedTemplate.parseResource(path.getPath());
     ParsedTemplate.ForEachTypeBlock global = root.globalTypeBlock();

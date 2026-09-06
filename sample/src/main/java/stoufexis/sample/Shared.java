@@ -9,7 +9,7 @@ import org.agrona.concurrent.SleepingIdleStrategy;
 import stoufexis.jarpc.lib.common.ConnectionConfig;
 
 public final class Shared {
-  public static ConnectionConfig connectivityConfig =
+  public static ConnectionConfig connection =
       new ConnectionConfig("localhost:10000", 1, "localhost:10001", 2, ConnectionConfig.Media.UDP);
 
   public static MediaDriver mediaDriver() {

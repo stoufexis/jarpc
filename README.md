@@ -9,9 +9,6 @@ the JVM.
 This project currently contains a Proof of Concept for jarpc. It is completely functional, but limited in features,
 under-documented, under-tested, and under-benchmarked. Additionally, it is not published as a library in any repository.
 
-In its current state, the project serves as an experiment that investigates whether creating an RPC library based on
-Aeron is indeed practical without sacrificing Aeron's performance characteristics.
-
 ## Schema
 
 A jarpc service is specified using a schema. It defines each of the service's supported actions and the shape of its

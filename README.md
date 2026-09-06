@@ -4,6 +4,9 @@ Jarpc is a performance-focused RPC library for Java. It is based on [Aeron](http
 and [Agrona](https://aeron.io/docs/agrona/overview/) to provide the best possible latency and throughput achievable in
 the JVM, and introduces no steady-state allocations.
 
+It aims to provide similar usage to other RPC frameworks like gRPC or Cap'n Proto (a schema-driven generator producing
+typed client and server code), but at the performance level of Aeron.
+
 ## State of the Project
 
 This project currently contains a Proof of Concept for jarpc. It is completely functional, but limited in features,
@@ -449,7 +452,7 @@ The generated code avoids forcing a level of abstraction that turns many calls i
 when the number of RPC definitions grows large. As such, when it is simple to avoid megamorphic dispatch by repeating
 code for each rpc type, without making the generated code completely un-readable or giant, jarpc repeats the code.
 
-Real benchmarks are necessary to make any explicit claims about performance, but Jarpc is designed to perform very
+Real benchmarks are necessary to make any concrete claims about performance, but Jarpc is designed to perform very
 close, if not identically to using plain Aeron transport with custom message serialization.
 
 ## Code Generation Internals

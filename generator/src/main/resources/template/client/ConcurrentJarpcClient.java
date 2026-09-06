@@ -81,6 +81,7 @@ public final class _Service_ConcurrentJarpcClient
     return "_Service_ConcurrentJarpcClient";
   }
 
+  /** Not thread-safe. Must be called by the same thread that runs doWork. */
   @Override
   public void close() {
     singleThreadedClient.close();

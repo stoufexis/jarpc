@@ -161,9 +161,16 @@ public class LeaseServer implements Agent, AutoCloseable {
       illegalClientId(clientId);
       IO.println(clientId + " disconnected");
 
-      for (long key : payloads.keySet()) {
+      var it = payloads.keySet().iterator();
+      while (it.hasNext()) {
+
+        long key = it.nextLong();
+
         if (owners.get(key) == clientId) {
-          remove(key);
+          it.remove();
+          owners.remove(key);
+          refreshed.remove(key);
+
           IO.println("removing " + key + " because its owner " + clientId + " disconnected");
         }
       }
@@ -177,10 +184,17 @@ public class LeaseServer implements Agent, AutoCloseable {
       if (lastTickAtNanos == Long.MIN_VALUE || now - lastTickAtNanos > TICK_NANOS) {
         lastTickAtNanos = now;
 
-        for (long key : payloads.keySet()) {
+        var it = payloads.keySet().iterator();
+        while (it.hasNext()) {
+
+          long key = it.nextLong();
           long receivedAt = refreshed.get(key);
+
           if (now - receivedAt > TTL_NANOS) {
-            remove(key);
+            it.remove();
+            owners.remove(key);
+            refreshed.remove(key);
+
             IO.println(
                 "key "
                     + key
@@ -208,12 +222,6 @@ public class LeaseServer implements Agent, AutoCloseable {
     @Override
     public void onError(Throwable throwable) {
       IO.println(throwable.toString());
-    }
-
-    private void remove(long key) {
-      payloads.remove(key);
-      owners.remove(key);
-      refreshed.remove(key);
     }
 
     private void put(long key, Bytes payload, long clientId, long refreshedAt) {

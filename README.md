@@ -466,5 +466,5 @@ See an example template [here](./generator/src/main/resources/template/client/Si
 ## Data Model Limitations and SBE
 
 The data model is fairly limited, with the most glaring omissions being composite types and variable length fields. In
-the future, Jarpc's own decoding/encoding code can be replaced by SBE, which would unlock a much richer request/response
+the future, Jarpc's own decoding/encoding code can be replaced by SBE, which would unlock much richer request/response
 types.
